@@ -1,19 +1,21 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react'
+import { Eye, EyeOff, Lock, User, Shield } from 'lucide-react'
+import { httpsCallable } from 'firebase/functions'
 import { useAuth } from '../../contexts/AuthContext'
+import { functions } from '../../firebase/config'
 import { Spinner } from '../../components/ui/LoadingScreen'
+import { normalizeKenyanPhone } from '../../utils/phone'
 import toast from 'react-hot-toast'
 import type { UserRole } from '../../types'
 
 const loginSchema = z.object({
-  email:    z.string().min(1, 'Email is required').email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  identifier: z.string().min(1, 'Email or phone is required'),
+  password:   z.string().min(1, 'Password is required'),
 })
-
 type LoginForm = z.infer<typeof loginSchema>
 
 function getRolePath(role: UserRole | null): string {
@@ -28,8 +30,6 @@ function getRolePath(role: UserRole | null): string {
 
 export default function LoginPage() {
   const { signIn, user } = useAuth()
-  const navigate          = useNavigate()
-  const location          = useLocation()
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -38,25 +38,25 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
 
-  // Already logged in — redirect immediately
-  if (user) {
-    navigate(getRolePath(user.role), { replace: true })
-    return null
-  }
+  if (user) return <Navigate to={getRolePath(user.role)} replace />
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      await signIn(data.email, data.password)
-      // Wait for auth state to update, then redirect
-      // The onAuthStateChanged sets user.role — we navigate after brief delay
-      setTimeout(() => {
-        const role = (window as any).__lango_role as UserRole | null
-        navigate(getRolePath(role), { replace: true })
-      }, 300)
+      let email = data.identifier.trim()
+      if (!email.includes('@')) {
+        const phone = normalizeKenyanPhone(email)
+        if (!phone) { toast.error('Enter a valid email or Kenyan phone number'); return }
+        const resolve = httpsCallable<{ phone: string }, { email: string }>(functions, 'resolvePhoneToEmail')
+        const res = await resolve({ phone })
+        email = res.data.email
+      }
+      await signIn(email, data.password)
     } catch (error: any) {
       const code = error?.code as string
-      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        toast.error('Invalid email or password')
+      if (code === 'functions/not-found') {
+        toast.error('No account found for that phone number')
+      } else if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(code)) {
+        toast.error('Invalid credentials')
       } else if (code === 'auth/too-many-requests') {
         toast.error('Too many failed attempts. Please try again later.')
       } else if (code === 'auth/user-disabled') {
@@ -93,20 +93,20 @@ export default function LoginPage() {
             <p className="text-sm text-gray-500 mb-6">Enter your credentials to access your dashboard</p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-              {/* Email */}
+              {/* Email or phone */}
               <div>
-                <label className="label">Email address</label>
+                <label className="label">Email or phone number</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   <input
-                    {...register('email')}
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    className={`input pl-9 ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
+                    {...register('identifier')}
+                    type="text"
+                    autoComplete="username"
+                    placeholder="you@example.com or 0712345678"
+                    className={`input pl-9 ${errors.identifier ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
                   />
                 </div>
-                {errors.email && <p className="form-error">{errors.email.message}</p>}
+                {errors.identifier && <p className="form-error">{errors.identifier.message}</p>}
               </div>
 
               {/* Password */}
