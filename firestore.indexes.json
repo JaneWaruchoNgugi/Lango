@@ -6,8 +6,19 @@
     { "collectionGroup": "units", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },
       { "fieldPath": "unitNumber", "order": "ASCENDING" } ] },
+    { "collectionGroup": "units", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "blockId", "order": "ASCENDING" },
+      { "fieldPath": "unitNumber", "order": "ASCENDING" } ] },
     { "collectionGroup": "visitors", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "checkInTime", "order": "DESCENDING" } ] },
+    { "collectionGroup": "visitors", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "checkInTime", "order": "ASCENDING" } ] },
+    { "collectionGroup": "visitors", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
       { "fieldPath": "checkInTime", "order": "DESCENDING" } ] },
     { "collectionGroup": "incidents", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },

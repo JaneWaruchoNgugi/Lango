@@ -79,7 +79,7 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['SECURITY_GUARD']}><GuardLayout /></ProtectedRoute>}
       >
         <Route index element={<GateDashboard />} />
-        <Route path="register" element={<RegisterVisitorPage />} />
+        <Route path="register-visitor" element={<RegisterVisitorPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />
