@@ -26,6 +26,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to={getRoleDashboard(user.role)} replace />
   }
 
+  if (user.profile?.tempPasswordSet) {
+    return <Navigate to="/change-password" replace />
+  }
+
   return <>{children}</>
 }
 
