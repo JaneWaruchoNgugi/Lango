@@ -33,6 +33,7 @@ export default function StaffPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL')
   const [showModal, setShowModal] = useState(false)
   const [creating, setCreating]   = useState(false)
+  const [tempCred, setTempCred] = useState<{ name: string; email: string; password: string } | null>(null)
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<StaffForm>({
     resolver: zodResolver(staffSchema),
@@ -59,12 +60,12 @@ export default function StaffPage() {
   const onCreateStaff = async (data: StaffForm) => {
     setCreating(true)
     try {
-      const createStaffUser = httpsCallable(functions, 'createStaffUser')
-      await createStaffUser(data)
-      toast.success(`Account created for ${data.name}. A password has been set.`)
+      const createStaffUser = httpsCallable<StaffForm, { uid: string; tempPassword: string }>(functions, 'createStaffUser')
+      const res = await createStaffUser(data)
+      setTempCred({ name: data.name, email: data.email, password: res.data.tempPassword })
+      toast.success(`Account created for ${data.name}`)
       setShowModal(false)
       reset()
-      // Reload staff
       const snap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')))
       setStaff(snap.docs.map(d => d.data() as AppUser).filter(u => u.role !== 'SUPER_ADMIN'))
     } catch (err: any) {
@@ -235,6 +236,23 @@ export default function StaffPage() {
             </div>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!tempCred} onClose={() => setTempCred(null)} title="Account created" size="sm">
+        <p className="text-sm text-gray-600 mb-3">
+          Share these one-time credentials with <span className="font-medium">{tempCred?.name}</span>.
+          They must change the password on first login.
+        </p>
+        <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+          <p><span className="text-gray-500">Login:</span> <span className="font-mono">{tempCred?.email}</span></p>
+          <p><span className="text-gray-500">Temp password:</span> <span className="font-mono">{tempCred?.password}</span></p>
+        </div>
+        <button
+          className="btn-secondary w-full mt-4"
+          onClick={() => { navigator.clipboard?.writeText(`${tempCred?.email} / ${tempCred?.password}`); toast.success('Copied') }}
+        >
+          Copy credentials
+        </button>
       </Modal>
     </div>
   )
