@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+  body {
+    @apply font-sans antialiased bg-gray-50 text-gray-900;
+  }
+  html {
+    @apply h-full;
+  }
+  body {
+    @apply h-full;
+  }
+  #root {
+    @apply h-full;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-lango-primary text-white text-sm font-medium rounded-lg hover:bg-lango-secondary transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors duration-150;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-card;
+  }
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lango-primary/20 focus:border-lango-primary transition-colors duration-150 placeholder:text-gray-400;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-green {
+    @apply badge bg-green-100 text-green-800;
+  }
+  .badge-red {
+    @apply badge bg-red-100 text-red-800;
+  }
+  .badge-yellow {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+  .badge-gray {
+    @apply badge bg-gray-100 text-gray-700;
+  }
+  .badge-blue {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+  .badge-orange {
+    @apply badge bg-orange-100 text-orange-800;
+  }
+  .stat-card {
+    @apply card p-5 flex items-start gap-4;
+  }
+  .stat-icon {
+    @apply p-2.5 rounded-lg;
+  }
+  .table-container {
+    @apply overflow-x-auto;
+  }
+  .table {
+    @apply w-full text-sm text-left;
+  }
+  .table th {
+    @apply px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100;
+  }
+  .table td {
+    @apply px-4 py-3 border-b border-gray-50 text-gray-700;
+  }
+  .table tr:last-child td {
+    @apply border-b-0;
+  }
+  .table tr:hover td {
+    @apply bg-gray-50/50;
+  }
+  .form-error {
+    @apply text-xs text-red-600 mt-1;
+  }
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  .page-title {
+    @apply text-xl font-bold text-gray-900;
+  }
+  .page-subtitle {
+    @apply text-sm text-gray-500 mt-0.5;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-gray-900 mb-3;
+  }
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+  .empty-state-icon {
+    @apply w-12 h-12 text-gray-300 mb-3;
+  }
+  .empty-state-title {
+    @apply text-sm font-medium text-gray-900 mb-1;
+  }
+  .empty-state-desc {
+    @apply text-xs text-gray-500 max-w-xs;
+  }
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  .divider {
+    @apply border-t border-gray-100 my-4;
+  }
+  .tab-button {
+    @apply px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150;
+  }
+  .tab-button-active {
+    @apply tab-button border-lango-primary text-lango-primary;
+  }
+  .tab-button-inactive {
+    @apply tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

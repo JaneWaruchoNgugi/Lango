@@ -1,0 +1,208 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+
+    // Check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Get the role from custom claims (set server-side only)
+    function getRole() {
+      return request.auth.token.role;
+    }
+
+    // Get the propertyId from custom claims
+    function getPropertyId() {
+      return request.auth.token.propertyId;
+    }
+
+    // Role checks
+    function isSuperAdmin() {
+      return isAuth() && getRole() == 'SUPER_ADMIN';
+    }
+
+    function isPropertyManager() {
+      return isAuth() && getRole() == 'PROPERTY_MANAGER';
+    }
+
+    function isCaretaker() {
+      return isAuth() && getRole() == 'CARETAKER';
+    }
+
+    function isGuard() {
+      return isAuth() && getRole() == 'SECURITY_GUARD';
+    }
+
+    // Property staff: manager or caretaker
+    function isPropertyStaff() {
+      return isPropertyManager() || isCaretaker();
+    }
+
+    // Any authenticated staff member
+    function isAnyStaff() {
+      return isSuperAdmin() || isPropertyManager() || isCaretaker() || isGuard();
+    }
+
+    // Check if user is authorized for this property
+    function ownsProperty(propertyId) {
+      return isSuperAdmin() || getPropertyId() == propertyId;
+    }
+
+    // ============================================================
+    // USERS
+    // ============================================================
+    // Only Super Admin can create/update users
+    // Users can read their own profile only
+    // Guards cannot read other users
+    match /users/{userId} {
+      allow read:   if isAuth() && (isSuperAdmin() || request.auth.uid == userId || isPropertyStaff());
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || request.auth.uid == userId;
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // PROPERTIES
+    // ============================================================
+    match /properties/{propertyId} {
+      allow read:   if isAuth() && ownsProperty(propertyId);
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // BLOCKS
+    // ============================================================
+    match /blocks/{blockId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // UNITS
+    // ============================================================
+    match /units/{unitId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin()
+                    || (isPropertyStaff() && getPropertyId() == resource.data.propertyId)
+                    || (isGuard() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // TENANTS
+    // ============================================================
+    // Guards can read tenants to look up who lives in a unit
+    // Guards cannot create/edit/delete tenant records
+    match /tenants/{tenantId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // OCCUPANCY HISTORY
+    // ============================================================
+    match /occupancies/{recordId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // VISITORS
+    // ============================================================
+    // Guards can create and update visitors (check in/out)
+    // Guards can read visitors for their property
+    match /visitors/{visitorId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isAuth() && ownsProperty(resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // PRE-APPROVED VISITORS
+    // ============================================================
+    match /preApproved/{docId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+    }
+
+    // ============================================================
+    // DELIVERIES
+    // ============================================================
+    match /deliveries/{deliveryId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isAuth() && ownsProperty(resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // INCIDENTS
+    // ============================================================
+    match /incidents/{incidentId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // SHIFTS
+    // ============================================================
+    match /shifts/{shiftId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isAuth() && (request.auth.uid == resource.data.guardId || isSuperAdmin() || isPropertyStaff());
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // SUBSCRIPTIONS
+    // ============================================================
+    // Guards cannot access subscription data
+    match /subscriptions/{subId} {
+      allow read:   if isAuth() && (isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId));
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // AUDIT LOGS
+    // ============================================================
+    // Immutable to all non-Super Admin users
+    match /auditLogs/{logId} {
+      allow read:   if isAuth() && (isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId));
+      allow create: if isAnyStaff(); // Any staff can create audit log entries
+      allow update: if false;        // Nobody can edit audit logs
+      allow delete: if false;        // Nobody can delete audit logs
+    }
+
+    // ============================================================
+    // NOTIFICATIONS
+    // ============================================================
+    match /notifications/{notifId} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAnyStaff();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+  }
+}
