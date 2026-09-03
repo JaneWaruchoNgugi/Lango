@@ -1,3 +1,4 @@
+import { randomInt, timingSafeEqual } from 'node:crypto'
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { initializeApp } from 'firebase-admin/app'
@@ -22,10 +23,15 @@ function generateTempPassword(): string {
   const lower = 'abcdefghijkmnpqrstuvwxyz'
   const nums = '23456789'
   const all = upper + lower + nums
-  const pick = (set: string) => set[Math.floor(Math.random() * set.length)]
+  const pick = (set: string) => set[randomInt(0, set.length)]
   const chars = [pick(upper), pick(lower), pick(nums)]
   for (let i = 0; i < 9; i++) chars.push(pick(all))
-  return chars.sort(() => Math.random() - 0.5).join('')
+  // Fisher–Yates shuffle with a CSPRNG
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+  return chars.join('')
 }
 
 // createStaffUser — Super Admin creates a staff account with claims.
@@ -94,15 +100,41 @@ export const createStaffUser = onCall(async (request) => {
 export const setUserClaims = onCall(async (request) => {
   assertSuperAdmin(request.auth)
   const { uid, role, propertyId } = request.data as { uid: string; role: Role; propertyId: string | null }
-  if (!uid || !role) throw new HttpsError('invalid-argument', 'uid and role are required.')
 
-  await getAuth().setCustomUserClaims(uid, { role, propertyId: propertyId ?? null })
+  const ALL_ROLES: Role[] = ['SUPER_ADMIN', 'PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD']
+  if (typeof uid !== 'string' || uid.length === 0 || uid.length > 128) {
+    throw new HttpsError('invalid-argument', 'Invalid uid.')
+  }
+  if (!ALL_ROLES.includes(role)) {
+    throw new HttpsError('invalid-argument', 'Invalid role.')
+  }
+  const normalizedPropertyId = propertyId ?? null
+  if (normalizedPropertyId !== null && (typeof normalizedPropertyId !== 'string' || normalizedPropertyId.length === 0 || normalizedPropertyId.length > 128)) {
+    throw new HttpsError('invalid-argument', 'Invalid propertyId.')
+  }
+  // Non-SUPER_ADMIN roles must be scoped to a property.
+  if (role !== 'SUPER_ADMIN' && normalizedPropertyId === null) {
+    throw new HttpsError('invalid-argument', 'A property is required for this role.')
+  }
+  // Guard against the acting admin demoting themselves out of SUPER_ADMIN.
+  if (uid === request.auth!.uid && role !== 'SUPER_ADMIN') {
+    throw new HttpsError('failed-precondition', 'You cannot remove your own Super Admin role.')
+  }
+
+  await getAuth().setCustomUserClaims(uid, { role, propertyId: normalizedPropertyId })
   await getFirestore().collection('users').doc(uid).update({
-    role, propertyId: propertyId ?? null, updatedAt: FieldValue.serverTimestamp(),
+    role, propertyId: normalizedPropertyId, updatedAt: FieldValue.serverTimestamp(),
   })
   return { ok: true }
 })
 
+// SECURITY NOTE (deferred per milestone spec §7): resolvePhoneToEmail is an
+// unauthenticated callable that maps phone -> login email to enable phone login.
+// This permits phone/email enumeration. The accepted mitigation — App Check
+// enforcement (enforceAppCheck) + per-phone/IP rate limiting — is scheduled for
+// the later "Notifications / App Check / hardening" phase. Do NOT enable
+// enforceAppCheck until the web client registers an App Check provider, or all
+// callable traffic (including login) will be rejected.
 // resolvePhoneToEmail — public, lets the login page sign in by phone.
 export const resolvePhoneToEmail = onCall(async (request) => {
   const { phone } = request.data as { phone: string }
@@ -116,17 +148,37 @@ export const resolvePhoneToEmail = onCall(async (request) => {
   return { email: snap.docs[0].data().email as string }
 })
 
+function secretsMatch(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
+
 // bootstrapSuperAdmin — one-time, secret-guarded creation of the first admin.
 export const bootstrapSuperAdmin = onCall(async (request) => {
   const { secret, email, password, name } = request.data as {
     secret: string; email: string; password: string; name: string
   }
-  if (!process.env.BOOTSTRAP_SECRET || secret !== process.env.BOOTSTRAP_SECRET) {
+  if (!process.env.BOOTSTRAP_SECRET || typeof secret !== 'string' || !secretsMatch(secret, process.env.BOOTSTRAP_SECRET)) {
     throw new HttpsError('permission-denied', 'Invalid bootstrap secret.')
   }
+  if (!email || !name || typeof password !== 'string' || password.length < 12) {
+    throw new HttpsError('invalid-argument', 'email, name and a password of at least 12 characters are required.')
+  }
+
   const db = getFirestore()
-  const existing = await db.collection('users').where('role', '==', 'SUPER_ADMIN').limit(1).get()
-  if (!existing.empty) throw new HttpsError('failed-precondition', 'A Super Admin already exists.')
+  const bootstrapRef = db.collection('system').doc('bootstrap')
+
+  // Transactionally claim the singleton so concurrent calls cannot both proceed.
+  await db.runTransaction(async (tx) => {
+    const existingAdmin = await db.collection('users').where('role', '==', 'SUPER_ADMIN').limit(1).get()
+    const bootstrapDoc = await tx.get(bootstrapRef)
+    if (!existingAdmin.empty || bootstrapDoc.exists) {
+      throw new HttpsError('failed-precondition', 'A Super Admin already exists.')
+    }
+    tx.set(bootstrapRef, { claimedAt: FieldValue.serverTimestamp() })
+  })
 
   const userRecord = await getAuth().createUser({ email, password, displayName: name })
   await getAuth().setCustomUserClaims(userRecord.uid, { role: 'SUPER_ADMIN', propertyId: null })
@@ -135,5 +187,6 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
     status: 'ACTIVE', tempPasswordSet: false,
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   })
+  await bootstrapRef.update({ uid: userRecord.uid })
   return { uid: userRecord.uid }
 })
