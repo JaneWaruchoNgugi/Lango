@@ -14,7 +14,7 @@ Download a service-account key from the Firebase console
 ## Demo accounts (all dev-only)
 | Role         | Login                     | Password       |
 |--------------|---------------------------|----------------|
-| Super Admin  | admin@lango.dev           | Lango#Admin1   |
+| Super Admin  | waruchojanen@gmail.com     | Lango#Admin1   |
 | Caretaker    | caretaker@greenview.dev   | Lango#Care1    |
 | Security Guard | guard1@greenview.dev    | Lango#Guard1   |
 

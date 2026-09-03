@@ -29,9 +29,11 @@ async function main() {
   const now = FieldValue.serverTimestamp()
 
   // 1. Super Admin
-  const adminUid = await ensureUser('admin@lango.dev', 'Lango#Admin1', 'Lango Super Admin', { role: 'SUPER_ADMIN', propertyId: null })
+  const ADMIN_EMAIL = 'waruchojanen@gmail.com'
+  const ADMIN_PASSWORD = 'Lango#Admin1'
+  const adminUid = await ensureUser(ADMIN_EMAIL, ADMIN_PASSWORD, 'Lango Super Admin', { role: 'SUPER_ADMIN', propertyId: null })
   await db.collection('users').doc(adminUid).set({
-    uid: adminUid, name: 'Lango Super Admin', email: 'admin@lango.dev', phone: '+254712000000',
+    uid: adminUid, name: 'Lango Super Admin', email: ADMIN_EMAIL, phone: '+254712000000',
     role: 'SUPER_ADMIN', propertyId: null, status: 'ACTIVE', tempPasswordSet: false,
     createdAt: now, updatedAt: now,
   })
@@ -106,7 +108,7 @@ async function main() {
     })
   }
 
-  console.log('✅ Seed complete. Super Admin: admin@lango.dev / Lango#Admin1')
+  console.log(`✅ Seed complete. Super Admin: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`)
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1) })
