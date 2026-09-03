@@ -22,6 +22,7 @@ const staffSchema = z.object({
   role:       z.enum(['PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD']),
   propertyId: z.string().min(1, 'Assign a property'),
   status:     z.enum(['ACTIVE', 'INACTIVE']),
+  password:   z.string().min(8, 'At least 8 characters'),
 })
 type StaffForm = z.infer<typeof staffSchema>
 
@@ -35,10 +36,19 @@ export default function StaffPage() {
   const [creating, setCreating]   = useState(false)
   const [tempCred, setTempCred] = useState<{ name: string; email: string; password: string } | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<StaffForm>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<StaffForm>({
     resolver: zodResolver(staffSchema),
     defaultValues: { role: 'SECURITY_GUARD', status: 'ACTIVE' },
   })
+
+  // Suggest a strong temporary password the admin can accept or overwrite.
+  const suggestPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+    const arr = new Uint32Array(12)
+    crypto.getRandomValues(arr)
+    const pw = Array.from(arr, (n) => chars[n % chars.length]).join('')
+    setValue('password', pw, { shouldValidate: true })
+  }
 
   useEffect(() => {
     Promise.all([
@@ -197,7 +207,7 @@ export default function StaffPage() {
         }
       >
         <p className="text-xs text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
-          A temporary password will be set. The staff member must change it on first login.
+          Set a temporary password for this staff member. They will be required to change it on first login.
         </p>
         <form id="staffForm" onSubmit={handleSubmit(onCreateStaff)} className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
@@ -233,6 +243,16 @@ export default function StaffPage() {
                 ))}
               </select>
               {errors.propertyId && <p className="form-error">{errors.propertyId.message}</p>}
+            </div>
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <label className="label">Temporary Password *</label>
+                <button type="button" onClick={suggestPassword} className="text-xs text-lango-primary hover:underline">
+                  Generate
+                </button>
+              </div>
+              <input {...register('password')} type="text" className="input font-mono" placeholder="At least 8 characters" autoComplete="off" />
+              {errors.password && <p className="form-error">{errors.password.message}</p>}
             </div>
           </div>
         </form>

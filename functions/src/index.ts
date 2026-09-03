@@ -38,9 +38,9 @@ function generateTempPassword(): string {
 // createStaffUser — Super Admin creates a staff account with claims.
 export const createStaffUser = onCall(async (request) => {
   assertSuperAdmin(request.auth)
-  const { name, email, phone, role, propertyId, status } = request.data as {
+  const { name, email, phone, role, propertyId, status, password } = request.data as {
     name: string; email: string; phone: string
-    role: Exclude<Role, 'SUPER_ADMIN'>; propertyId: string; status: string
+    role: Exclude<Role, 'SUPER_ADMIN'>; propertyId: string; status: string; password?: string
   }
 
   if (!name || !email || !phone || !role || !propertyId) {
@@ -52,9 +52,21 @@ export const createStaffUser = onCall(async (request) => {
   const normPhone = normalizeKenyanPhone(phone)
   if (!normPhone) throw new HttpsError('invalid-argument', 'Invalid Kenyan phone number.')
 
+  // Use the admin-provided temporary password when supplied (min 8 chars);
+  // otherwise fall back to a generated one. Either way the staff member must
+  // change it on first login (tempPasswordSet: true below).
+  let tempPassword: string
+  if (password !== undefined && password !== '') {
+    if (typeof password !== 'string' || password.length < 8) {
+      throw new HttpsError('invalid-argument', 'Temporary password must be at least 8 characters.')
+    }
+    tempPassword = password
+  } else {
+    tempPassword = generateTempPassword()
+  }
+
   const auth = getAuth()
   const db = firestore()
-  const tempPassword = generateTempPassword()
 
   let uid: string
   try {
