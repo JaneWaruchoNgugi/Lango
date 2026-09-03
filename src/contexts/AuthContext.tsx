@@ -16,6 +16,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -87,8 +88,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendPasswordResetEmail(auth, email)
   }
 
+  // Re-read the Firestore profile into context state without waiting for a new
+  // onAuthStateChanged event. Needed after actions that mutate the profile in
+  // place (e.g. clearing tempPasswordSet on first-login password change), since
+  // getIdToken(true) refreshes the token but does not re-fire onAuthStateChanged.
+  const refreshProfile = async () => {
+    const current = auth.currentUser
+    if (!current) return
+    const snap = await getDoc(doc(db, 'users', current.uid))
+    const profile = snap.exists() ? (snap.data() as AppUser) : null
+    setUser((prev) => (prev ? { ...prev, profile } : prev))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, resetPassword, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

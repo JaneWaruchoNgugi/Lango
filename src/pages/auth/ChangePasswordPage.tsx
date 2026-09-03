@@ -29,7 +29,7 @@ function rolePath(role: UserRole | null): string {
 }
 
 export default function ChangePasswordPage() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({ resolver: zodResolver(schema) })
@@ -43,6 +43,9 @@ export default function ChangePasswordPage() {
       await updatePassword(auth.currentUser, data.password)
       await updateDoc(doc(db, 'users', user.uid), { tempPasswordSet: false, updatedAt: serverTimestamp() })
       await auth.currentUser.getIdToken(true)
+      // Pull the cleared tempPasswordSet into context state so ProtectedRoute
+      // doesn't bounce us straight back here.
+      await refreshProfile()
       toast.success('Password updated')
       navigate(rolePath(user.role), { replace: true })
     } catch (err: any) {

@@ -31,7 +31,7 @@ async function main() {
   // 1. Super Admin
   const adminUid = await ensureUser('admin@lango.dev', 'Lango#Admin1', 'Lango Super Admin', { role: 'SUPER_ADMIN', propertyId: null })
   await db.collection('users').doc(adminUid).set({
-    uid: adminUid, name: 'Lango Super Admin', email: 'admin@lango.dev',
+    uid: adminUid, name: 'Lango Super Admin', email: 'admin@lango.dev', phone: '+254712000000',
     role: 'SUPER_ADMIN', propertyId: null, status: 'ACTIVE', tempPasswordSet: false,
     createdAt: now, updatedAt: now,
   })
