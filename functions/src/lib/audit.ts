@@ -1,4 +1,5 @@
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
+import { firestore } from './db'
 
 interface AuditInput {
   actorId: string
@@ -14,7 +15,7 @@ interface AuditInput {
 
 /** Write an immutable audit log entry. Never throws into the caller path. */
 export async function writeAuditLog(input: AuditInput): Promise<void> {
-  const db = getFirestore()
+  const db = firestore()
   const ref = db.collection('auditLogs').doc()
   await ref.set({
     logId: ref.id,

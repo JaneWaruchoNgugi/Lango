@@ -3,9 +3,10 @@ import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { getFirestore, FieldValue } from 'firebase-admin/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
 import { normalizeKenyanPhone } from './lib/phone'
 import { writeAuditLog } from './lib/audit'
+import { firestore } from './lib/db'
 
 initializeApp()
 setGlobalOptions({ region: 'us-central1' })
@@ -52,7 +53,7 @@ export const createStaffUser = onCall(async (request) => {
   if (!normPhone) throw new HttpsError('invalid-argument', 'Invalid Kenyan phone number.')
 
   const auth = getAuth()
-  const db = getFirestore()
+  const db = firestore()
   const tempPassword = generateTempPassword()
 
   let uid: string
@@ -122,7 +123,7 @@ export const setUserClaims = onCall(async (request) => {
   }
 
   await getAuth().setCustomUserClaims(uid, { role, propertyId: normalizedPropertyId })
-  await getFirestore().collection('users').doc(uid).update({
+  await firestore().collection('users').doc(uid).update({
     role, propertyId: normalizedPropertyId, updatedAt: FieldValue.serverTimestamp(),
   })
   return { ok: true }
@@ -141,7 +142,7 @@ export const resolvePhoneToEmail = onCall(async (request) => {
   const norm = normalizeKenyanPhone(phone ?? '')
   if (!norm) throw new HttpsError('invalid-argument', 'Invalid phone number.')
 
-  const snap = await getFirestore()
+  const snap = await firestore()
     .collection('users').where('phone', '==', norm).limit(1).get()
   if (snap.empty) throw new HttpsError('not-found', 'No account found for that phone number.')
 
@@ -167,7 +168,7 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'email, name and a password of at least 12 characters are required.')
   }
 
-  const db = getFirestore()
+  const db = firestore()
   const bootstrapRef = db.collection('system').doc('bootstrap')
 
   // Transactionally claim the singleton so concurrent calls cannot both proceed.
