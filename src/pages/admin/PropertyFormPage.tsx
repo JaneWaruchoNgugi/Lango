@@ -2,7 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { doc, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, collection, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { ArrowLeft } from 'lucide-react'
@@ -61,7 +61,7 @@ export default function PropertyFormPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const propertyId = isEdit ? id! : doc(db, 'properties').id
+      const propertyId = isEdit ? id! : doc(collection(db, 'properties')).id
       const payload = {
         ...data,
         propertyId,
