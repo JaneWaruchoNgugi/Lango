@@ -1,0 +1,17 @@
+{
+  "indexes": [
+    { "collectionGroup": "blocks", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "name", "order": "ASCENDING" } ] },
+    { "collectionGroup": "units", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "unitNumber", "order": "ASCENDING" } ] },
+    { "collectionGroup": "visitors", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "checkInTime", "order": "DESCENDING" } ] },
+    { "collectionGroup": "incidents", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] }
+  ],
+  "fieldOverrides": []
+}
