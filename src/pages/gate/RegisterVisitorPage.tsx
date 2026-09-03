@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  collection, query, where, getDocs, addDoc, doc,
+  collection, query, where, getDocs, addDoc,
   updateDoc, serverTimestamp, orderBy,
 } from 'firebase/firestore'
 import { db } from '../../firebase/config'

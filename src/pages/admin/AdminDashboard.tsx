@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Building2, Users, Home, UserCheck, DoorOpen, Package,
-  AlertTriangle, TrendingUp, Plus, ArrowRight,
+  Building2, Users, Home, DoorOpen,
+  AlertTriangle, Plus, ArrowRight,
 } from 'lucide-react'
 import {
   collection, query, where, getDocs, orderBy, limit,

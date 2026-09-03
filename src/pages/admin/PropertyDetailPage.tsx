@@ -5,8 +5,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import {
-  ArrowLeft, Building2, MapPin, Phone, Mail, Pencil,
-  Home, Users, DoorOpen, Package, AlertTriangle, BarChart3, CreditCard, Activity,
+  ArrowLeft, Building2, MapPin, Pencil,
+  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard,
 } from 'lucide-react'
 import { PropertyStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'

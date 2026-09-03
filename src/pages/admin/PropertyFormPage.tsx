@@ -17,8 +17,8 @@ const schema = z.object({
   address:        z.string().min(5, 'Address is required'),
   county:         z.string().min(2, 'County is required'),
   city:           z.string().min(2, 'City/Town is required'),
-  numberOfBlocks: z.coerce.number().min(1, 'At least 1 block required').max(50),
-  totalUnits:     z.coerce.number().min(1, 'At least 1 unit required').max(9999),
+  numberOfBlocks: z.number({ message: 'At least 1 block required' }).min(1, 'At least 1 block required').max(50),
+  totalUnits:     z.number({ message: 'At least 1 unit required' }).min(1, 'At least 1 unit required').max(9999),
   primaryContact: z.string().min(2, 'Contact name is required'),
   phone:          z.string().min(9, 'Valid phone number required'),
   email:          z.string().email('Valid email required'),
@@ -160,12 +160,12 @@ export default function PropertyFormPage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Number of Blocks *</label>
-              <input {...register('numberOfBlocks')} type="number" min={1} max={50} className="input" />
+              <input {...register('numberOfBlocks', { valueAsNumber: true })} type="number" min={1} max={50} className="input" />
               {errors.numberOfBlocks && <p className="form-error">{errors.numberOfBlocks.message}</p>}
             </div>
             <div>
               <label className="label">Total Units *</label>
-              <input {...register('totalUnits')} type="number" min={1} className="input" />
+              <input {...register('totalUnits', { valueAsNumber: true })} type="number" min={1} className="input" />
               {errors.totalUnits && <p className="form-error">{errors.totalUnits.message}</p>}
             </div>
           </div>
