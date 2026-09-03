@@ -2,9 +2,11 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 
-initializeApp({ credential: applicationDefault() })
+const app = initializeApp({ credential: applicationDefault() })
 const auth = getAuth()
-const db = getFirestore()
+// This project's Firestore database is named `default` (not `(default)`), so the
+// id must be passed explicitly. Overridable via FIRESTORE_DATABASE_ID.
+const db = getFirestore(app, process.env.FIRESTORE_DATABASE_ID || 'default')
 
 function unitNumbers(prefix: string, count: number): string[] {
   const width = Math.max(2, String(count).length)
