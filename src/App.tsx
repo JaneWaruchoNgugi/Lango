@@ -21,6 +21,11 @@ import StaffPage from './pages/admin/StaffPage'
 import CaretakerDashboard from './pages/caretaker/CaretakerDashboard'
 import GateDashboard from './pages/gate/GateDashboard'
 import RegisterGuestPage from './pages/gate/RegisterGuestPage'
+import CurrentlyInsidePage from './pages/gate/CurrentlyInsidePage'
+import DeliveriesPage from './pages/gate/DeliveriesPage'
+import IncidentsPage from './pages/gate/IncidentsPage'
+import ReportIncidentPage from './pages/gate/ReportIncidentPage'
+import MyShiftPage from './pages/gate/MyShiftPage'
 
 import type { UserRole } from './types'
 
@@ -80,6 +85,11 @@ export default function App() {
       >
         <Route index element={<GateDashboard />} />
         <Route path="register" element={<RegisterGuestPage />} />
+        <Route path="inside" element={<CurrentlyInsidePage />} />
+        <Route path="deliveries" element={<DeliveriesPage />} />
+        <Route path="incidents" element={<IncidentsPage />} />
+        <Route path="incidents/new" element={<ReportIncidentPage />} />
+        <Route path="shift" element={<MyShiftPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />
