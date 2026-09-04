@@ -122,7 +122,7 @@ service cloud.firestore {
     match /occupancies/{recordId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
       allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
-      allow update: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
       allow delete: if isSuperAdmin();
     }
 
