@@ -10,6 +10,10 @@
  * Actual API calls to WhatsApp providers should go through Cloud Functions.
  */
 
+import { addDoc, serverTimestamp } from 'firebase/firestore'
+import { notificationsCol } from '../firebase/collections'
+import type { NotificationType } from '../types'
+
 type NotificationPayload = {
   to: string
   type: 'VISITOR_ALERT' | 'DELIVERY_ALERT' | 'INCIDENT_ALERT'
@@ -75,6 +79,29 @@ function buildMessage(payload: NotificationPayload): string {
   }
 
   return `🔔 *LANGO ALERT*\n\nYou have a new notification from Lango Gate Management.`
+}
+
+export async function sendVisitorNotification(params: {
+  propertyId: string
+  type: Extract<NotificationType, 'VISITOR_ALERT' | 'DELIVERY_ALERT'>
+  recipientPhone: string
+  recipientName: string
+  relatedEntityId: string
+  data: Record<string, string>
+}): Promise<void> {
+  const message = buildMessage({ to: params.recipientPhone, type: params.type, data: params.data })
+  await addDoc(notificationsCol, {
+    propertyId: params.propertyId,
+    type: params.type,
+    recipientPhone: params.recipientPhone,
+    recipientName: params.recipientName,
+    message,
+    status: 'MOCK',
+    provider: 'MOCK',
+    relatedEntityId: params.relatedEntityId,
+    createdAt: serverTimestamp(),
+  } as never)
+  await sendMockWhatsApp({ to: params.recipientPhone, type: params.type, data: params.data })
 }
 
 /**

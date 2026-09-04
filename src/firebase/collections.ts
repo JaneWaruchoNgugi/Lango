@@ -55,4 +55,6 @@ export const visitorDoc    = (id: string)         : DocumentReference<Visitor>  
 export const deliveryDoc   = (id: string)         : DocumentReference<Delivery>      => doc(deliveriesCol, id)
 export const incidentDoc   = (id: string)         : DocumentReference<Incident>      => doc(incidentsCol, id)
 export const shiftDoc      = (id: string)         : DocumentReference<Shift>         => doc(shiftsCol, id)
-export const subscriptionDoc = (id: string)       : DocumentReference<Subscription>  => doc(subscriptionsCol, id)
+export const subscriptionDoc  = (id: string)       : DocumentReference<Subscription>  => doc(subscriptionsCol, id)
+export const notificationDoc  = (id: string)       : DocumentReference<Notification>  => doc(notificationsCol, id)
+export const preApprovedDoc   = (id: string)       : DocumentReference<PreApprovedVisitor> => doc(preApprovedCol, id)
