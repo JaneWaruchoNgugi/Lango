@@ -81,6 +81,8 @@ async function main() {
   ]
   let firstUnitId = ''
   let firstUnitNumber = ''
+  let firstBlockId = ''
+  let firstBlockName = ''
   let firstTenantId = ''
   let firstTenantName = ''
   for (let i = 0; i < tenantSeed.length; i++) {
@@ -99,6 +101,8 @@ async function main() {
     if (i === 0) {
       firstUnitId = unit.unitId
       firstUnitNumber = unit.unitNumber
+      firstBlockId = unit.blockId
+      firstBlockName = unit.blockName
       firstTenantId = tenantRef.id
       firstTenantName = t.name
     }
@@ -110,6 +114,8 @@ async function main() {
     propertyId,
     unitId: firstUnitId,
     unitNumber: firstUnitNumber,
+    blockId: firstBlockId,
+    blockName: firstBlockName,
     tenantId: firstTenantId,
     tenantName: firstTenantName,
     name: 'Susan Akinyi',

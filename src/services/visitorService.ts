@@ -1,6 +1,6 @@
 import {
   addDoc, updateDoc, doc, query, where, orderBy, onSnapshot, serverTimestamp,
-  collection, Timestamp, type Unsubscribe,
+  collection, type Unsubscribe,
 } from 'firebase/firestore'
 import { visitorsCol } from '../firebase/collections'
 import { db } from '../firebase/config'
@@ -78,14 +78,6 @@ export async function checkOutVisitor(visitor: Visitor, actor: Pick<AppUser, 'ui
 export function watchInside(propertyId: string, cb: (v: Visitor[]) => void, onErr: (e: Error) => void): Unsubscribe {
   const q = query(collection(db, 'visitors'),
     where('propertyId', '==', propertyId), where('status', '==', 'INSIDE'),
-    orderBy('checkInTime', 'desc'))
-  return onSnapshot(q, s => cb(s.docs.map(d => d.data() as Visitor)), onErr)
-}
-
-export function watchVisitorsSince(propertyId: string, since: Date, cb: (v: Visitor[]) => void, onErr: (e: Error) => void): Unsubscribe {
-  const q = query(collection(db, 'visitors'),
-    where('propertyId', '==', propertyId),
-    where('checkInTime', '>=', Timestamp.fromDate(since)),
     orderBy('checkInTime', 'desc'))
   return onSnapshot(q, s => cb(s.docs.map(d => d.data() as Visitor)), onErr)
 }

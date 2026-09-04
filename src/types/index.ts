@@ -248,6 +248,8 @@ export interface PreApprovedVisitor {
   propertyId: string
   unitId: string
   unitNumber: string
+  blockId?: string
+  blockName?: string
   tenantId: string
   tenantName: string
   name: string
