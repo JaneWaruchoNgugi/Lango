@@ -79,6 +79,10 @@ async function main() {
     { name: 'Mary Wanjiku', phone: '+254712000002' },
     { name: 'Jane Njeri', phone: '+254712000003' },
   ]
+  let firstUnitId = ''
+  let firstUnitNumber = ''
+  let firstTenantId = ''
+  let firstTenantName = ''
   for (let i = 0; i < tenantSeed.length; i++) {
     const unit = createdUnits[i]
     const t = tenantSeed[i]
@@ -92,8 +96,33 @@ async function main() {
     await db.collection('units').doc(unit.unitId).update({
       status: 'OCCUPIED', currentTenantId: tenantRef.id, currentTenantName: t.name, updatedAt: now,
     })
+    if (i === 0) {
+      firstUnitId = unit.unitId
+      firstUnitNumber = unit.unitNumber
+      firstTenantId = tenantRef.id
+      firstTenantName = t.name
+    }
   }
   await db.collection('properties').doc(propertyId).update({ occupiedUnits: tenantSeed.length })
+
+  // 4a. Pre-approved visitor — tied to first tenant/unit for guard demo
+  await db.collection('preApproved').add({
+    propertyId,
+    unitId: firstUnitId,
+    unitNumber: firstUnitNumber,
+    tenantId: firstTenantId,
+    tenantName: firstTenantName,
+    name: 'Susan Akinyi',
+    idNumber: '29384756',
+    phone: '0722000111',
+    relationship: 'House Help',
+    accessDays: [1, 2, 3, 4, 5],
+    accessStart: '07:00',
+    accessEnd: '18:00',
+    isActive: true,
+    createdAt: FieldValue.serverTimestamp(),
+  })
+  console.log('Seeded pre-approved visitor: Susan Akinyi →', firstUnitNumber)
 
   // 5. Staff (caretaker + 2 guards)
   const caretakerUid = await ensureUser('caretaker@greenview.dev', 'Lango#Care1', 'Peter Otieno', { role: 'CARETAKER', propertyId })
