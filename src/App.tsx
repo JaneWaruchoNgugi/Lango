@@ -19,6 +19,14 @@ import BlockFormPage from './pages/admin/BlockFormPage'
 import StaffPage from './pages/admin/StaffPage'
 
 import CaretakerDashboard from './pages/caretaker/CaretakerDashboard'
+import VisitorsPage from './features/property/VisitorsPage'
+import TenantsPage from './features/property/TenantsPage'
+import BlocksUnitsPage from './features/property/BlocksUnitsPage'
+import CaretakerDeliveriesPage from './features/property/DeliveriesPage'
+import CaretakerIncidentsPage from './features/property/IncidentsPage'
+import CaretakerStaffPage from './features/property/StaffPage'
+import SettingsPage from './features/property/SettingsPage'
+import ReportsPlaceholder from './features/property/ReportsPlaceholder'
 import GateDashboard from './pages/gate/GateDashboard'
 import RegisterGuestPage from './pages/gate/RegisterGuestPage'
 import CurrentlyInsidePage from './pages/gate/CurrentlyInsidePage'
@@ -77,6 +85,14 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['CARETAKER']}><CaretakerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
+        <Route path="visitors" element={<VisitorsPage />} />
+        <Route path="tenants" element={<TenantsPage />} />
+        <Route path="blocks" element={<BlocksUnitsPage />} />
+        <Route path="deliveries" element={<CaretakerDeliveriesPage />} />
+        <Route path="incidents" element={<CaretakerIncidentsPage />} />
+        <Route path="staff" element={<CaretakerStaffPage />} />
+        <Route path="reports" element={<ReportsPlaceholder />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       <Route
