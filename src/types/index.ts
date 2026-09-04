@@ -483,29 +483,6 @@ export interface CreateStaffForm {
   status: StaffStatus
 }
 
-export interface RegisterVisitorForm {
-  visitorName: string
-  idNumber: string
-  nationality: string
-  phone: string
-  visitType: VisitType
-  blockId: string
-  unitId: string
-  reason: string
-  notes?: string
-}
-
-export interface RegisterDeliveryForm {
-  company: string
-  riderName: string
-  riderPhone: string
-  riderIdNumber?: string
-  blockId: string
-  unitId: string
-  packageDescription?: string
-  notes?: string
-}
-
 export interface ReportIncidentForm {
   type: IncidentType
   description: string

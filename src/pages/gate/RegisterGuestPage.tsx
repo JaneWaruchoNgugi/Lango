@@ -41,6 +41,10 @@ export default function RegisterGuestPage() {
 
   const chooseType = (t: VisitType) => {
     setVisitType(t)
+    // Reset both the form and the selection state so switching type never leaves
+    // a stale tenant label with cleared blockId/unitId (which would block submit).
+    setVisiting(null)
+    setPhoto(null)
     form.reset({ visitType: t, nationality: 'Kenyan' } as never)
     setStep(1)
   }
