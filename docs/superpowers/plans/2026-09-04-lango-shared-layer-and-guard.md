@@ -1785,8 +1785,13 @@ In `firestore.indexes.json`, add to `indexes`:
   { "fieldPath": "status", "order": "ASCENDING" } ] },
 { "collectionGroup": "preApproved", "queryScope": "COLLECTION", "fields": [
   { "fieldPath": "propertyId", "order": "ASCENDING" },
-  { "fieldPath": "isActive", "order": "ASCENDING" } ] }
+  { "fieldPath": "isActive", "order": "ASCENDING" } ] },
+{ "collectionGroup": "tenants", "queryScope": "COLLECTION", "fields": [
+  { "fieldPath": "propertyId", "order": "ASCENDING" },
+  { "fieldPath": "status", "order": "ASCENDING" },
+  { "fieldPath": "fullName", "order": "ASCENDING" } ] }
 ```
+(The `tenants` index backs `loadActiveTenants`'s `propertyId + status ==` + `orderBy(fullName)` query — required in production, not just the emulator.)
 
 - [ ] **Step 4: Add the storage emulator port**
 
