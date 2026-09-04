@@ -55,7 +55,7 @@ export async function setIncidentStatus(
   await updateDoc(doc(incidentsCol, incident.incidentId), patch)
   await logAudit({
     actor, propertyId: incident.propertyId,
-    action: status === 'RESOLVED' || status === 'CLOSED' ? 'INCIDENT_RESOLVED' : 'INCIDENT_REPORTED',
+    action: status === 'RESOLVED' || status === 'CLOSED' ? 'INCIDENT_RESOLVED' : 'INCIDENT_STATUS_CHANGED',
     entityType: 'incident', entityId: incident.incidentId,
     description: `Incident ${incident.type} → ${status}`,
   })
@@ -68,5 +68,10 @@ export async function addIncidentNote(
   const existing = incident.description ?? ''
   await updateDoc(doc(incidentsCol, incident.incidentId), {
     description: `${existing}\n— ${stamped}`, updatedAt: serverTimestamp(),
+  })
+  await logAudit({
+    actor, propertyId: incident.propertyId, action: 'INCIDENT_NOTE_ADDED',
+    entityType: 'incident', entityId: incident.incidentId,
+    description: `Note added to ${incident.type}`,
   })
 }

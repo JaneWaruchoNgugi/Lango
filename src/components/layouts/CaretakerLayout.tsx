@@ -23,7 +23,7 @@ const navItems = [
   { to: '/caretaker/blocks',     label: 'Blocks & Units', icon: Building },
   { to: '/caretaker/deliveries', label: 'Deliveries',  icon: Package },
   { to: '/caretaker/incidents',  label: 'Incidents',   icon: AlertTriangle },
-  { to: '/caretaker/staff',      label: 'Guards',      icon: Users },
+  { to: '/caretaker/staff',      label: 'Staff',       icon: Users },
   { to: '/caretaker/reports',    label: 'Reports',     icon: BarChart3 },
   { to: '/caretaker/settings',   label: 'Settings',    icon: Settings },
 ]
