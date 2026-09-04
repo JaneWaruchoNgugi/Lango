@@ -89,19 +89,25 @@ export async function sendVisitorNotification(params: {
   relatedEntityId: string
   data: Record<string, string>
 }): Promise<void> {
-  const message = buildMessage({ to: params.recipientPhone, type: params.type, data: params.data })
-  await addDoc(notificationsCol, {
-    propertyId: params.propertyId,
-    type: params.type,
-    recipientPhone: params.recipientPhone,
-    recipientName: params.recipientName,
-    message,
-    status: 'MOCK',
-    provider: 'MOCK',
-    relatedEntityId: params.relatedEntityId,
-    createdAt: serverTimestamp(),
-  } as never)
-  await sendMockWhatsApp({ to: params.recipientPhone, type: params.type, data: params.data })
+  // Notifications are informational (spec §20). A failure here must never throw
+  // into — and thereby mask — a successful guest registration.
+  try {
+    const message = buildMessage({ to: params.recipientPhone, type: params.type, data: params.data })
+    await addDoc(notificationsCol, {
+      propertyId: params.propertyId,
+      type: params.type,
+      recipientPhone: params.recipientPhone,
+      recipientName: params.recipientName,
+      message,
+      status: 'MOCK',
+      provider: 'MOCK',
+      relatedEntityId: params.relatedEntityId,
+      createdAt: serverTimestamp(),
+    } as never)
+    await sendMockWhatsApp({ to: params.recipientPhone, type: params.type, data: params.data })
+  } catch (err) {
+    console.error('[notification] failed to send visitor notification', err)
+  }
 }
 
 /**
