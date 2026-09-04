@@ -25,7 +25,7 @@ export type UnitStatus = 'OCCUPIED' | 'VACANT' | 'RESERVED' | 'MAINTENANCE'
 
 export type TenantStatus = 'ACTIVE' | 'MOVED_OUT' | 'INACTIVE'
 
-export type VisitorType = 'VISITOR' | 'DELIVERY' | 'CONTRACTOR' | 'SERVICE_PROVIDER' | 'EMERGENCY'
+export type VisitType = 'FRIENDLY_VISIT' | 'WORK' | 'DELIVERY' | 'SERVICE_PROVIDER'
 
 export type VisitorStatus = 'INSIDE' | 'CHECKED_OUT' | 'DENIED' | 'CANCELLED'
 
@@ -218,7 +218,7 @@ export interface Visitor {
   nationality: string
   phone: string
   photoUrl?: string
-  visitType: VisitorType
+  visitType: VisitType
   reason: string
   status: VisitorStatus
   checkInTime: Timestamp
@@ -226,6 +226,14 @@ export interface Visitor {
   durationMinutes?: number | null
   notificationSent: boolean
   notes?: string
+  company?: string
+  workType?: string
+  workDescription?: string
+  serviceType?: string
+  serviceDescription?: string
+  expectedDurationMins?: number
+  registeredBy: string
+  registeredByRole: 'SECURITY_GUARD'
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -267,6 +275,7 @@ export interface Delivery {
   tenantName: string
   guardId: string
   guardName: string
+  registeredBy: string
   shiftId?: string
   company: string           // DHL, Glovo, Jumia, etc.
   riderName: string
@@ -478,7 +487,7 @@ export interface RegisterVisitorForm {
   idNumber: string
   nationality: string
   phone: string
-  visitType: VisitorType
+  visitType: VisitType
   blockId: string
   unitId: string
   reason: string

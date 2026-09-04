@@ -11,7 +11,7 @@ import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { ArrowLeft, ArrowRight, CheckCircle, User, MapPin, FileText } from 'lucide-react'
 import { Spinner } from '../../components/ui/LoadingScreen'
-import type { Block, Unit, Tenant, VisitorType } from '../../types'
+import type { Block, Unit, Tenant, VisitType } from '../../types'
 import { sendMockWhatsApp } from '../../services/NotificationService'
 import toast from 'react-hot-toast'
 
@@ -22,7 +22,7 @@ const step1Schema = z.object({
   idNumber:     z.string().min(5, 'ID number is required'),
   nationality:  z.string().min(2, 'Nationality is required'),
   phone:        z.string().min(9, 'Phone is required'),
-  visitType:    z.enum(['VISITOR','DELIVERY','CONTRACTOR','SERVICE_PROVIDER','EMERGENCY']),
+  visitType:    z.enum(['FRIENDLY_VISIT','WORK','DELIVERY','SERVICE_PROVIDER']),
 })
 
 const step2Schema = z.object({
@@ -39,12 +39,11 @@ type Step1 = z.infer<typeof step1Schema>
 type Step2 = z.infer<typeof step2Schema>
 type Step3 = z.infer<typeof step3Schema>
 
-const VISIT_TYPES: { value: VisitorType; label: string; emoji: string }[] = [
-  { value: 'VISITOR',          label: 'Personal Visit',    emoji: '👋' },
-  { value: 'DELIVERY',         label: 'Delivery',          emoji: '📦' },
-  { value: 'CONTRACTOR',       label: 'Contractor',        emoji: '🔧' },
-  { value: 'SERVICE_PROVIDER', label: 'Service Provider',  emoji: '🛠️' },
-  { value: 'EMERGENCY',        label: 'Emergency',         emoji: '🚨' },
+const VISIT_TYPES: { value: VisitType; label: string; emoji: string }[] = [
+  { value: 'FRIENDLY_VISIT',   label: 'Friendly Visit',   emoji: '👤' },
+  { value: 'WORK',             label: 'Work',             emoji: '🔧' },
+  { value: 'DELIVERY',         label: 'Delivery',         emoji: '📦' },
+  { value: 'SERVICE_PROVIDER', label: 'Service Provider', emoji: '🛠️' },
 ]
 
 export default function RegisterVisitorPage() {
@@ -62,7 +61,7 @@ export default function RegisterVisitorPage() {
   const propertyId = user?.propertyId ?? ''
   const guardId    = user?.uid ?? ''
 
-  const form1 = useForm<Step1>({ resolver: zodResolver(step1Schema), defaultValues: { visitType: 'VISITOR', nationality: 'Kenyan' } })
+  const form1 = useForm<Step1>({ resolver: zodResolver(step1Schema), defaultValues: { visitType: 'FRIENDLY_VISIT', nationality: 'Kenyan' } })
   const form2 = useForm<Step2>({ resolver: zodResolver(step2Schema) })
   const form3 = useForm<Step3>({ resolver: zodResolver(step3Schema) })
 
@@ -118,6 +117,8 @@ export default function RegisterVisitorPage() {
         tenantName:    tenant?.fullName ?? '',
         guardId,
         guardName:     user?.profile?.name ?? 'Guard',
+        registeredBy:  guardId,
+        registeredByRole: 'SECURITY_GUARD' as const,
         visitorName:   step1Data.visitorName,
         idNumber:      step1Data.idNumber,
         nationality:   step1Data.nationality,

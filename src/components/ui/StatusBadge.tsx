@@ -3,7 +3,7 @@ import type {
   UnitStatus,
   TenantStatus,
   VisitorStatus,
-  VisitorType,
+  VisitType,
   DeliveryStatus,
   IncidentSeverity,
   StaffStatus,
@@ -60,13 +60,12 @@ export function VisitorStatusBadge({ status }: { status: VisitorStatus }) {
   return <Badge variant={variant} label={label} />
 }
 
-export function VisitorTypeBadge({ type }: { type: VisitorType }) {
-  const map: Record<VisitorType, { variant: BadgeVariant; label: string }> = {
-    VISITOR:          { variant: 'blue',   label: 'Visitor' },
+export function VisitTypeBadge({ type }: { type: VisitType }) {
+  const map: Record<VisitType, { variant: BadgeVariant; label: string }> = {
+    FRIENDLY_VISIT:   { variant: 'blue',   label: 'Friendly Visit' },
+    WORK:             { variant: 'yellow', label: 'Work' },
     DELIVERY:         { variant: 'orange', label: 'Delivery' },
-    CONTRACTOR:       { variant: 'yellow', label: 'Contractor' },
-    SERVICE_PROVIDER: { variant: 'blue',   label: 'Service' },
-    EMERGENCY:        { variant: 'red',    label: 'Emergency' },
+    SERVICE_PROVIDER: { variant: 'green',  label: 'Service Provider' },
   }
   const { variant, label } = map[type]
   return <Badge variant={variant} label={label} />
