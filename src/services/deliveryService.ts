@@ -65,3 +65,13 @@ export function watchDeliveries(propertyId: string, cb: (d: Delivery[]) => void,
     : query(collection(db, 'deliveries'), ...base, orderBy('receivedAt', 'desc'))
   return onSnapshot(q, s => cb(s.docs.map(x => x.data() as Delivery)), onErr)
 }
+
+export async function markHeld(d: Delivery, actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<void> {
+  await updateDoc(doc(deliveriesCol, d.deliveryId), { status: 'HELD', updatedAt: serverTimestamp() })
+  await logAudit({ actor, propertyId: d.propertyId, action: 'DELIVERY_HELD', entityType: 'delivery', entityId: d.deliveryId, description: `${d.company} delivery held` })
+}
+
+export async function markReturned(d: Delivery, actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<void> {
+  await updateDoc(doc(deliveriesCol, d.deliveryId), { status: 'RETURNED', updatedAt: serverTimestamp() })
+  await logAudit({ actor, propertyId: d.propertyId, action: 'DELIVERY_RETURNED', entityType: 'delivery', entityId: d.deliveryId, description: `${d.company} delivery returned` })
+}
