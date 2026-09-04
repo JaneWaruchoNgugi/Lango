@@ -54,6 +54,11 @@ service cloud.firestore {
       return isSuperAdmin() || getPropertyId() == propertyId;
     }
 
+    // Guard unit edits: only status + updatedAt may change
+    function onlyStatusChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+    }
+
     // ============================================================
     // USERS
     // ============================================================
@@ -95,7 +100,7 @@ service cloud.firestore {
       allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
       allow update: if isSuperAdmin()
                     || (isPropertyStaff() && getPropertyId() == resource.data.propertyId)
-                    || (isGuard() && getPropertyId() == resource.data.propertyId);
+                    || (isGuard() && getPropertyId() == resource.data.propertyId && onlyStatusChanged());
       allow delete: if isSuperAdmin();
     }
 
@@ -128,7 +133,8 @@ service cloud.firestore {
     // Guards can read visitors for their property
     match /visitors/{visitorId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId)
+                    && request.resource.data.registeredBy == request.auth.uid;
       allow update: if isAuth() && ownsProperty(resource.data.propertyId);
       allow delete: if isSuperAdmin();
     }
@@ -148,7 +154,8 @@ service cloud.firestore {
     // ============================================================
     match /deliveries/{deliveryId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId)
+                    && request.resource.data.registeredBy == request.auth.uid;
       allow update: if isAuth() && ownsProperty(resource.data.propertyId);
       allow delete: if isSuperAdmin();
     }
@@ -190,7 +197,10 @@ service cloud.firestore {
     // Immutable to all non-Super Admin users
     match /auditLogs/{logId} {
       allow read:   if isAuth() && (isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId));
-      allow create: if isAnyStaff(); // Any staff can create audit log entries
+      allow create: if isAnyStaff()
+                    && request.resource.data.actorId == request.auth.uid
+                    && request.resource.data.actorRole == getRole()
+                    && (isSuperAdmin() || request.resource.data.propertyId == getPropertyId()); // actor + property bound to claims
       allow update: if false;        // Nobody can edit audit logs
       allow delete: if false;        // Nobody can delete audit logs
     }
@@ -200,7 +210,7 @@ service cloud.firestore {
     // ============================================================
     match /notifications/{notifId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isAnyStaff();
+      allow create: if isAnyStaff() && ownsProperty(request.resource.data.propertyId);
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }

@@ -22,7 +22,28 @@
       { "fieldPath": "checkInTime", "order": "DESCENDING" } ] },
     { "collectionGroup": "incidents", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },
-      { "fieldPath": "createdAt", "order": "DESCENDING" } ] }
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "deliveries", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "receivedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "deliveries", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "receivedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "incidents", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "shifts", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "preApproved", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "isActive", "order": "ASCENDING" } ] },
+    { "collectionGroup": "tenants", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "fullName", "order": "ASCENDING" } ] }
   ],
   "fieldOverrides": []
 }
