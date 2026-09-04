@@ -31,4 +31,19 @@ describe('registerGuestSchema', () => {
     const r = registerGuestSchema.safeParse({ ...base, unitId: '', visitType: 'FRIENDLY_VISIT' })
     expect(r.success).toBe(false)
   })
+
+  it('rejects a delivery with no company', () => {
+    const r = registerGuestSchema.safeParse({ ...base, visitType: 'DELIVERY', company: '' })
+    expect(r.success).toBe(false)
+  })
+
+  it('accepts work with a blank expected duration', () => {
+    const r = registerGuestSchema.safeParse({ ...base, visitType: 'WORK', workType: 'Plumbing', workDescription: 'Fix sink', expectedDurationMins: '' })
+    expect(r.success).toBe(true)
+  })
+
+  it('accepts work with a numeric expected duration', () => {
+    const r = registerGuestSchema.safeParse({ ...base, visitType: 'WORK', workType: 'Plumbing', workDescription: 'Fix sink', expectedDurationMins: '45' })
+    expect(r.success).toBe(true)
+  })
 })

@@ -3,8 +3,8 @@ import { z } from 'zod'
 const guest = {
   visitorName: z.string().min(2, 'Name is required'),
   phone: z.string().min(9, 'Phone is required'),
-  idNumber: z.string().optional().or(z.literal('')),
-  nationality: z.string().optional().or(z.literal('')),
+  idNumber: z.string().optional(),
+  nationality: z.string().optional(),
   blockId: z.string().min(1, 'Select a block'),
   unitId: z.string().min(1, 'Select a unit'),
   notes: z.string().optional(),
@@ -19,7 +19,10 @@ const work = z.object({
   company: z.string().optional(),
   workType: z.string().min(2, 'Type of work is required'),
   workDescription: z.string().min(2, 'Describe the work'),
-  expectedDurationMins: z.coerce.number().int().positive().optional(),
+  expectedDurationMins: z.preprocess(
+    v => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z.number().int().positive().optional(),
+  ),
 })
 
 const delivery = z.object({
@@ -34,7 +37,10 @@ const service = z.object({
   serviceType: z.string().min(2, 'The service you are here to provide is required'),
   serviceDescription: z.string().optional(),
   company: z.string().optional(),
-  expectedDurationMins: z.coerce.number().int().positive().optional(),
+  expectedDurationMins: z.preprocess(
+    v => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z.number().int().positive().optional(),
+  ),
 })
 
 export const registerGuestSchema = z.discriminatedUnion('visitType', [friendly, work, delivery, service])
