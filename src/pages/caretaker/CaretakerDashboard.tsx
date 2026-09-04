@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
 import {
-  collection, query, where, getDocs, orderBy, limit, Timestamp, onSnapshot,
+  collection, query, where, getDocs, orderBy, limit, Timestamp,
 } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { DoorOpen, Package, AlertTriangle, Users, Home, UserCheck } from 'lucide-react'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { PageLoader } from '../../components/ui/LoadingScreen'
-import type { Visitor, Delivery, Incident } from '../../types'
+import type { Delivery, Incident } from '../../types'
 import { format } from 'date-fns'
+import { useCurrentVisitors } from '../../hooks/useCurrentVisitors'
 
 export default function CaretakerDashboard() {
   const { user } = useAuth()
   const propertyId = user?.propertyId ?? ''
 
   const [loading, setLoading]             = useState(true)
-  const [currentVisitors, setCurrentVisitors] = useState<Visitor[]>([])
   const [recentDeliveries, setRecentDeliveries] = useState<Delivery[]>([])
   const [openIncidents, setOpenIncidents] = useState<Incident[]>([])
   const [stats, setStats] = useState({
@@ -23,17 +23,11 @@ export default function CaretakerDashboard() {
     occupiedUnits: 0, vacantUnits: 0, activeGuards: 0,
   })
 
+  const { visitors: currentVisitors } = useCurrentVisitors(propertyId)
+
   useEffect(() => {
     if (!propertyId) return
     const todayStart = new Date(); todayStart.setHours(0,0,0,0)
-
-    // Real-time current visitors
-    const unsub = onSnapshot(
-      query(collection(db, 'visitors'), where('propertyId','==',propertyId), where('status','==','INSIDE'), orderBy('checkInTime','desc')),
-      snap => {
-        setCurrentVisitors(snap.docs.map(d => d.data() as Visitor))
-      }
-    )
 
     const loadRest = async () => {
       try {
@@ -59,7 +53,6 @@ export default function CaretakerDashboard() {
       finally { setLoading(false) }
     }
     loadRest()
-    return unsub
   }, [propertyId])
 
   if (loading) return <PageLoader />

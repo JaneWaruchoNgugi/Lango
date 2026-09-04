@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  collection, query, where, getDocs, orderBy, onSnapshot,
-  doc, updateDoc, serverTimestamp, addDoc, Timestamp,
+  collection, query, where, getDocs, Timestamp,
 } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
@@ -10,18 +9,22 @@ import {
   UserPlus, Package, Users, AlertTriangle, Clock, LogIn, LogOut,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import type { Visitor, Shift } from '../../types'
+import type { Visitor } from '../../types'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ConfirmDialog } from '../../components/ui/Modal'
 import toast from 'react-hot-toast'
+import { useCurrentVisitors } from '../../hooks/useCurrentVisitors'
+import { useShift } from '../../hooks/useShift'
+import {
+  startShift as startShiftService,
+  endShift as endShiftService,
+} from '../../services/shiftService'
+import { checkOutVisitor } from '../../services/visitorService'
 
 export default function GateDashboard() {
   const { user }                = useAuth()
-  const [visitors, setVisitors]   = useState<Visitor[]>([])
-  const [shift, setShift]         = useState<Shift | null>(null)
   const [todayCount, setTodayCount] = useState(0)
-  const [loading, setLoading]     = useState(true)
   const [checkingOut, setCheckingOut] = useState<string | null>(null)
   const [shiftLoading, setShiftLoading] = useState(false)
   const [confirmCheckout, setConfirmCheckout] = useState<Visitor | null>(null)
@@ -29,24 +32,14 @@ export default function GateDashboard() {
   const propertyId = user?.propertyId
   const guardId    = user?.uid
 
-  // Real-time listener for current visitors
-  useEffect(() => {
-    if (!propertyId) return
-    const q = query(
-      collection(db, 'visitors'),
-      where('propertyId', '==', propertyId),
-      where('status', '==', 'INSIDE'),
-      orderBy('checkInTime', 'desc')
-    )
-    const unsub = onSnapshot(q, snap => {
-      setVisitors(snap.docs.map(d => d.data() as Visitor))
-      setLoading(false)
-    }, err => {
-      console.error(err)
-      setLoading(false)
-    })
-    return unsub
-  }, [propertyId])
+  const { visitors, loading } = useCurrentVisitors(propertyId)
+  const { shift }             = useShift(guardId)
+
+  const actor = {
+    uid:  user!.uid,
+    name: user?.profile?.name ?? 'Guard',
+    role: 'SECURITY_GUARD' as const,
+  }
 
   // Today's count
   useEffect(() => {
@@ -59,44 +52,21 @@ export default function GateDashboard() {
     )).then(snap => setTodayCount(snap.size)).catch(console.error)
   }, [propertyId])
 
-  // Active shift
-  useEffect(() => {
-    if (!guardId || !propertyId) return
-    getDocs(query(
-      collection(db, 'shifts'),
-      where('guardId', '==', guardId),
-      where('status', '==', 'ACTIVE'),
-    )).then(snap => {
-      if (!snap.empty) setShift(snap.docs[0].data() as Shift)
-    }).catch(console.error)
-  }, [guardId, propertyId])
-
-  const startShift = async () => {
+  const handleStartShift = async () => {
+    if (!propertyId) return
     setShiftLoading(true)
     try {
-      const ref = await addDoc(collection(db, 'shifts'), {
-        shiftId: '', guardId, guardName: user?.profile?.name ?? 'Guard',
-        propertyId, status: 'ACTIVE',
-        startTime: serverTimestamp(), endTime: null,
-        visitorsRegistered: 0, deliveriesRegistered: 0, incidentsReported: 0,
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      })
-      await updateDoc(ref, { shiftId: ref.id })
-      const snap = await getDocs(query(collection(db, 'shifts'), where('guardId', '==', guardId), where('status', '==', 'ACTIVE')))
-      if (!snap.empty) setShift(snap.docs[0].data() as Shift)
+      await startShiftService(propertyId, actor)
       toast.success('Shift started')
     } catch { toast.error('Failed to start shift') }
     finally { setShiftLoading(false) }
   }
 
-  const endShift = async () => {
+  const handleEndShift = async () => {
     if (!shift) return
     setShiftLoading(true)
     try {
-      await updateDoc(doc(db, 'shifts', shift.shiftId), {
-        status: 'ENDED', endTime: serverTimestamp(), updatedAt: serverTimestamp(),
-      })
-      setShift(null)
+      await endShiftService(shift, actor)
       toast.success('Shift ended')
     } catch { toast.error('Failed to end shift') }
     finally { setShiftLoading(false) }
@@ -105,15 +75,7 @@ export default function GateDashboard() {
   const checkOut = async (visitor: Visitor) => {
     setCheckingOut(visitor.visitorId)
     try {
-      const now       = new Date()
-      const checkIn   = visitor.checkInTime.toDate()
-      const duration  = Math.round((now.getTime() - checkIn.getTime()) / 60000)
-      await updateDoc(doc(db, 'visitors', visitor.visitorId), {
-        status: 'CHECKED_OUT',
-        checkOutTime: serverTimestamp(),
-        durationMinutes: duration,
-        updatedAt: serverTimestamp(),
-      })
+      await checkOutVisitor(visitor, actor)
       toast.success(`${visitor.visitorName} checked out`)
     } catch { toast.error('Checkout failed') }
     finally { setCheckingOut(null); setConfirmCheckout(null) }
@@ -149,7 +111,7 @@ export default function GateDashboard() {
           </div>
         </div>
         <button
-          onClick={shift ? endShift : startShift}
+          onClick={shift ? handleEndShift : handleStartShift}
           disabled={shiftLoading}
           className={shift ? 'btn-secondary text-sm' : 'btn-primary text-sm'}
         >
@@ -173,35 +135,42 @@ export default function GateDashboard() {
         </div>
       </div>
 
-      {/* Action buttons - large, touch-friendly */}
+      {/* Action tiles - large, touch-friendly */}
       <div className="grid grid-cols-2 gap-3">
         <Link
-          to="/gate/register-visitor"
+          to="/gate/register"
           className="flex flex-col items-center gap-2 p-5 bg-lango-primary text-white rounded-2xl hover:bg-lango-secondary transition-colors active:scale-95"
         >
           <UserPlus className="w-7 h-7" />
           <span className="text-sm font-semibold">Register Visitor</span>
         </Link>
         <Link
-          to="/gate/register-delivery"
+          to="/gate/deliveries"
           className="flex flex-col items-center gap-2 p-5 bg-white border-2 border-lango-primary text-lango-primary rounded-2xl hover:bg-lango-light transition-colors active:scale-95"
         >
           <Package className="w-7 h-7" />
           <span className="text-sm font-semibold">Register Delivery</span>
         </Link>
         <Link
-          to="/gate/current-visitors"
+          to="/gate/inside"
           className="flex flex-col items-center gap-2 p-5 bg-white border border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
         >
           <Users className="w-6 h-6" />
-          <span className="text-sm font-semibold">Current Visitors</span>
+          <span className="text-sm font-semibold">Currently Inside</span>
         </Link>
         <Link
-          to="/gate/incidents/new"
+          to="/gate/incidents"
           className="flex flex-col items-center gap-2 p-5 bg-white border border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
         >
           <AlertTriangle className="w-6 h-6" />
           <span className="text-sm font-semibold">Report Incident</span>
+        </Link>
+        <Link
+          to="/gate/shift"
+          className="flex flex-col items-center gap-2 p-5 bg-white border border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 transition-colors active:scale-95"
+        >
+          <Clock className="w-6 h-6" />
+          <span className="text-sm font-semibold">My Shift</span>
         </Link>
       </div>
 
@@ -210,7 +179,7 @@ export default function GateDashboard() {
         <div className="card">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
             <h3 className="text-sm font-semibold text-gray-900">Currently Inside</h3>
-            <Link to="/gate/current-visitors" className="text-xs text-lango-primary">View all</Link>
+            <Link to="/gate/inside" className="text-xs text-lango-primary">View all</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {visitors.slice(0, 5).map(v => {
