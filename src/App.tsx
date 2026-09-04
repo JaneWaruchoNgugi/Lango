@@ -20,7 +20,7 @@ import StaffPage from './pages/admin/StaffPage'
 
 import CaretakerDashboard from './pages/caretaker/CaretakerDashboard'
 import GateDashboard from './pages/gate/GateDashboard'
-import RegisterVisitorPage from './pages/gate/RegisterVisitorPage'
+import RegisterGuestPage from './pages/gate/RegisterGuestPage'
 
 import type { UserRole } from './types'
 
@@ -79,7 +79,7 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['SECURITY_GUARD']}><GuardLayout /></ProtectedRoute>}
       >
         <Route index element={<GateDashboard />} />
-        <Route path="register-visitor" element={<RegisterVisitorPage />} />
+        <Route path="register" element={<RegisterGuestPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />
