@@ -149,7 +149,7 @@ export default function GateDashboard() {
           className="flex flex-col items-center gap-2 p-5 bg-white border-2 border-lango-primary text-lango-primary rounded-2xl hover:bg-lango-light transition-colors active:scale-95"
         >
           <Package className="w-7 h-7" />
-          <span className="text-sm font-semibold">Register Delivery</span>
+          <span className="text-sm font-semibold">Deliveries</span>
         </Link>
         <Link
           to="/gate/inside"

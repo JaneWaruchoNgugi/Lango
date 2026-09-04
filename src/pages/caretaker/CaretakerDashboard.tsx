@@ -19,7 +19,7 @@ export default function CaretakerDashboard() {
   const [recentDeliveries, setRecentDeliveries] = useState<Delivery[]>([])
   const [openIncidents, setOpenIncidents] = useState<Incident[]>([])
   const [stats, setStats] = useState({
-    visitorsToday: 0, currentlyInside: 0, deliveriesToday: 0,
+    visitorsToday: 0, deliveriesToday: 0,
     occupiedUnits: 0, vacantUnits: 0, activeGuards: 0,
   })
 
@@ -41,7 +41,6 @@ export default function CaretakerDashboard() {
         const units = unitSnap.docs.map(d => d.data() as any)
         setStats({
           visitorsToday:   visSnap.size,
-          currentlyInside: 0, // updated by real-time listener
           deliveriesToday: delSnap.size,
           occupiedUnits:   units.filter((u: any) => u.status === 'OCCUPIED').length,
           vacantUnits:     units.filter((u: any) => u.status === 'VACANT').length,
