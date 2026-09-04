@@ -226,13 +226,14 @@ export interface Visitor {
   durationMinutes?: number | null
   notificationSent: boolean
   notes?: string
-  company?: string
-  workType?: string
-  workDescription?: string
-  serviceType?: string
-  serviceDescription?: string
-  expectedDurationMins?: number
-  registeredBy: string
+  // Conditional — populated only when relevant to the visit type:
+  company?: string              // WORK / SERVICE_PROVIDER employer
+  workType?: string             // WORK
+  workDescription?: string      // WORK
+  serviceType?: string          // SERVICE_PROVIDER (required at the form layer)
+  serviceDescription?: string   // SERVICE_PROVIDER
+  expectedDurationMins?: number // WORK / SERVICE_PROVIDER
+  registeredBy: string          // authed guard uid — asserted by rules
   registeredByRole: 'SECURITY_GUARD'
   createdAt: Timestamp
   updatedAt: Timestamp
