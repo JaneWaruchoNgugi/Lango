@@ -445,6 +445,25 @@ export interface Notification {
 }
 
 // ============================================================
+// LEAD (public landing-page demo requests)
+// ============================================================
+
+export type LeadStatus = 'NEW' | 'CONTACTED' | 'CLOSED'
+
+export interface Lead {
+  leadId: string
+  name: string
+  propertyName: string
+  propertyType: string   // Residential | Commercial | Institutional | Industrial | Other
+  phone: string
+  email?: string
+  message?: string
+  source: 'LANDING_FORM'
+  status: LeadStatus
+  createdAt: Timestamp
+}
+
+// ============================================================
 // FORM TYPES (used in forms, not stored directly)
 // ============================================================
 

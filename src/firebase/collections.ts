@@ -20,6 +20,7 @@ import type {
   Subscription,
   AuditLog,
   Notification,
+  Lead,
 } from '../types'
 
 // ============================================================
@@ -40,6 +41,7 @@ export const shiftsCol      = collection(db, 'shifts')       as CollectionRefere
 export const subscriptionsCol = collection(db, 'subscriptions') as CollectionReference<Subscription>
 export const auditLogsCol   = collection(db, 'auditLogs')    as CollectionReference<AuditLog>
 export const notificationsCol = collection(db, 'notifications') as CollectionReference<Notification>
+export const leadsCol         = collection(db, 'leads')         as CollectionReference<Lead>
 
 // ============================================================
 // DOCUMENT REFERENCE HELPERS
@@ -58,3 +60,4 @@ export const shiftDoc      = (id: string)         : DocumentReference<Shift>    
 export const subscriptionDoc  = (id: string)       : DocumentReference<Subscription>  => doc(subscriptionsCol, id)
 export const notificationDoc  = (id: string)       : DocumentReference<Notification>  => doc(notificationsCol, id)
 export const preApprovedDoc   = (id: string)       : DocumentReference<PreApprovedVisitor> => doc(preApprovedCol, id)
+export const leadDoc          = (id: string): DocumentReference<Lead> => doc(leadsCol, id)
