@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  Inbox,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
@@ -22,6 +23,7 @@ const navItems = [
   { to: '/admin/properties',    label: 'Properties',    icon: Building2 },
   { to: '/admin/staff',         label: 'Staff',         icon: Users },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { to: '/admin/leads',         label: 'Leads',         icon: Inbox },
   { to: '/admin/reports',       label: 'Reports',       icon: BarChart3 },
   { to: '/admin/notifications',  label: 'Notifications', icon: Bell },
   { to: '/admin/audit-logs',    label: 'System Logs',   icon: ScrollText },
