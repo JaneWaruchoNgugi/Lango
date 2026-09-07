@@ -17,6 +17,11 @@ import PropertyFormPage from './pages/admin/PropertyFormPage'
 import PropertyDetailPage from './pages/admin/PropertyDetailPage'
 import BlockFormPage from './pages/admin/BlockFormPage'
 import StaffPage from './pages/admin/StaffPage'
+import SubscriptionsPage from './pages/admin/SubscriptionsPage'
+import AdminReportsPage from './pages/admin/AdminReportsPage'
+import NotificationsPage from './pages/admin/NotificationsPage'
+import AuditLogsPage from './pages/admin/AuditLogsPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 import CaretakerDashboard from './pages/caretaker/CaretakerDashboard'
 import VisitorsPage from './features/property/VisitorsPage'
@@ -71,6 +76,11 @@ export default function App() {
         <Route path="properties/:id/blocks/new" element={<BlockFormPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="staff/new" element={<StaffPage />} />
+        <Route path="subscriptions" element={<SubscriptionsPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="settings" element={<AdminSettingsPage />} />
       </Route>
 
       <Route
@@ -78,6 +88,13 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['PROPERTY_MANAGER']}><PropertyManagerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
+        <Route path="visitors" element={<VisitorsPage />} />
+        <Route path="tenants" element={<TenantsPage />} />
+        <Route path="units" element={<BlocksUnitsPage />} />
+        <Route path="deliveries" element={<CaretakerDeliveriesPage />} />
+        <Route path="incidents" element={<CaretakerIncidentsPage />} />
+        <Route path="staff" element={<CaretakerStaffPage />} />
+        <Route path="reports" element={<ReportsPlaceholder />} />
       </Route>
 
       <Route
