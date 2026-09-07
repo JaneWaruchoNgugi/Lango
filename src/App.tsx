@@ -8,10 +8,12 @@ import { CaretakerLayout } from './components/layouts/CaretakerLayout'
 import { GuardLayout } from './components/layouts/GuardLayout'
 import { PropertyManagerLayout } from './components/layouts/PropertyManagerLayout'
 
+import LandingPage from './pages/landing/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import ChangePasswordPage from './pages/auth/ChangePasswordPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
+import LeadsPage from './pages/admin/LeadsPage'
 import PropertiesPage from './pages/admin/PropertiesPage'
 import PropertyFormPage from './pages/admin/PropertyFormPage'
 import PropertyDetailPage from './pages/admin/PropertyDetailPage'
@@ -55,7 +57,8 @@ function roleHome(role: UserRole | null): string {
 function RootRedirect() {
   const { user, loading } = useAuth()
   if (loading) return <LoadingScreen />
-  return <Navigate to={user ? roleHome(user.role) : '/login'} replace />
+  if (user) return <Navigate to={roleHome(user.role)} replace />
+  return <LandingPage />
 }
 
 export default function App() {
@@ -77,6 +80,7 @@ export default function App() {
         <Route path="staff" element={<StaffPage />} />
         <Route path="staff/new" element={<StaffPage />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
+        <Route path="leads" element={<LeadsPage />} />
         <Route path="reports" element={<AdminReportsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
