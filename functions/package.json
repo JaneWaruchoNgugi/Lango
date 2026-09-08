@@ -1,13 +1,16 @@
 {
   "name": "lango-functions",
   "private": true,
-  "engines": { "node": "20" },
+  "engines": {
+    "node": "20"
+  },
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.1.0"
   },

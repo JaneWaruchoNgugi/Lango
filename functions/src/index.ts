@@ -1,6 +1,8 @@
 import { randomInt, timingSafeEqual } from 'node:crypto'
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
+import { defineSecret } from 'firebase-functions/params'
+import Anthropic from '@anthropic-ai/sdk'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -109,6 +111,59 @@ export const createStaffUser = onCall(async (request) => {
   return { uid, tempPassword }
 })
 
+// deleteStaffUser — a Property Manager (or Super Admin) removes a staff account.
+// Deletes the Auth user + the Firestore profile. PMs are scoped to their own
+// property and cannot delete admins or other managers.
+export const deleteStaffUser = onCall(async (request) => {
+  const auth = request.auth
+  if (!auth) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = auth.token?.role as Role | undefined
+  if (callerRole !== 'PROPERTY_MANAGER' && callerRole !== 'SUPER_ADMIN') {
+    throw new HttpsError('permission-denied', 'Only a Property Manager or administrator may delete staff.')
+  }
+
+  const { uid } = request.data as { uid: string }
+  if (typeof uid !== 'string' || uid.length === 0 || uid.length > 128) {
+    throw new HttpsError('invalid-argument', 'A valid uid is required.')
+  }
+  if (uid === auth.uid) throw new HttpsError('failed-precondition', 'You cannot delete your own account.')
+
+  const db = firestore()
+  const snap = await db.collection('users').doc(uid).get()
+  if (!snap.exists) throw new HttpsError('not-found', 'Staff member not found.')
+  const target = snap.data() as { role: Role; propertyId?: string | null; name?: string }
+
+  if (callerRole === 'PROPERTY_MANAGER') {
+    if ((auth.token?.propertyId ?? null) !== (target.propertyId ?? null)) {
+      throw new HttpsError('permission-denied', 'That staff member belongs to another property.')
+    }
+    if (target.role === 'SUPER_ADMIN' || target.role === 'PROPERTY_MANAGER') {
+      throw new HttpsError('permission-denied', 'You cannot delete an administrator or another manager.')
+    }
+  }
+
+  // Remove the Auth account first (ignore if it was already gone), then the profile.
+  try {
+    await getAuth().deleteUser(uid)
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'auth/user-not-found') throw err
+  }
+  await db.collection('users').doc(uid).delete()
+
+  await writeAuditLog({
+    actorId: auth.uid,
+    actorName: (auth.token?.name as string) ?? 'Manager',
+    actorRole: callerRole,
+    propertyId: (target.propertyId as string) ?? (auth.token?.propertyId as string) ?? null,
+    action: 'STAFF_DELETED',
+    entityType: 'user',
+    entityId: uid,
+    description: `Deleted ${target.name ?? uid} (${target.role})`,
+  })
+
+  return { ok: true }
+})
+
 // setUserClaims — reassign role/property; re-mints claims + mirrors profile.
 export const setUserClaims = onCall(async (request) => {
   assertSuperAdmin(request.auth)
@@ -202,4 +257,83 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
   })
   await bootstrapRef.update({ uid: userRecord.uid })
   return { uid: userRecord.uid }
+})
+
+// ---------------------------------------------------------------------------
+// analyzeIdDocument — reads a Kenyan National ID or passport photo with Claude
+// vision and returns the guest's full name + document number. The API key is a
+// Functions secret; the function deploys fine before the secret is set — it is
+// only needed at scan time.
+// ---------------------------------------------------------------------------
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
+
+const ID_PROMPT = `You are reading a photo of a Kenyan identity document — either a Kenyan National ID card or a passport data page. Extract exactly two things: the person's full name and their document number.
+
+Rules:
+- Kenyan National ID: "idNumber" is the value labelled "ID NUMBER" (7-8 digits). Do NOT return the "SERIAL NUMBER" (9 digits). Set docType to "national_id".
+- Passport: "idNumber" is the passport number (from the data page or the machine-readable zone). Set docType to "passport".
+- "name" is the full name in normal Title Case (e.g. "Jane Warucho Ngugi").
+- If the image is not a recognizable ID or passport, or a field is unreadable, set that field to null and docType to "unknown".
+Return only the structured fields.`
+
+const ID_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    docType: { type: 'string', enum: ['national_id', 'passport', 'unknown'] },
+    name: { type: ['string', 'null'] },
+    idNumber: { type: ['string', 'null'] },
+  },
+  required: ['docType', 'name', 'idNumber'],
+} as const
+
+export const analyzeIdDocument = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
+
+  const { imageBase64, mediaType } = request.data as { imageBase64: string; mediaType: string }
+  if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
+    throw new HttpsError('invalid-argument', 'A base64 image is required.')
+  }
+  if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
+    throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
+  }
+
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
+  let response
+  try {
+    response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      thinking: { type: 'disabled' },
+      output_config: {
+        effort: 'low',
+        format: { type: 'json_schema', schema: ID_SCHEMA },
+      },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+            { type: 'text', text: ID_PROMPT },
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    console.error('Anthropic vision call failed', err)
+    throw new HttpsError('internal', 'Could not read the document. Please try again.')
+  }
+
+  const block = response.content.find((b) => b.type === 'text')
+  const text = block && block.type === 'text' ? block.text : ''
+  try {
+    const parsed = JSON.parse(text) as { docType?: string; name?: string | null; idNumber?: string | null }
+    return {
+      docType: parsed.docType ?? 'unknown',
+      name: parsed.name ?? null,
+      idNumber: parsed.idNumber ?? null,
+    }
+  } catch {
+    return { docType: 'unknown', name: null, idNumber: null }
+  }
 })

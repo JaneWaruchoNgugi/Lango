@@ -17,3 +17,7 @@ export function canManageDeliveries(role: UserRole | null | undefined): boolean 
 export function canManageStaff(role: UserRole | null | undefined): boolean {
   return role === 'SUPER_ADMIN'
 }
+/** Property managers (and admins) may remove staff accounts for their property. */
+export function canDeleteStaff(role: UserRole | null | undefined): boolean {
+  return role === 'PROPERTY_MANAGER' || role === 'SUPER_ADMIN'
+}

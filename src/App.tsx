@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoadingScreen } from './components/ui/LoadingScreen'
@@ -56,8 +56,11 @@ function roleHome(role: UserRole | null): string {
 
 function RootRedirect() {
   const { user, loading } = useAuth()
+  const location = useLocation()
   if (loading) return <LoadingScreen />
   if (user) return <Navigate to={roleHome(user.role)} replace />
+  // Only the marketing page lives at "/"; unknown deep paths go to login.
+  if (location.pathname !== '/') return <Navigate to="/login" replace />
   return <LandingPage />
 }
 
@@ -92,6 +95,7 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['PROPERTY_MANAGER']}><PropertyManagerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
+        <Route path="register" element={<RegisterGuestPage />} />
         <Route path="visitors" element={<VisitorsPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="units" element={<BlocksUnitsPage />} />
@@ -106,6 +110,7 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['CARETAKER']}><CaretakerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
+        <Route path="register" element={<RegisterGuestPage />} />
         <Route path="visitors" element={<VisitorsPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="blocks" element={<BlocksUnitsPage />} />

@@ -3,7 +3,7 @@ import { normalizeKenyanPhone } from '../../utils/phone'
 
 export const leadFormSchema = z.object({
   name:         z.string().trim().min(1, 'Your name is required').max(120),
-  propertyName: z.string().trim().min(1, 'Property name is required').max(120),
+  propertyName: z.string().trim().max(120).optional(),
   propertyType: z.string().trim().min(1, 'Select a property type'),
   phone:        z.string().trim().refine(v => normalizeKenyanPhone(v) !== null, 'Enter a valid Kenyan phone number'),
   email:        z.string().trim().email('Enter a valid email').or(z.literal('')).optional(),
@@ -31,7 +31,7 @@ export interface LeadPayload {
 export function buildLeadPayload(v: LeadFormValues): LeadPayload {
   const payload: LeadPayload = {
     name: v.name.trim(),
-    propertyName: v.propertyName.trim(),
+    propertyName: v.propertyName?.trim() ?? '',
     propertyType: v.propertyType.trim(),
     phone: normalizeKenyanPhone(v.phone) ?? v.phone.trim(),
     source: 'LANDING_FORM',

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDocs, query, orderBy, limit, updateDoc } from 'firebase/firestore'
 import { leadsCol, leadDoc } from '../../firebase/collections'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { Inbox } from 'lucide-react'
+import { Inbox, RefreshCw } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Lead, LeadStatus } from '../../types'
@@ -13,21 +13,25 @@ const statusBadge: Record<LeadStatus, string> = { NEW: 'badge-blue', CONTACTED: 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [filter, setFilter] = useState<'ALL' | LeadStatus>('ALL')
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const snap = await getDocs(query(leadsCol, orderBy('createdAt', 'desc'), limit(200)))
-        setLeads(snap.docs.map(d => ({ ...d.data(), leadId: d.id })))
-      } catch (err) {
-        console.error('Leads load error:', err)
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    try {
+      const snap = await getDocs(query(leadsCol, orderBy('createdAt', 'desc'), limit(200)))
+      setLeads(snap.docs.map(d => ({ ...d.data(), leadId: d.id })))
+    } catch (err) {
+      console.error('Leads load error:', err)
     }
-    load()
   }, [])
+
+  useEffect(() => { load().finally(() => setLoading(false)) }, [load])
+
+  const refresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
 
   const shown = useMemo(() => filter === 'ALL' ? leads : leads.filter(l => l.status === filter), [leads, filter])
 
@@ -50,13 +54,17 @@ export default function LeadsPage() {
           <h1 className="page-title">Leads</h1>
           <p className="page-subtitle">Demo requests from the landing page.</p>
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           {filters.map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`text-xs px-3 py-1.5 rounded-lg border ${filter === f ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>
               {f === 'ALL' ? 'All' : f}
             </button>
           ))}
+          <button onClick={refresh} disabled={refreshing} title="Refresh"
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 disabled:opacity-50">
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 

@@ -31,6 +31,9 @@ interface Props {
 export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, vacantUnits, editing }: Props) {
   const [unitId, setUnitId] = useState('')
   const [busy, setBusy] = useState(false)
+  const [sameWhatsapp, setSameWhatsapp] = useState(
+    editing ? (!editing.whatsappNumber || editing.whatsappNumber === editing.phoneNumber) : true,
+  )
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: editing
@@ -41,13 +44,14 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
   const submit = async (d: FormData) => {
     setBusy(true)
     try {
+      const whatsappNumber = sameWhatsapp ? d.phoneNumber : (d.whatsappNumber || d.phoneNumber)
       if (editing) {
-        await updateTenant(editing, { fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber: d.whatsappNumber || d.phoneNumber, email: d.email, nationalId: d.nationalId, notes: d.notes }, actor)
+        await updateTenant(editing, { fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, notes: d.notes }, actor)
         toast.success('Tenant updated')
       } else {
         const unit = vacantUnits.find(u => u.unitId === unitId)
         if (!unit) { toast.error('Select a vacant unit'); setBusy(false); return }
-        await assignTenantToUnit({ propertyId, actor, unit, fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber: d.whatsappNumber || d.phoneNumber, email: d.email, nationalId: d.nationalId, moveInDate: new Date(), notes: d.notes })
+        await assignTenantToUnit({ propertyId, actor, unit, fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, moveInDate: new Date(), notes: d.notes })
         toast.success('Tenant added')
       }
       onDone(); onClose(); form.reset(); setUnitId('')
@@ -67,10 +71,14 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
           </div>
         )}
         <div><label className="label">Full name *</label><input className="input" {...form.register('fullName')} />{form.formState.errors.fullName && <p className="form-error">{form.formState.errors.fullName.message}</p>}</div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Phone *</label><input className="input" {...form.register('phoneNumber')} />{form.formState.errors.phoneNumber && <p className="form-error">{form.formState.errors.phoneNumber.message}</p>}</div>
-          <div><label className="label">WhatsApp</label><input className="input" {...form.register('whatsappNumber')} /></div>
-        </div>
+        <div><label className="label">Phone *</label><input className="input" {...form.register('phoneNumber')} />{form.formState.errors.phoneNumber && <p className="form-error">{form.formState.errors.phoneNumber.message}</p>}</div>
+        <label className="flex items-center gap-2 text-sm text-gray-600 select-none">
+          <input type="checkbox" checked={sameWhatsapp} onChange={e => setSameWhatsapp(e.target.checked)} className="rounded border-gray-300 text-lango-primary focus:ring-lango-primary/20" />
+          WhatsApp number is the same as phone
+        </label>
+        {!sameWhatsapp && (
+          <div><label className="label">WhatsApp number</label><input className="input" placeholder="e.g. 0712 345 678" {...form.register('whatsappNumber')} /></div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div><label className="label">Email</label><input className="input" {...form.register('email')} />{form.formState.errors.email && <p className="form-error">{form.formState.errors.email.message}</p>}</div>
           <div><label className="label">National ID</label><input className="input" {...form.register('nationalId')} /></div>

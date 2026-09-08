@@ -50,6 +50,7 @@ export type NotificationType = 'VISITOR_ALERT' | 'DELIVERY_ALERT' | 'INCIDENT_AL
 export type AuditAction =
   | 'STAFF_CREATED'
   | 'STAFF_DEACTIVATED'
+  | 'STAFF_DELETED'
   | 'PROPERTY_CREATED'
   | 'PROPERTY_SUSPENDED'
   | 'BLOCK_CREATED'
@@ -241,6 +242,9 @@ export interface Visitor {
   serviceType?: string          // SERVICE_PROVIDER (required at the form layer)
   serviceDescription?: string   // SERVICE_PROVIDER
   expectedDurationMins?: number // WORK / SERVICE_PROVIDER
+  appointment?: 'SCHEDULED' | 'UNSCHEDULED' // SERVICE_PROVIDER
+  vehicleRegistration?: string  // any type — vehicle plate
+  numberOfVisitors?: number     // FRIENDLY_VISIT — party size
   registeredBy: string          // authed guard uid — asserted by rules
   registeredByRole: 'SECURITY_GUARD'
   createdAt: Timestamp
@@ -292,6 +296,9 @@ export interface Delivery {
   riderName: string
   riderPhone: string
   riderIdNumber?: string
+  deliveryType?: string     // Food, Parcel, Groceries, etc.
+  trackingNumber?: string   // courier tracking / order number
+  vehicleRegistration?: string
   packageDescription?: string
   photoUrl?: string
   status: DeliveryStatus

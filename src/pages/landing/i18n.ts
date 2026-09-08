@@ -27,6 +27,7 @@ export interface LandingCopy {
     name: string; propertyName: string; propertyType: string; phone: string; email: string; message: string
     submit: string; success: string; error: string
     or: string; whatsapp: string; call: string; emailUs: string
+    waText: string
     typeOptions: string[]
   }
   footerTagline: string
@@ -89,6 +90,7 @@ const en: LandingCopy = {
     phone: 'Phone number', email: 'Email (optional)', message: 'Anything else? (optional)',
     submit: 'Request Demo', success: 'Thanks! We will be in touch shortly.', error: 'Something went wrong. Please try WhatsApp instead.',
     or: 'or reach us directly', whatsapp: 'Chat on WhatsApp', call: 'Call us', emailUs: 'Email us',
+    waText: "Hi Lango, I'd like to book a free demo for my property.",
     typeOptions: ['Residential', 'Commercial', 'Institutional', 'Industrial', 'Other'],
   },
   footerTagline: 'Visitor & gate management for every property.',
@@ -151,6 +153,7 @@ const sw: LandingCopy = {
     phone: 'Namba ya simu', email: 'Barua pepe (si lazima)', message: 'Kitu kingine? (si lazima)',
     submit: 'Omba Demo', success: 'Asante! Tutawasiliana nawe hivi karibuni.', error: 'Kuna hitilafu. Tafadhali jaribu WhatsApp.',
     or: 'au wasiliana nasi moja kwa moja', whatsapp: 'Piga soga WhatsApp', call: 'Tupigie simu', emailUs: 'Tutumie barua pepe',
+    waText: 'Habari Lango, ningependa kuomba demo bila malipo kwa mali yangu.',
     typeOptions: ['Makazi', 'Biashara', 'Taasisi', 'Viwanda', 'Nyingine'],
   },
   footerTagline: 'Usimamizi wa wageni na lango kwa kila mali.',

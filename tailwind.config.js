@@ -21,11 +21,11 @@ export default {
           950: '#052e16',
         },
         lango: {
-          primary:   '#0f4c35',
-          secondary: '#1a6b4a',
-          accent:    '#22c55e',
-          dark:      '#0a2e1f',
-          light:     '#f0fdf4',
+          primary:   '#2563eb',
+          secondary: '#1d4ed8',
+          accent:    '#3b82f6',
+          dark:      '#0f2a43',
+          light:     '#eff6ff',
         }
       },
       fontFamily: {

@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthContext'
 import { useShift } from '../../hooks/useShift'
 import { startShift, endShift } from '../../services/shiftService'
-import { LogIn, LogOut } from 'lucide-react'
+import { LogIn, LogOut, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatDuration, durationMinutes } from '../../utils/format'
 import { useState } from 'react'
@@ -22,11 +22,17 @@ export default function MyShiftPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-      <h1 className="page-title">My Shift</h1>
-      <div className={`card p-5 ${shift ? 'border-l-4 border-l-green-500' : ''}`}>
-        <p className="text-sm font-semibold text-gray-900">{shift ? 'On Shift' : 'Not on Shift'}</p>
-        {shift && <p className="text-xs text-gray-500">Started {format(shift.startTime.toDate(), 'h:mm a')} · {formatDuration(durationMinutes(shift.startTime.toDate(), new Date()))}</p>}
+    <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Clock className="w-5 h-5 text-lango-primary" /></div>
+        <div><h1 className="text-xl font-bold text-gray-900">My Shift</h1><p className="text-sm text-gray-500">Your current shift and activity.</p></div>
+      </div>
+      <div className={`card p-4 flex items-center gap-3 ${shift ? 'bg-green-50 border-green-100' : ''}`}>
+        <span className={`w-2.5 h-2.5 rounded-full ${shift ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{shift ? 'On Shift' : 'Not on Shift'}</p>
+          {shift && <p className="text-xs text-gray-500">Started {format(shift.startTime.toDate(), 'h:mm a')} · {formatDuration(durationMinutes(shift.startTime.toDate(), new Date()))}</p>}
+        </div>
       </div>
       {shift && (
         <div className="grid grid-cols-3 gap-3">

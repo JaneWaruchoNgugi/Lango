@@ -1,18 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useIncidents } from '../../hooks/useIncidents'
 import { setIncidentStatus, addIncidentNote } from '../../services/incidentService'
 import { canResolveIncidents } from '../../domain/permissions'
 import { IncidentSeverityBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
-import { EmptyState } from '../../components/ui/EmptyState'
 import { Modal } from '../../components/ui/Modal'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Incident } from '../../types'
 
 const STATUSES: Incident['status'][] = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED']
+const TABS: (Incident['status'] | 'ALL')[] = ['ALL', 'OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED']
+const severityTone = (s: string) => s === 'CRITICAL' ? 'bg-red-50 text-red-500' : s === 'HIGH' ? 'bg-orange-50 text-orange-500' : 'bg-yellow-50 text-yellow-600'
 
 export default function IncidentsPage() {
   const { user } = useAuth()
@@ -22,6 +23,15 @@ export default function IncidentsPage() {
   const [selected, setSelected] = useState<Incident | null>(null)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [tab, setTab] = useState<Incident['status'] | 'ALL'>('ALL')
+  const [term, setTerm] = useState('')
+
+  const shown = useMemo(() => {
+    const q = term.trim().toLowerCase()
+    return incidents
+      .filter(i => tab === 'ALL' || i.status === tab)
+      .filter(i => !q || [i.type, i.description, i.guardName].some(v => v?.toLowerCase().includes(q)))
+  }, [incidents, tab, term])
 
   const changeStatus = async (i: Incident, s: Incident['status']) => {
     setBusy(true)
@@ -38,14 +48,47 @@ export default function IncidentsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <h1 className="page-title">Incidents</h1>
-      {incidents.length === 0 ? <EmptyState icon={AlertTriangle} title="No incidents" /> : (
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><AlertTriangle className="w-5 h-5 text-lango-primary" /></div>
+        <div><h1 className="text-xl font-bold text-gray-900">Incidents</h1><p className="text-sm text-gray-500">Track and resolve reported incidents.</p></div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input className="input pl-9" placeholder="Search incidents…" value={term} onChange={e => setTerm(e.target.value)} />
+      </div>
+
+      {/* Status chips */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`shrink-0 text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${tab === t ? 'bg-lango-primary text-white border-lango-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {shown.length === 0 ? (
+        <div className="card py-14 flex flex-col items-center text-center px-6">
+          <div className="w-28 h-28 rounded-full bg-lango-primary/5 flex items-center justify-center mb-5"><AlertTriangle className="w-12 h-12 text-lango-primary/40" /></div>
+          <h3 className="font-bold text-gray-900">No incidents</h3>
+          <p className="text-sm text-gray-500 mt-1 max-w-xs">{incidents.length === 0 ? 'No incidents have been reported.' : 'No incidents match your search or filters.'}</p>
+        </div>
+      ) : (
         <div className="space-y-3">
-          {incidents.map(i => (
-            <button key={i.incidentId} onClick={() => setSelected(i)} className="card p-4 w-full text-left hover:shadow-card-hover">
-              <div className="flex items-center justify-between"><p className="font-medium text-gray-900">{i.type.replace(/_/g, ' ')}</p><IncidentSeverityBadge severity={i.severity} /></div>
-              <p className="text-xs text-gray-500 mt-1 whitespace-pre-line">{i.description}</p>
-              <p className="text-xs text-gray-400 mt-1">{format(i.createdAt.toDate(), 'd MMM, h:mm a')} · {i.status}</p>
+          {shown.map(i => (
+            <button key={i.incidentId} onClick={() => setSelected(i)} className="card p-4 w-full text-left hover:shadow-card-hover transition-shadow">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${severityTone(i.severity)}`}><AlertTriangle className="w-5 h-5" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2"><p className="font-semibold text-gray-900 truncate">{i.type.replace(/_/g, ' ')}</p><IncidentSeverityBadge severity={i.severity} /></div>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 whitespace-pre-line">{i.description}</p>
+                  <p className="text-xs text-gray-400 mt-1">{format(i.createdAt.toDate(), 'd MMM, h:mm a')} · {i.status}</p>
+                </div>
+              </div>
             </button>
           ))}
         </div>

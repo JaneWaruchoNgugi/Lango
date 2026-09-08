@@ -1,26 +1,32 @@
-import { UserCheck, MessageCircle, Package, AlertTriangle, ClipboardList, LayoutDashboard, type LucideIcon } from 'lucide-react'
-import type { LandingCopy } from '../i18n'
-import { Reveal } from '../components/Reveal'
+import { UserCheck, MessageCircle, Truck, AlertTriangle, Clock, LayoutDashboard, Check, type LucideIcon } from 'lucide-react'
 
-const icons: LucideIcon[] = [UserCheck, MessageCircle, Package, AlertTriangle, ClipboardList, LayoutDashboard]
+const FEATURES: { icon: LucideIcon; title: string; points: string[] }[] = [
+  { icon: UserCheck, title: 'Visitor check-in / out', points: ['Fast registration with photo and ID', 'Real-time host notifications', 'Live visitor log'] },
+  { icon: MessageCircle, title: 'Instant WhatsApp alerts', points: ['Visitor approvals & denials', 'Delivery notifications', 'Incident alerts'] },
+  { icon: Truck, title: 'Delivery management', points: ['Track deliveries and contractors', 'Scan QR / record manually', 'Delivery history'] },
+  { icon: AlertTriangle, title: 'Incident reporting', points: ['Report and track incidents', 'Attach photos and notes', 'Automatic notifications'] },
+  { icon: Clock, title: 'Shift accountability', points: ['Guard check-in/out', 'Activity logs', 'Performance tracking'] },
+  { icon: LayoutDashboard, title: 'Live dashboard', points: ['Real-time updates', 'Reports & analytics', 'Exportable data'] },
+]
 
-export function Features({ t }: { t: LandingCopy }) {
+export function Features() {
   return (
-    <section className="max-w-6xl mx-auto px-4 py-16">
-      <Reveal><h2 className="text-3xl font-bold text-lango-dark text-center">{t.featuresHeading}</h2></Reveal>
+    <section id="features" className="max-w-6xl mx-auto px-4 py-16 lg:py-20">
+      <span className="text-xs font-semibold tracking-wide uppercase text-lango-primary">Powerful features</span>
+      <h2 className="mt-3 text-3xl font-bold text-lango-dark">Everything you need at the gate</h2>
+      <p className="mt-3 text-gray-500 max-w-2xl">From visitor management to incident reporting, Lango keeps your property secure, organized and running smoothly.</p>
       <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {t.features.map((f, i) => {
-          const Icon = icons[i] ?? UserCheck
-          return (
-            <Reveal key={f.title} delay={(i % 3) * 80}>
-              <div className="card p-6 h-full">
-                <Icon className="w-6 h-6 text-lango-primary" />
-                <h3 className="mt-3 font-semibold text-gray-900">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-gray-500">{f.blurb}</p>
-              </div>
-            </Reveal>
-          )
-        })}
+        {FEATURES.map(f => (
+          <div key={f.title} className="card p-6 h-full hover:shadow-card-hover transition-shadow">
+            <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center"><f.icon className="w-5 h-5 text-lango-primary" /></div>
+            <h3 className="mt-4 font-semibold text-gray-900">{f.title}</h3>
+            <ul className="mt-3 space-y-2">
+              {f.points.map(p => (
+                <li key={p} className="flex items-start gap-2 text-sm text-gray-600"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> {p}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   )

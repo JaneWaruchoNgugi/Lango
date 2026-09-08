@@ -219,7 +219,9 @@ service cloud.firestore {
     // LEADS (public demo requests from the landing page)
     // ============================================================
     match /leads/{leadId} {
-      allow read, update, delete: if isSuperAdmin();
+      allow read, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow create: if request.resource.data.keys().hasOnly(
                          ['name','propertyName','propertyType','phone','email','message','source','status','createdAt'])
                     && request.resource.data.source == 'LANDING_FORM'

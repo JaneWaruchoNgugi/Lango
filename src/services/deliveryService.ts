@@ -18,6 +18,9 @@ export interface RegisterDeliveryArgs {
   blockId: string; blockName: string
   unitId: string; unitNumber: string
   tenantId?: string; tenantName?: string
+  deliveryType?: string
+  trackingNumber?: string
+  vehicleRegistration?: string
   packageDescription?: string
   photoUrl?: string
   notes?: string
@@ -33,6 +36,8 @@ export async function registerDelivery(a: RegisterDeliveryArgs): Promise<string>
     shiftId: a.shiftId ?? '',
     company: a.company, riderName: a.riderName, riderPhone: a.riderPhone,
     riderIdNumber: a.riderIdNumber ?? '',
+    deliveryType: a.deliveryType ?? '', trackingNumber: a.trackingNumber ?? '',
+    vehicleRegistration: a.vehicleRegistration ?? '',
     packageDescription: a.packageDescription ?? '', photoUrl: a.photoUrl ?? '',
     status: 'RECEIVED', receivedAt: serverTimestamp(), collectedAt: null,
     notificationSent: false, notes: a.notes ?? '',

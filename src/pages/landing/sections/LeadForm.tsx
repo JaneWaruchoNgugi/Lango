@@ -32,7 +32,7 @@ export function LeadForm({ t }: { t: LandingCopy }) {
           <p className="mt-2 text-gray-500">{t.form.sub}</p>
           <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">{t.form.or}</p>
           <div className="mt-3 space-y-2">
-            <a href={waLink(t.form.heading)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-lango-primary font-medium"><MessageCircle className="w-4 h-4" /> {t.form.whatsapp}</a>
+            <a href={waLink(t.form.waText)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-lango-primary font-medium"><MessageCircle className="w-4 h-4" /> {t.form.whatsapp}</a>
             <a href={telLink} className="flex items-center gap-2 text-sm text-gray-700"><Phone className="w-4 h-4" /> {t.form.call}</a>
             <a href={mailtoLink} className="flex items-center gap-2 text-sm text-gray-700"><Mail className="w-4 h-4" /> {t.form.emailUs}</a>
           </div>

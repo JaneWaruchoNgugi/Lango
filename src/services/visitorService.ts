@@ -26,6 +26,9 @@ export interface RegisterVisitorArgs {
   workType?: string; workDescription?: string
   serviceType?: string; serviceDescription?: string
   expectedDurationMins?: number
+  appointment?: 'SCHEDULED' | 'UNSCHEDULED'
+  vehicleRegistration?: string
+  numberOfVisitors?: number
   notes?: string
 }
 
@@ -48,6 +51,9 @@ export async function registerVisitor(a: RegisterVisitorArgs): Promise<string> {
     workType: a.workType ?? '', workDescription: a.workDescription ?? '',
     serviceType: a.serviceType ?? '', serviceDescription: a.serviceDescription ?? '',
     expectedDurationMins: a.expectedDurationMins ?? null,
+    appointment: a.appointment ?? null,
+    vehicleRegistration: a.vehicleRegistration ?? '',
+    numberOfVisitors: a.numberOfVisitors ?? null,
     status: 'INSIDE',
     checkInTime: serverTimestamp(), checkOutTime: null, durationMinutes: null,
     notificationSent: false, notes: a.notes ?? '',

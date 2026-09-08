@@ -4,6 +4,7 @@ import { propertyDoc } from '../../firebase/collections'
 import { useAuth } from '../../contexts/AuthContext'
 import { canManageUnits } from '../../domain/permissions'
 import { PageLoader, Spinner } from '../../components/ui/LoadingScreen'
+import { Settings as SettingsIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Property } from '../../types'
 
@@ -32,7 +33,10 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <h1 className="page-title">Settings</h1>
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><SettingsIcon className="w-5 h-5 text-lango-primary" /></div>
+        <div><h1 className="text-xl font-bold text-gray-900">Settings</h1><p className="text-sm text-gray-500">Manage your property details.</p></div>
+      </div>
       <div className="card p-5 space-y-4">
         <div><p className="text-xs text-gray-500">Property</p><p className="font-semibold text-gray-900">{property?.name ?? '—'}</p></div>
         <div><label className="label">Primary contact</label><input className="input" value={form.primaryContact} onChange={e => setForm({ ...form, primaryContact: e.target.value })} disabled={!canEdit} /></div>

@@ -6,6 +6,7 @@ export function useStaff(propertyId: string | null | undefined) {
   const [staff, setStaff] = useState<AppUser[]>([])
   const [onShift, setOnShift] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [nonce, setNonce] = useState(0)
   useEffect(() => {
     if (!propertyId) { setLoading(false); return }
     let active = true
@@ -15,6 +16,6 @@ export function useStaff(propertyId: string | null | undefined) {
       .catch(e => console.error('[useStaff]', e))
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [propertyId])
-  return { staff, onShift, loading }
+  }, [propertyId, nonce])
+  return { staff, onShift, loading, reload: () => setNonce(n => n + 1) }
 }
