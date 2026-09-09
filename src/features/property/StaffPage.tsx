@@ -1,15 +1,28 @@
 import { useMemo, useState } from 'react'
 import { httpsCallable } from 'firebase/functions'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { useAuth } from '../../contexts/AuthContext'
 import { functions } from '../../firebase/config'
 import { useStaff } from '../../hooks/useStaff'
-import { canDeleteStaff } from '../../domain/permissions'
+import { canDeleteStaff, canCreateStaff } from '../../domain/permissions'
 import { StaffStatusBadge } from '../../components/ui/StatusBadge'
-import { PageLoader } from '../../components/ui/LoadingScreen'
-import { ConfirmDialog } from '../../components/ui/Modal'
+import { PageLoader, Spinner } from '../../components/ui/LoadingScreen'
+import { ConfirmDialog, Modal } from '../../components/ui/Modal'
 import { Users, Plus, Search, Filter, MoreVertical, ArrowDownUp, Trash2, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { AppUser } from '../../types'
+
+// PMs may only create operational staff; propertyId is forced server-side.
+const staffSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Valid email required'),
+  phone: z.string().min(9, 'Valid phone required'),
+  role: z.enum(['CARETAKER', 'SECURITY_GUARD']),
+  password: z.string().min(8, 'At least 8 characters'),
+})
+type StaffForm = z.infer<typeof staffSchema>
 
 const ROLE_LABEL: Record<string, string> = { SECURITY_GUARD: 'Security Guard', CARETAKER: 'Caretaker', PROPERTY_MANAGER: 'Property Manager' }
 const AVATAR_TONES = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-sky-500', 'bg-pink-500', 'bg-teal-500', 'bg-amber-500']
@@ -25,6 +38,37 @@ export default function StaffPage() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<AppUser | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [tempCred, setTempCred] = useState<{ name: string; email: string; password: string } | null>(null)
+
+  const canCreate = canCreateStaff(user?.role)
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<StaffForm>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: { role: 'SECURITY_GUARD' },
+  })
+
+  const suggestPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+    const arr = new Uint32Array(12)
+    crypto.getRandomValues(arr)
+    setValue('password', Array.from(arr, n => chars[n % chars.length]).join(''), { shouldValidate: true })
+  }
+
+  const onCreate = async (data: StaffForm) => {
+    setCreating(true)
+    try {
+      // propertyId is forced from the caller's claim server-side; sent only for clarity.
+      const call = httpsCallable<StaffForm & { propertyId?: string; status: string }, { uid: string; tempPassword: string }>(functions, 'createStaffUser')
+      const res = await call({ ...data, propertyId: user?.propertyId ?? '', status: 'ACTIVE' })
+      setTempCred({ name: data.name, email: data.email, password: res.data.tempPassword })
+      toast.success(`Account created for ${data.name}`)
+      setShowAdd(false); reset({ role: 'SECURITY_GUARD' }); reload()
+    } catch (e) {
+      const msg = (e as { message?: string })?.message
+      console.error(e); toast.error(msg ?? 'Could not create staff. Check your connection.')
+    } finally { setCreating(false) }
+  }
 
   const canDelete = canDeleteStaff(user?.role)
   const deletable = (s: AppUser) =>
@@ -58,9 +102,9 @@ export default function StaffPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-lango-primary" /></div>
-          <div><h1 className="text-xl font-bold text-gray-900">Staff</h1><p className="text-sm text-gray-500">Roster for your property (managed by the administrator).</p></div>
+          <div><h1 className="text-xl font-bold text-gray-900">Staff</h1><p className="text-sm text-gray-500">Manage the caretakers and guards for your property.</p></div>
         </div>
-        <button className="btn-primary" onClick={() => toast('Staff accounts are created by the administrator.')}><Plus className="w-4 h-4" /> Add Staff</button>
+        {canCreate && <button className="btn-primary" onClick={() => { reset({ role: 'SECURITY_GUARD' }); setShowAdd(true) }}><Plus className="w-4 h-4" /> Add Staff</button>}
       </div>
 
       {/* Search + filters */}
@@ -149,6 +193,75 @@ export default function StaffPage() {
         variant="danger"
         loading={busy}
       />
+
+      {/* Add staff */}
+      <Modal
+        isOpen={showAdd}
+        onClose={() => { setShowAdd(false); reset({ role: 'SECURITY_GUARD' }) }}
+        title="Add Staff Member"
+        size="md"
+        footer={
+          <>
+            <button onClick={() => { setShowAdd(false); reset({ role: 'SECURITY_GUARD' }) }} className="btn-secondary" disabled={creating}>Cancel</button>
+            <button form="pmStaffForm" type="submit" className="btn-primary" disabled={creating}>
+              {creating && <Spinner size="sm" className="text-white" />} Create Account
+            </button>
+          </>
+        }
+      >
+        <p className="text-xs text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
+          The new staff member is added to your property. They must change the temporary password on first login.
+        </p>
+        <form id="pmStaffForm" onSubmit={handleSubmit(onCreate)} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="label">Full Name *</label>
+              <input {...register('name')} className="input" placeholder="e.g. Peter Otieno" />
+              {errors.name && <p className="form-error">{errors.name.message}</p>}
+            </div>
+            <div>
+              <label className="label">Email *</label>
+              <input {...register('email')} type="email" className="input" placeholder="peter@example.com" />
+              {errors.email && <p className="form-error">{errors.email.message}</p>}
+            </div>
+            <div>
+              <label className="label">Phone *</label>
+              <input {...register('phone')} className="input" placeholder="0712345678" />
+              {errors.phone && <p className="form-error">{errors.phone.message}</p>}
+            </div>
+            <div>
+              <label className="label">Role *</label>
+              <select {...register('role')} className="input">
+                <option value="SECURITY_GUARD">Security Guard</option>
+                <option value="CARETAKER">Caretaker</option>
+              </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="label">Temporary Password *</label>
+                <button type="button" onClick={suggestPassword} className="text-xs text-lango-primary hover:underline">Generate</button>
+              </div>
+              <input {...register('password')} type="text" className="input font-mono" placeholder="At least 8 characters" autoComplete="off" />
+              {errors.password && <p className="form-error">{errors.password.message}</p>}
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Credentials to hand over */}
+      <Modal isOpen={!!tempCred} onClose={() => setTempCred(null)} title="Account created" size="sm">
+        <p className="text-sm text-gray-600 mb-3">
+          Share these one-time credentials with <span className="font-medium">{tempCred?.name}</span>. They must change the password on first login.
+        </p>
+        <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+          <p><span className="text-gray-500">Login:</span> <span className="font-mono">{tempCred?.email}</span></p>
+          <p><span className="text-gray-500">Temp password:</span> <span className="font-mono">{tempCred?.password}</span></p>
+        </div>
+        <button className="btn-secondary w-full mt-4"
+          onClick={() => { navigator.clipboard?.writeText(`${tempCred?.email} / ${tempCred?.password}`); toast.success('Copied') }}>
+          Copy credentials
+        </button>
+      </Modal>
     </div>
   )
 }

@@ -227,10 +227,12 @@ export default function RegisterGuestPage() {
     </Field>
   )
 
+  const clearVisiting = () => { setVisiting(null); form.setValue('unitId', ''); form.setValue('blockId', '') }
+
   const visitingField = (label: string) => (
     <Field icon={Home} label={label}>
-      <TenantSearchField propertyId={propertyId} onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved}
-        selectedLabel={visiting ? `${visiting.tenantName ?? 'Unit'} · ${visiting.blockName} ${visiting.unitNumber}` : undefined} />
+      <TenantSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
+        onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
       {errors.unitId && <p className="form-error">{errors.unitId.message}</p>}
     </Field>
   )

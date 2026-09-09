@@ -37,19 +37,42 @@ function generateTempPassword(): string {
   return chars.join('')
 }
 
-// createStaffUser — Super Admin creates a staff account with claims.
+// createStaffUser — a Super Admin or Property Manager creates a staff account
+// with claims. A PM is scoped to their OWN property and may only create
+// Caretakers and Security Guards (never managers/admins); the Super Admin can
+// create any staff role for any property.
 export const createStaffUser = onCall(async (request) => {
-  assertSuperAdmin(request.auth)
-  const { name, email, phone, role, propertyId, status, password } = request.data as {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'PROPERTY_MANAGER') {
+    throw new HttpsError('permission-denied', 'Only a Property Manager or administrator may create staff.')
+  }
+
+  const { name, email, phone, role, propertyId: requestedPropertyId, status, password } = request.data as {
     name: string; email: string; phone: string
     role: Exclude<Role, 'SUPER_ADMIN'>; propertyId: string; status: string; password?: string
   }
 
-  if (!name || !email || !phone || !role || !propertyId) {
-    throw new HttpsError('invalid-argument', 'name, email, phone, role and propertyId are required.')
+  if (!name || !email || !phone || !role) {
+    throw new HttpsError('invalid-argument', 'name, email, phone and role are required.')
   }
-  if (!['PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD'].includes(role)) {
-    throw new HttpsError('invalid-argument', 'Invalid role.')
+
+  // Resolve the target property + allowed roles from WHO is calling.
+  let propertyId: string
+  if (callerRole === 'PROPERTY_MANAGER') {
+    if (role !== 'CARETAKER' && role !== 'SECURITY_GUARD') {
+      throw new HttpsError('permission-denied', 'A Property Manager can only add Caretakers and Security Guards.')
+    }
+    const claimProperty = caller.token?.propertyId as string | undefined
+    if (!claimProperty) throw new HttpsError('failed-precondition', 'Your account is not linked to a property.')
+    propertyId = claimProperty // forced from the caller's claim — never trust a client-supplied propertyId
+  } else {
+    if (!['PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD'].includes(role)) {
+      throw new HttpsError('invalid-argument', 'Invalid role.')
+    }
+    if (!requestedPropertyId) throw new HttpsError('invalid-argument', 'propertyId is required.')
+    propertyId = requestedPropertyId
   }
   const normPhone = normalizeKenyanPhone(phone)
   if (!normPhone) throw new HttpsError('invalid-argument', 'Invalid Kenyan phone number.')
@@ -98,9 +121,9 @@ export const createStaffUser = onCall(async (request) => {
   })
 
   await writeAuditLog({
-    actorId: request.auth!.uid,
-    actorName: (request.auth!.token.name as string) ?? 'Super Admin',
-    actorRole: 'SUPER_ADMIN',
+    actorId: caller.uid,
+    actorName: (caller.token?.name as string) ?? (callerRole === 'PROPERTY_MANAGER' ? 'Manager' : 'Super Admin'),
+    actorRole: callerRole,
     propertyId,
     action: 'STAFF_CREATED',
     entityType: 'user',

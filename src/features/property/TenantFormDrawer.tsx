@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,8 +29,22 @@ interface Props {
 }
 
 export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, vacantUnits, editing }: Props) {
+  const [blockId, setBlockId] = useState('')
   const [unitId, setUnitId] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Only blocks that actually have vacant units, and the vacant units within the
+  // chosen block — both derived from the vacantUnits list (no extra queries).
+  const blocks = useMemo(() => {
+    const byId = new Map<string, string>()
+    vacantUnits.forEach(u => byId.set(u.blockId, u.blockName))
+    return [...byId].map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+  }, [vacantUnits])
+  const blockUnits = useMemo(
+    () => vacantUnits.filter(u => u.blockId === blockId)
+      .sort((a, b) => a.unitNumber.localeCompare(b.unitNumber, undefined, { numeric: true })),
+    [vacantUnits, blockId])
   const [sameWhatsapp, setSameWhatsapp] = useState(
     editing ? (!editing.whatsappNumber || editing.whatsappNumber === editing.phoneNumber) : true,
   )
@@ -54,7 +68,7 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
         await assignTenantToUnit({ propertyId, actor, unit, fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, moveInDate: new Date(), notes: d.notes })
         toast.success('Tenant added')
       }
-      onDone(); onClose(); form.reset(); setUnitId('')
+      onDone(); onClose(); form.reset(); setUnitId(''); setBlockId('')
     } catch (e) { console.error(e); toast.error('Save failed') } finally { setBusy(false) }
   }
 
@@ -62,12 +76,21 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
     <Modal isOpen={isOpen} onClose={onClose} title={editing ? 'Edit tenant' : 'Add tenant'}>
       <form onSubmit={form.handleSubmit(submit)} className="space-y-3">
         {!editing && (
-          <div>
-            <label className="label">Assign to vacant unit *</label>
-            <select className="input" value={unitId} onChange={e => setUnitId(e.target.value)}>
-              <option value="">Select unit…</option>
-              {vacantUnits.map(u => <option key={u.unitId} value={u.unitId}>{u.blockName} — {u.unitNumber}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Block *</label>
+              <select className="input" value={blockId} onChange={e => { setBlockId(e.target.value); setUnitId('') }}>
+                <option value="">Select block…</option>
+                {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Vacant unit *</label>
+              <select className="input" value={unitId} onChange={e => setUnitId(e.target.value)} disabled={!blockId}>
+                <option value="">{blockId ? 'Select unit…' : 'Select a block first'}</option>
+                {blockUnits.map(u => <option key={u.unitId} value={u.unitId}>{u.unitNumber}</option>)}
+              </select>
+            </div>
           </div>
         )}
         <div><label className="label">Full name *</label><input className="input" {...form.register('fullName')} />{form.formState.errors.fullName && <p className="form-error">{form.formState.errors.fullName.message}</p>}</div>

@@ -22,5 +22,5 @@ export function useTenantSearch(propertyId: string | null | undefined) {
 
   const results = useMemo(() => filterTenants(tenants, term), [tenants, term])
   const preApprovedMatches = useMemo(() => matchPreApproved(preApproved, term), [preApproved, term])
-  return { term, setTerm, results, preApprovedMatches, loading }
+  return { term, setTerm, results, preApprovedMatches, tenants, preApproved, loading }
 }

@@ -8,7 +8,7 @@ import { TenantStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import { ConfirmDialog } from '../../components/ui/Modal'
 import { TenantFormDrawer } from './TenantFormDrawer'
-import { Users, Plus, Search, Home, User, Filter } from 'lucide-react'
+import { Users, Plus, Search, Home, User, Filter, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Tenant } from '../../types'
 
@@ -19,7 +19,7 @@ export default function TenantsPage() {
   const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Caretaker', role: user?.role ?? 'CARETAKER' as const }
   const canManage = canManageTenants(user?.role)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE')
-  const { tenants, loading, reload } = useTenants(user?.propertyId, statusFilter === 'ACTIVE' ? 'ACTIVE' : undefined)
+  const { tenants, loading, error, reload } = useTenants(user?.propertyId, statusFilter === 'ACTIVE' ? 'ACTIVE' : undefined)
   const { units, reload: reloadUnits } = useUnitsWithTenants(user?.propertyId)
   const [term, setTerm] = useState('')
   const [drawer, setDrawer] = useState<{ open: boolean; editing: Tenant | null }>({ open: false, editing: null })
@@ -71,7 +71,16 @@ export default function TenantsPage() {
       </div>
 
       {/* Content */}
-      {shown.length === 0 ? (
+      {error ? (
+        <div className="card py-14 flex flex-col items-center text-center px-6">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-7 h-7 text-red-500" />
+          </div>
+          <h3 className="font-bold text-gray-900">Couldn't load tenants</h3>
+          <p className="text-sm text-gray-500 mt-1 max-w-sm">{error}</p>
+          <button className="btn-secondary mt-5" onClick={reload}>Try again</button>
+        </div>
+      ) : shown.length === 0 ? (
         <div className="card py-14 flex flex-col items-center text-center px-6">
           <div className="relative w-28 h-28 rounded-full bg-lango-primary/5 flex items-center justify-center mb-5">
             <User className="w-12 h-12 text-lango-primary/40" />
