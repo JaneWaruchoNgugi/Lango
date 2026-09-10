@@ -95,7 +95,7 @@ export default function RegisterGuestPage() {
 
   const applyTenant = (t: Tenant) => {
     setVisiting({ blockId: t.blockId ?? null, blockName: t.blockName ?? null, unitId: t.unitId, unitNumber: t.unitNumber, tenantId: t.tenantId, tenantName: t.fullName, tenantPhone: t.whatsappNumber || t.phoneNumber })
-    form.setValue('blockId', t.blockId); form.setValue('unitId', t.unitId)
+    form.setValue('blockId', t.blockId ?? ''); form.setValue('unitId', t.unitId)
   }
   const applyPreApproved = (p: PreApprovedVisitor) => {
     setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: p.tenantId, tenantName: p.tenantName })
@@ -109,7 +109,7 @@ export default function RegisterGuestPage() {
     setStep(3)
   }
 
-  const visitingLabel = visiting ? `${visiting.blockName} ${visiting.unitNumber}${visiting.tenantName ? ` — ${visiting.tenantName}` : ''}` : ''
+  const visitingLabel = visiting ? `${visiting.blockName ?? ''} ${visiting.unitNumber}${visiting.tenantName ? ` — ${visiting.tenantName}` : ''}`.trim() : ''
 
   const onSubmit = async (raw: FieldValues) => {
     const data = raw as RegisterGuestInput

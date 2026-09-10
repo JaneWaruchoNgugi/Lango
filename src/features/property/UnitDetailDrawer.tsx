@@ -39,7 +39,7 @@ export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
           <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Building2 className="w-5 h-5 text-lango-primary" /></div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-gray-900">Unit {unit.unitNumber}</h2>
-            <p className="text-sm text-gray-500 truncate">{unit.blockName} • {floorLabel(unit.floor)}</p>
+            <p className="text-sm text-gray-500 truncate">{unit.blockName ?? ''} • {floorLabel(unit.floor)}</p>
           </div>
           <UnitStatusBadge status={pending} />
           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>

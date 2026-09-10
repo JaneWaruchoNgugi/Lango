@@ -27,6 +27,7 @@ export default function BlocksUnitsPage() {
 
   const byBlock = useMemo(() => {
     const map = new Map<string, Unit[]>()
+    // Block-less units bucket under '' and only surface in BLOCKS-layout properties (P1).
     for (const u of units) { const k = u.blockId ?? ''; if (!map.has(k)) map.set(k, []); map.get(k)!.push(u) }
     return map
   }, [units])
