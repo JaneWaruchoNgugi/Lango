@@ -18,7 +18,7 @@ export function stageOpenOccupancy(batch: WriteBatch, a: OpenOccupancyArgs): str
   batch.set(ref, {
     recordId: ref.id, propertyId: a.propertyId,
     unitId: a.unit.unitId, unitNumber: a.unit.unitNumber,
-    blockId: a.unit.blockId, blockName: a.unit.blockName,
+    blockId: a.unit.blockId ?? null, blockName: a.unit.blockName ?? null,
     tenantId: a.tenantId, tenantName: a.tenantName, tenantPhone: a.tenantPhone,
     moveInDate: Timestamp.fromDate(a.moveInDate), moveOutDate: null,
     createdAt: serverTimestamp(),

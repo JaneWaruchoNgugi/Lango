@@ -21,7 +21,7 @@ export function GenerateUnitsForm({ propertyId, blockId, blockName, actor, onCre
   const [unitType, setUnitType] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const preview = generateUnitCodes({ prefix, start, count: Math.min(Math.max(count, 0), 500), padding })
+  const preview = generateUnitCodes({ prefix, start, count: Math.min(Math.max(count, 0), 499), padding })
 
   async function submit() {
     setBusy(true)
@@ -62,7 +62,7 @@ export function GenerateUnitsForm({ propertyId, blockId, blockName, actor, onCre
           <input className="input" value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="e.g. 2 Bedroom" /></div>
       </div>
       <div className="rounded-lg border border-gray-200 bg-blue-50/40 p-3">
-        <p className="text-xs font-medium text-gray-600 mb-1">Preview ({preview.length}{count > 500 ? ' — capped at 500' : ''})</p>
+        <p className="text-xs font-medium text-gray-600 mb-1">Preview ({preview.length}{count > 499 ? ' — capped at 499' : ''})</p>
         {preview.length === 0
           ? <p className="text-sm text-gray-500">Enter a count of 1 or more to preview unit codes.</p>
           : <p className="text-sm text-gray-800 break-words">{preview.slice(0, 30).join(', ')}{preview.length > 30 ? ' …' : ''}</p>}

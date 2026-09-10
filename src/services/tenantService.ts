@@ -52,8 +52,8 @@ export async function assignTenantToUnit(a: AssignTenantArgs): Promise<string> {
   const tenantRef = doc(tenantsCol)
   batch.set(tenantRef, {
     tenantId: tenantRef.id, propertyId: a.propertyId,
-    blockId: a.unit.blockId, unitId: a.unit.unitId,
-    unitNumber: a.unit.unitNumber, blockName: a.unit.blockName,
+    blockId: a.unit.blockId ?? null, unitId: a.unit.unitId,
+    unitNumber: a.unit.unitNumber, blockName: a.unit.blockName ?? null,
     fullName: a.fullName, phoneNumber: a.phoneNumber, whatsappNumber: a.whatsappNumber,
     email: a.email ?? '', nationalId: a.nationalId ?? '',
     moveInDate: Timestamp.fromDate(a.moveInDate), moveOutDate: null,
