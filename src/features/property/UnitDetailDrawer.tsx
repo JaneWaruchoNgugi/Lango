@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 import type { AppUser, Unit, UnitStatus } from '../../types'
 
 const STATUSES: UnitStatus[] = ['OCCUPIED', 'VACANT', 'RESERVED', 'MAINTENANCE']
-const floorLabel = (f?: number) => f === undefined ? '—' : f === 0 ? 'Ground Floor' : `Floor ${f}`
+const floorLabel = (f?: string) => f ?? '—'
 
 export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
   unit: Unit | null; onClose: () => void; onChanged: () => void; actor: Pick<AppUser, 'uid' | 'name' | 'role'>
@@ -70,7 +70,7 @@ export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
             {/* Right */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
               <p className="text-sm font-semibold text-gray-900">Unit details</p>
-              <Detail icon={Building2} label="Block" value={unit.blockName} />
+              <Detail icon={Building2} label="Block" value={unit.blockName ?? ''} />
               <Detail icon={Layers} label="Floor" value={floorLabel(unit.floor)} />
               {unit.notes && <Detail icon={History} label="Notes" value={unit.notes} />}
             </div>

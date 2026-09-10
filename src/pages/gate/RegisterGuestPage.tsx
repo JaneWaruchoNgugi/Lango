@@ -26,7 +26,7 @@ import { VisitorPass } from '../../components/gate/VisitorPass'
 import { Spinner } from '../../components/ui/LoadingScreen'
 import type { VisitType, Tenant, PreApprovedVisitor } from '../../types'
 
-type Visiting = { blockId: string; blockName: string; unitId: string; unitNumber: string; tenantId?: string; tenantName?: string; tenantPhone?: string }
+type Visiting = { blockId: string | null; blockName: string | null; unitId: string; unitNumber: string; tenantId?: string; tenantName?: string; tenantPhone?: string }
 
 type DoneResult = {
   id: string; name: string; type: VisitType; subtitle: string
@@ -94,7 +94,7 @@ export default function RegisterGuestPage() {
   }
 
   const applyTenant = (t: Tenant) => {
-    setVisiting({ blockId: t.blockId, blockName: t.blockName, unitId: t.unitId, unitNumber: t.unitNumber, tenantId: t.tenantId, tenantName: t.fullName, tenantPhone: t.whatsappNumber || t.phoneNumber })
+    setVisiting({ blockId: t.blockId ?? null, blockName: t.blockName ?? null, unitId: t.unitId, unitNumber: t.unitNumber, tenantId: t.tenantId, tenantName: t.fullName, tenantPhone: t.whatsappNumber || t.phoneNumber })
     form.setValue('blockId', t.blockId); form.setValue('unitId', t.unitId)
   }
   const applyPreApproved = (p: PreApprovedVisitor) => {

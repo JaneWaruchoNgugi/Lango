@@ -18,7 +18,7 @@ export interface RegisterVisitorArgs {
   idNumber?: string
   nationality?: string
   photoUrl?: string
-  blockId: string; blockName: string
+  blockId: string | null; blockName: string | null
   unitId: string; unitNumber: string
   tenantId?: string; tenantName?: string
   reason?: string

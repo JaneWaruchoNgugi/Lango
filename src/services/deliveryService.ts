@@ -15,7 +15,7 @@ export interface RegisterDeliveryArgs {
   riderName: string
   riderPhone: string
   riderIdNumber?: string
-  blockId: string; blockName: string
+  blockId: string | null; blockName: string | null
   unitId: string; unitNumber: string
   tenantId?: string; tenantName?: string
   deliveryType?: string

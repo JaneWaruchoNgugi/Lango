@@ -21,7 +21,7 @@ export function filterTenants(tenants: Tenant[], term: string): Tenant[] {
   return tenants.filter(x =>
     x.fullName.toLowerCase().includes(t) ||
     x.unitNumber.toLowerCase().includes(t) ||
-    x.blockName.toLowerCase().includes(t) ||
+    (x.blockName ?? '').toLowerCase().includes(t) ||
     x.phoneNumber.includes(t) || (x.whatsappNumber ?? '').includes(t))
 }
 

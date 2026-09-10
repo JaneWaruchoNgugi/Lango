@@ -27,7 +27,7 @@ export default function BlocksUnitsPage() {
 
   const byBlock = useMemo(() => {
     const map = new Map<string, Unit[]>()
-    for (const u of units) { if (!map.has(u.blockId)) map.set(u.blockId, []); map.get(u.blockId)!.push(u) }
+    for (const u of units) { const k = u.blockId ?? ''; if (!map.has(k)) map.set(k, []); map.get(k)!.push(u) }
     return map
   }, [units])
 

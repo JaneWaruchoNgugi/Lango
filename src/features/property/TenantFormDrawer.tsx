@@ -37,7 +37,7 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
   // chosen block — both derived from the vacantUnits list (no extra queries).
   const blocks = useMemo(() => {
     const byId = new Map<string, string>()
-    vacantUnits.forEach(u => byId.set(u.blockId, u.blockName))
+    vacantUnits.forEach(u => byId.set(u.blockId ?? '', u.blockName ?? ''))
     return [...byId].map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
   }, [vacantUnits])
