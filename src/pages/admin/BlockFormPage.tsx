@@ -7,7 +7,7 @@ import { doc, collection, writeBatch, serverTimestamp, getDoc, increment } from 
 import { ArrowLeft } from 'lucide-react'
 import { db } from '../../firebase/config'
 import { Spinner } from '../../components/ui/LoadingScreen'
-import { generateUnitNumbers } from '../../utils/units'
+import { generateUnitCodes } from '../../utils/units'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
@@ -56,7 +56,12 @@ export default function BlockFormPage() {
 
       let unitsCreated = 0
       if (data.autoGenerateUnits && data.totalUnits > 0) {
-        const numbers = generateUnitNumbers(data.prefix, data.totalUnits)
+        const numbers = generateUnitCodes({
+          prefix: data.prefix.trim(),
+          start: 1,
+          count: data.totalUnits,
+          padding: Math.max(2, String(Math.max(data.totalUnits, 1)).length),
+        })
         for (const unitNumber of numbers) {
           const unitRef = doc(collection(db, 'units'))
           batch.set(unitRef, {
@@ -65,6 +70,9 @@ export default function BlockFormPage() {
             blockId: blockRef.id,
             blockName: data.name,
             unitNumber,
+            displayName: unitNumber,
+            floor: null,
+            unitType: null,
             status: 'VACANT',
             currentTenantId: null,
             currentTenantName: null,
@@ -92,7 +100,14 @@ export default function BlockFormPage() {
     }
   }
 
-  const preview = auto && prefix && count > 0 ? generateUnitNumbers(prefix, Math.min(count, 500)) : []
+  const preview = auto && count > 0
+    ? generateUnitCodes({
+        prefix: prefix.trim(),
+        start: 1,
+        count: Math.min(count, 500),
+        padding: Math.max(2, String(Math.min(count, 500)).length),
+      })
+    : []
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
