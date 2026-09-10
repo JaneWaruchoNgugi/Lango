@@ -1,10 +1,10 @@
 import {
-  collection, doc, getDocs, query, where,
+  getDocs, query, where,
   writeBatch, serverTimestamp, increment,
-  updateDoc, orderBy,
+  updateDoc, orderBy, getDoc, doc,
 } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { blocksCol, unitsCol, unitDoc } from '../firebase/collections'
+import { blocksCol, unitsCol, unitDoc, propertyDoc, tenantDoc } from '../firebase/collections'
 import type { AppUser, Block, Unit } from '../types'
 import { validateUnitCode } from '../domain/unitCode'
 import { logAudit } from './auditService'
@@ -55,8 +55,9 @@ export interface NewUnitInput {
 }
 
 /** All existing unit codes for a property (for uniqueness checks). */
+// Firestore SDK has no field projection, so full unit docs are fetched.
 export async function fetchUnitCodes(propertyId: string): Promise<string[]> {
-  const snap = await getDocs(query(collection(db, 'units'), where('propertyId', '==', propertyId)))
+  const snap = await getDocs(query(unitsCol, where('propertyId', '==', propertyId)))
   return snap.docs.map((d) => (d.data() as Unit).unitNumber)
 }
 
@@ -78,28 +79,42 @@ function unitDocPayload(input: NewUnitInput) {
 }
 
 /** Create a single unit after validating its code is unique in the property. */
-export async function createUnit(input: NewUnitInput): Promise<string> {
+export async function createUnit(input: NewUnitInput, actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<string> {
   const existing = await fetchUnitCodes(input.propertyId)
   const err = validateUnitCode(input.unitCode, existing)
   if (err) throw new Error(err)
 
   const batch = writeBatch(db)
-  const ref = doc(collection(db, 'units'))
-  batch.set(ref, { unitId: ref.id, ...unitDocPayload(input) })
-  batch.update(doc(db, 'properties', input.propertyId), {
+  const ref = doc(unitsCol)
+  batch.set(ref, { unitId: ref.id, ...unitDocPayload(input) } as never)
+  batch.update(propertyDoc(input.propertyId), {
     totalUnits: increment(1), updatedAt: serverTimestamp(),
   })
   await batch.commit()
+  await logAudit({
+    actor, propertyId: input.propertyId, action: 'UNIT_CREATED',
+    entityType: 'unit', entityId: ref.id,
+    description: `Unit ${input.unitCode.trim()} created`,
+  })
   return ref.id
 }
+
+const MAX_BATCH = 499 // 499 unit writes + 1 property-counter update = Firestore's 500 cap
 
 /**
  * Create many units atomically. Rejects if any code collides with existing
  * codes or with another code in the same batch.
  */
-export async function createUnitsBatch(inputs: NewUnitInput[]): Promise<number> {
+export async function createUnitsBatch(inputs: NewUnitInput[], actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<number> {
   if (inputs.length === 0) return 0
   const propertyId = inputs[0].propertyId
+
+  if (inputs.length > MAX_BATCH) throw new Error(`Cannot create more than ${MAX_BATCH} units at once`)
+
+  if (!inputs.every((i) => i.propertyId === propertyId)) {
+    throw new Error('All units in a batch must belong to the same property')
+  }
+
   const existing = await fetchUnitCodes(propertyId)
   const seen = new Set(existing.map((c) => c.trim().toLowerCase()))
   for (const input of inputs) {
@@ -110,13 +125,19 @@ export async function createUnitsBatch(inputs: NewUnitInput[]): Promise<number> 
 
   const batch = writeBatch(db)
   for (const input of inputs) {
-    const ref = doc(collection(db, 'units'))
-    batch.set(ref, { unitId: ref.id, ...unitDocPayload(input) })
+    const ref = doc(unitsCol)
+    batch.set(ref, { unitId: ref.id, ...unitDocPayload(input) } as never)
   }
-  batch.update(doc(db, 'properties', propertyId), {
+  batch.update(propertyDoc(propertyId), {
     totalUnits: increment(inputs.length), updatedAt: serverTimestamp(),
   })
   await batch.commit()
+  await logAudit({
+    actor, propertyId, action: 'UNITS_BULK_CREATED',
+    entityType: 'unit', entityId: propertyId,
+    description: `${inputs.length} units created`,
+    metadata: { count: inputs.length },
+  })
   return inputs.length
 }
 
@@ -127,6 +148,7 @@ export async function createUnitsBatch(inputs: NewUnitInput[]): Promise<number> 
 export async function renameUnit(
   unit: Unit,
   next: { unitCode: string; displayName?: string },
+  actor: Pick<AppUser, 'uid' | 'name' | 'role'>,
 ): Promise<void> {
   const existing = (await fetchUnitCodes(unit.propertyId)).filter(
     (c) => c.trim().toLowerCase() !== unit.unitNumber.trim().toLowerCase(),
@@ -135,28 +157,45 @@ export async function renameUnit(
   if (err) throw new Error(err)
 
   const batch = writeBatch(db)
-  batch.update(doc(db, 'units', unit.unitId), {
+  batch.update(unitDoc(unit.unitId), {
     unitNumber: next.unitCode.trim(),
     displayName: next.displayName?.trim() || next.unitCode.trim(),
     updatedAt: serverTimestamp(),
   })
   if (unit.currentTenantId) {
-    batch.update(doc(db, 'tenants', unit.currentTenantId), {
-      unitNumber: next.unitCode.trim(), updatedAt: serverTimestamp(),
-    })
+    const tSnap = await getDoc(tenantDoc(unit.currentTenantId))
+    if (
+      tSnap.exists() &&
+      tSnap.data().propertyId === unit.propertyId &&
+      tSnap.data().unitId === unit.unitId
+    ) {
+      batch.update(tenantDoc(unit.currentTenantId), {
+        unitNumber: next.unitCode.trim(), updatedAt: serverTimestamp(),
+      })
+    }
   }
   await batch.commit()
+  await logAudit({
+    actor, propertyId: unit.propertyId, action: 'UNIT_RENAMED',
+    entityType: 'unit', entityId: unit.unitId,
+    description: `Unit ${unit.unitNumber} → ${next.unitCode.trim()}`,
+  })
 }
 
 /** Delete a unit. Refuses to delete an occupied unit unless force=true. */
-export async function deleteUnit(unit: Unit, opts?: { force?: boolean }): Promise<void> {
+export async function deleteUnit(unit: Unit, actor: Pick<AppUser, 'uid' | 'name' | 'role'>, opts?: { force?: boolean }): Promise<void> {
   if (unit.currentTenantId && !opts?.force) {
     throw new Error('This unit has an active tenant. Confirm to delete anyway.')
   }
   const batch = writeBatch(db)
-  batch.delete(doc(db, 'units', unit.unitId))
-  batch.update(doc(db, 'properties', unit.propertyId), {
+  batch.delete(unitDoc(unit.unitId))
+  batch.update(propertyDoc(unit.propertyId), {
     totalUnits: increment(-1), updatedAt: serverTimestamp(),
   })
   await batch.commit()
+  await logAudit({
+    actor, propertyId: unit.propertyId, action: 'UNIT_DELETED',
+    entityType: 'unit', entityId: unit.unitId,
+    description: `Unit ${unit.unitNumber} deleted`,
+  })
 }
