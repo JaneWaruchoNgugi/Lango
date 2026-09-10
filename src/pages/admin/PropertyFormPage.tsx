@@ -17,8 +17,7 @@ const schema = z.object({
   address:        z.string().min(5, 'Address is required'),
   county:         z.string().min(2, 'County is required'),
   city:           z.string().min(2, 'City/Town is required'),
-  numberOfBlocks: z.number({ message: 'At least 1 block required' }).min(1, 'At least 1 block required').max(50),
-  totalUnits:     z.number({ message: 'At least 1 unit required' }).min(1, 'At least 1 unit required').max(9999),
+  structureType:  z.enum(['BLOCKS', 'SINGLE_BUILDING', 'VILLAS', 'CUSTOM']),
   primaryContact: z.string().min(2, 'Contact name is required'),
   phone:          z.string().min(9, 'Valid phone number required'),
   email:          z.string().email('Valid email required'),
@@ -40,7 +39,7 @@ export default function PropertyFormPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { status: 'TRIAL', plan: 'SMALL', type: 'APARTMENT_BLOCK', numberOfBlocks: 1, totalUnits: 10 },
+    defaultValues: { status: 'TRIAL', plan: 'SMALL', type: 'APARTMENT_BLOCK', structureType: 'BLOCKS' },
   })
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export default function PropertyFormPage() {
         reset({
           name: data.name, type: data.type, address: data.address,
           county: data.county, city: data.city,
-          numberOfBlocks: data.numberOfBlocks, totalUnits: data.totalUnits,
+          structureType: data.structureType ?? 'BLOCKS',
           primaryContact: data.primaryContact, phone: data.phone,
           email: data.email, plan: data.plan, status: data.status,
         })
@@ -129,6 +128,16 @@ export default function PropertyFormPage() {
                 <option value="ARCHIVED">Archived</option>
               </select>
             </div>
+            <div className="sm:col-span-2">
+              <label className="label">How is this property organized? *</label>
+              <select {...register('structureType')} className="input">
+                <option value="BLOCKS">Blocks &amp; Buildings</option>
+                <option value="SINGLE_BUILDING">Single Building</option>
+                <option value="VILLAS">Villas / Individual Units</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">You'll add buildings and units after creating the property.</p>
+            </div>
           </div>
         </div>
 
@@ -150,23 +159,6 @@ export default function PropertyFormPage() {
               <label className="label">Town / City *</label>
               <input {...register('city')} className="input" placeholder="e.g. Ruaka" />
               {errors.city && <p className="form-error">{errors.city.message}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Structure */}
-        <div>
-          <h3 className="section-title">Property Structure</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="label">Number of Blocks *</label>
-              <input {...register('numberOfBlocks', { valueAsNumber: true })} type="number" min={1} max={50} className="input" />
-              {errors.numberOfBlocks && <p className="form-error">{errors.numberOfBlocks.message}</p>}
-            </div>
-            <div>
-              <label className="label">Total Units *</label>
-              <input {...register('totalUnits', { valueAsNumber: true })} type="number" min={1} className="input" />
-              {errors.totalUnits && <p className="form-error">{errors.totalUnits.message}</p>}
             </div>
           </div>
         </div>
