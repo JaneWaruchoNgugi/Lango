@@ -37,4 +37,19 @@ describe('generateUnitCodes', () => {
   it('generateUnitNumbers wrapper preserves legacy behavior', () => {
     expect(generateUnitNumbers('a', 3)).toEqual(['A01', 'A02', 'A03'])
   })
+
+  it('generateUnitNumbers widens padding to 3 digits at count 100', () => {
+    const r = generateUnitNumbers('C', 100)
+    expect(r[0]).toBe('C001')
+    expect(r[99]).toBe('C100')
+    expect(r).toHaveLength(100)
+  })
+
+  it('generateUnitNumbers trims and uppercases the prefix', () => {
+    expect(generateUnitNumbers('  a ', 1)).toEqual(['A01'])
+  })
+
+  it('generateUnitNumbers returns [] for negative count', () => {
+    expect(generateUnitNumbers('A', -5)).toEqual([])
+  })
 })
