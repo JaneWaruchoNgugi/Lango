@@ -98,7 +98,7 @@ export default function RegisterGuestPage() {
     form.setValue('blockId', t.blockId); form.setValue('unitId', t.unitId)
   }
   const applyPreApproved = (p: PreApprovedVisitor) => {
-    setVisiting({ blockId: p.blockId ?? '', blockName: p.blockName ?? '', unitId: p.unitId, unitNumber: p.unitNumber, tenantId: p.tenantId, tenantName: p.tenantName })
+    setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: p.tenantId, tenantName: p.tenantName })
     form.setValue('unitId', p.unitId); form.setValue('blockId', p.blockId || 'preapproved'); form.setValue('visitorName', p.name)
   }
 
