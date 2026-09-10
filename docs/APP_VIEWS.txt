@@ -1,0 +1,203 @@
+========================================================================
+ LANGO — GATE & PROPERTY MANAGEMENT WEB APP
+ What every view does
+========================================================================
+
+Lango replaces the paper gate book. It handles visitor registration,
+delivery check-in, incident reporting, guard shifts, tenants, units and
+staff — with instant WhatsApp alerts and a searchable digital record.
+
+There are four roles, each with its own area:
+  • Super Admin      → /admin      (runs the whole platform)
+  • Property Manager → /property   (runs one property, full management)
+  • Caretaker        → /caretaker  (day-to-day property operations)
+  • Security Guard   → /gate        (the gate/front-desk operator)
+
+Access is gated by the user's role. All three operational roles
+(Guard, Caretaker, Property Manager) share the same navy/blue design
+system: a sidebar on desktop, an icon rail on tablet, and a top bar +
+bottom tabs on mobile.
+
+------------------------------------------------------------------------
+ PUBLIC (no login)
+------------------------------------------------------------------------
+
+Landing page  ( / )
+  The public marketing site aimed at property owners. Sections:
+    - Hero: the pitch + "Book a Free Demo" / "See How It Works".
+    - "One system for every property": Residential, Commercial,
+      Institutional, Industrial.
+    - "How it works": register visitor → resident gets a WhatsApp alert
+      → everything is recorded.
+    - Features: visitor check-in/out, WhatsApp alerts, delivery
+      management, incident reporting, shift accountability, live
+      dashboard.
+    - Pricing: Small / Medium / Large / Estate plans.
+    - FAQ: setup time, hardware, data ownership, multi-property.
+    - "Book a free demo": a form that saves a lead (name, email, phone,
+      property type) for the admin to follow up.
+  Logged-out visitors who hit a deep link are sent here or to login.
+
+Login  ( /login )
+  Sign in by email/phone + password. Routes each user to their role's
+  home after authenticating.
+
+Change password  ( /change-password )
+  Forces staff created with a temporary password to set a new one on
+  first login.
+
+------------------------------------------------------------------------
+ SECURITY GUARD  ( /gate )
+------------------------------------------------------------------------
+
+Home / Dashboard  ( /gate )
+  The guard's control centre: greeting + live clock, an On-Shift banner
+  with Start/End Shift, four stat cards (Visitors Today, Currently
+  Inside, Expected Today, Open Incidents), quick actions (Register
+  Visitor, Delivery Check-in, Currently Inside, Report Incident) and a
+  Recent Activity feed.
+
+Register a Guest  ( /gate/register )
+  The core flow, in 3 steps:
+    1. Purpose — Personal Visit, Work, Delivery, or Service Provider.
+    2. Details — type-specific fields (name, phone, ID/passport with
+       optional camera scan, company, vehicle, number of visitors,
+       who they're visiting, expected duration, appointment, etc.).
+    3. Review & Register — confirm, then it notifies the resident.
+  On success it shows a confirmation and a QR "Visitor Pass" the guest
+  presents at the gate.
+
+Currently Inside  ( /gate/inside )
+  Live list of everyone on the property now. Search + filter by visit
+  type (Personal/Work/Delivery/Service); check a visitor out.
+
+Delivery Check-in  ( /gate/deliveries )
+  Today's and past deliveries. "Check In" marks a received delivery as
+  collected.
+
+Report Incident  ( /gate/incidents , /gate/incidents/new )
+  See reported incidents (colour-coded by severity) and log a new one
+  (type, description, severity, optional photo).
+
+My Shift  ( /gate/shift )
+  Start/end the current shift and see live shift stats (visitors,
+  deliveries, incidents recorded this shift).
+
+------------------------------------------------------------------------
+ CARETAKER  ( /caretaker )
+------------------------------------------------------------------------
+
+Home / Dashboard  ( /caretaker )
+  Property overview: greeting + date/time, four stat cards, quick
+  actions and a Recent Activity feed (check-ins, deliveries, incidents).
+
+Register a Guest  ( /caretaker/register )
+  Same registration flow as the guard, for when the caretaker registers
+  a visitor directly.
+
+Visitors  ( /caretaker/visitors )
+  All visitors on site: search by name/phone/unit/ID, filter by type and
+  status, view full visitor details. "Add Visitor" opens registration.
+
+Tenants  ( /caretaker/tenants )
+  Add and manage tenants for units. Search + status filter (Active /
+  Moved out). Add/edit a tenant (with a "WhatsApp same as phone" option)
+  or move a tenant out (unit becomes vacant, history preserved).
+
+Blocks & Units  ( /caretaker/blocks )
+  Two tabs:
+    - Blocks: each block shows its unit count and a derived status
+      (Occupied / Partially Occupied / Vacant); "View Units" drills in.
+    - Units: grid of units by status; tap one to open the Unit Detail
+      popup — status, current tenant, change status (staged, saved on
+      "Save Changes"), block/floor info, and previous-tenant history.
+
+Deliveries  ( /caretaker/deliveries )
+  All delivery requests. Search + status chips (All/Received/Collected/
+  Held/Returned); mark collected, hold, or return.
+
+Incidents  ( /caretaker/incidents )
+  Track and resolve incidents: search, status filter, open one to change
+  its status or add a note.
+
+Staff  ( /caretaker/staff )
+  Read-only roster of the property's staff (created by the admin):
+  colour avatars, role, phone, active/inactive status, search + filters,
+  sort by name. Kebab menu copies a contact.
+
+Reports  ( /caretaker/reports )
+  Placeholder for upcoming visitor/delivery/incident/occupancy reports
+  with PDF & Excel export.
+
+Settings  ( /caretaker/settings )
+  Edit the property's contact details (primary contact, phone, email,
+  address).
+
+------------------------------------------------------------------------
+ PROPERTY MANAGER  ( /property )
+------------------------------------------------------------------------
+
+Same operational suite as the Caretaker, scoped to their property, plus
+the ability to remove staff. Views mirror the caretaker's:
+
+Home / Dashboard   ( /property )            — property overview dashboard.
+Register a Guest   ( /property/register )   — visitor registration flow.
+Visitors           ( /property/visitors )   — all visitors, search/filter.
+Tenants            ( /property/tenants )     — add/edit/move-out tenants.
+Blocks & Units     ( /property/units )       — blocks/units + unit detail.
+Deliveries         ( /property/deliveries )  — manage deliveries.
+Incidents          ( /property/incidents )   — track/resolve incidents.
+Staff              ( /property/staff )        — roster; the manager can
+                                               DELETE a staff member
+                                               (removes their account),
+                                               scoped to this property,
+                                               excluding admins/managers.
+Reports            ( /property/reports )      — reports (coming soon).
+
+------------------------------------------------------------------------
+ SUPER ADMIN  ( /admin )
+------------------------------------------------------------------------
+
+The platform owner's console — manages all properties and accounts.
+
+Dashboard          ( /admin )                — platform-wide overview.
+Properties         ( /admin/properties )     — list all properties.
+Add / Edit property( /admin/properties/new , /admin/properties/:id/edit )
+                                             — create or edit a property.
+Property detail    ( /admin/properties/:id ) — one property's blocks,
+                                               units and staff.
+Add block          ( /admin/properties/:id/blocks/new ) — add a block.
+Staff              ( /admin/staff , /admin/staff/new )
+                                             — create staff accounts
+                                               (guard/caretaker/manager),
+                                               assign role + property.
+Subscriptions      ( /admin/subscriptions )  — properties' billing plans.
+Leads              ( /admin/leads )           — demo-request leads from
+                                               the landing page.
+Reports            ( /admin/reports )         — cross-property reporting.
+Notifications      ( /admin/notifications )   — notification settings/log.
+Audit logs         ( /admin/audit-logs )      — immutable record of every
+                                               action (who did what,
+                                               when) across the platform.
+Settings           ( /admin/settings )        — platform-level settings.
+
+------------------------------------------------------------------------
+ CROSS-CUTTING PIECES
+------------------------------------------------------------------------
+
+Visitor Pass       — a QR pass generated after registration; the guest
+                     shows it at the gate. Encodes property + visitor id
+                     + validity.
+ID / Passport scan — optional camera capture on registration that reads
+                     a Kenyan National ID or passport and auto-fills the
+                     name + ID number for the guard to confirm.
+WhatsApp alerts    — residents are notified on visitor/delivery events so
+                     they can approve or deny access.
+Audit trail        — sensitive actions (staff created/deleted, tenant
+                     moved out, unit status changed, incident resolved,
+                     etc.) are logged for accountability.
+Roles & access     — every route is protected; users only ever see their
+                     own role's area.
+Online/Offline     — the app shows connection state and keeps working at
+                     the gate even on flaky signal.
+========================================================================
