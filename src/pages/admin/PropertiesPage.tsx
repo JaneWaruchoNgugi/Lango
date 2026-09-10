@@ -105,11 +105,13 @@ export default function PropertiesPage() {
               </div>
               <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-50">
                 <div className="text-center">
-                  <p className="text-sm font-bold text-gray-900">{prop.numberOfBlocks}</p>
+                  <p className="text-sm font-bold text-gray-900">{prop.numberOfBlocks ?? 0}</p>
                   <p className="text-xs text-gray-400">Blocks</p>
                 </div>
                 <div className="text-center border-x border-gray-100">
-                  <p className="text-sm font-bold text-gray-900">{prop.totalUnits}</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {prop.totalUnits && prop.totalUnits > 0 ? prop.totalUnits : '0 configured'}
+                  </p>
                   <p className="text-xs text-gray-400">Units</p>
                 </div>
                 <div className="text-center">
