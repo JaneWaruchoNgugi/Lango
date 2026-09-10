@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '../ui/Modal'
 import { deleteBlockCascade } from '../../services/blockService'
 import type { Block, Unit, AppUser } from '../../types'
@@ -15,6 +15,8 @@ interface Props {
 export function DeleteBlockDialog({ block, units, actor, onClose, onDeleted }: Props) {
   const [confirmText, setConfirmText] = useState('')
   const [busy, setBusy] = useState(false)
+  // Clear the typed confirmation when switching to a different block.
+  useEffect(() => { setConfirmText('') }, [block?.blockId])
   if (!block) return null
 
   const blockUnits = units.filter((u) => u.blockId === block.blockId)
