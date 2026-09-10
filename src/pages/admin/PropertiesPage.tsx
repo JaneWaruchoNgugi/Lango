@@ -110,7 +110,7 @@ export default function PropertiesPage() {
                 </div>
                 <div className="text-center border-x border-gray-100">
                   <p className="text-sm font-bold text-gray-900">
-                    {prop.totalUnits && prop.totalUnits > 0 ? prop.totalUnits : '0 configured'}
+                    {prop.totalUnits && prop.totalUnits > 0 ? prop.totalUnits : '—'}
                   </p>
                   <p className="text-xs text-gray-400">Units</p>
                 </div>
