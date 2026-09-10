@@ -25,22 +25,33 @@ export async function deleteBlockCascade(
     )
   }
 
-  // Delete units in chunks to respect the 500-write batch cap.
-  for (let i = 0; i < blockUnits.length; i += DELETE_CHUNK) {
+  // Fast path: everything fits in one atomic batch (448 unit deletes + block delete + property update ≤ 500 ops).
+  if (blockUnits.length <= 448) {
     const batch = writeBatch(db)
-    for (const u of blockUnits.slice(i, i + DELETE_CHUNK)) batch.delete(unitDoc(u.unitId))
+    for (const u of blockUnits) batch.delete(unitDoc(u.unitId))
+    batch.delete(blockDoc(block.blockId))
+    batch.update(propertyDoc(block.propertyId), {
+      numberOfBlocks: increment(-1),
+      totalUnits: increment(-blockUnits.length),
+      updatedAt: serverTimestamp(),
+    })
+    await batch.commit()
+  } else {
+    // Large block: chunk unit deletes, then delete block + fix counters in a final batch.
+    for (let i = 0; i < blockUnits.length; i += DELETE_CHUNK) {
+      const batch = writeBatch(db)
+      for (const u of blockUnits.slice(i, i + DELETE_CHUNK)) batch.delete(unitDoc(u.unitId))
+      await batch.commit()
+    }
+    const batch = writeBatch(db)
+    batch.delete(blockDoc(block.blockId))
+    batch.update(propertyDoc(block.propertyId), {
+      numberOfBlocks: increment(-1),
+      totalUnits: increment(-blockUnits.length),
+      updatedAt: serverTimestamp(),
+    })
     await batch.commit()
   }
-
-  // Final batch: delete the block and fix the property counters.
-  const batch = writeBatch(db)
-  batch.delete(blockDoc(block.blockId))
-  batch.update(propertyDoc(block.propertyId), {
-    numberOfBlocks: increment(-1),
-    totalUnits: increment(-blockUnits.length),
-    updatedAt: serverTimestamp(),
-  })
-  await batch.commit()
 
   await logAudit({
     actor,
