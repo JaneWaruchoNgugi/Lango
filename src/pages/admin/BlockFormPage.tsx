@@ -57,7 +57,7 @@ export default function BlockFormPage() {
       let unitsCreated = 0
       if (data.autoGenerateUnits && data.totalUnits > 0) {
         const numbers = generateUnitCodes({
-          prefix: data.prefix.trim(),
+          prefix: data.prefix.trim().toUpperCase(),
           start: 1,
           count: data.totalUnits,
           padding: Math.max(2, String(Math.max(data.totalUnits, 1)).length),
@@ -102,7 +102,7 @@ export default function BlockFormPage() {
 
   const preview = auto && count > 0
     ? generateUnitCodes({
-        prefix: prefix.trim(),
+        prefix: prefix.trim().toUpperCase(),
         start: 1,
         count: Math.min(count, 500),
         padding: Math.max(2, String(Math.min(count, 500)).length),
