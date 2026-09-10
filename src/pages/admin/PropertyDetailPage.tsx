@@ -6,7 +6,7 @@ import {
 import { db } from '../../firebase/config'
 import {
   ArrowLeft, Building2, MapPin, Pencil,
-  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard,
+  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard, Trash2,
 } from 'lucide-react'
 import { PropertyStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
@@ -17,7 +17,11 @@ import { SUBSCRIPTION_PLANS } from '../../types'
 import { useAuth } from '../../contexts/AuthContext'
 import { GenerateUnitsForm } from '../../components/units/GenerateUnitsForm'
 import { ManualUnitForm } from '../../components/units/ManualUnitForm'
+import { DeleteBlockDialog } from '../../components/units/DeleteBlockDialog'
 import { unitDisplayName, unitFloorLabel } from '../../domain/unitHelpers'
+import { ConfirmDialog } from '../../components/ui/Modal'
+import { deleteUnit } from '../../services/unitService'
+import toast from 'react-hot-toast'
 
 type TabId = 'overview' | 'blocks' | 'units' | 'staff' | 'visitors' | 'deliveries' | 'incidents' | 'subscription'
 
@@ -46,6 +50,9 @@ export default function PropertyDetailPage() {
   const [loading, setLoading]   = useState(true)
   const [addMode, setAddMode]   = useState<'generate' | 'manual' | null>(null)
   const [addBlockId, setAddBlockId] = useState<string>('')
+  const [blockToDelete, setBlockToDelete] = useState<Block | null>(null)
+  const [unitToDelete, setUnitToDelete]   = useState<Unit | null>(null)
+  const [deletingUnit, setDeletingUnit]   = useState(false)
 
   const reload = useCallback(async () => {
     if (!id) return
@@ -208,7 +215,16 @@ export default function PropertyDetailPage() {
                       <p className="font-medium text-gray-900 text-sm">{b.name}</p>
                       <p className="text-xs text-gray-500">{blockUnits.length} units · {occ} occupied</p>
                     </div>
-                    <span className={`badge ${b.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{b.status}</span>
+                    <div className="flex items-center gap-3">
+                      <span className={`badge ${b.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{b.status}</span>
+                      <button
+                        onClick={() => setBlockToDelete(b)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete block"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -260,7 +276,7 @@ export default function PropertyDetailPage() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Unit</th><th>Floor</th><th>Type</th><th>Block</th><th>Status</th><th>Tenant</th>
+                      <th>Unit</th><th>Floor</th><th>Type</th><th>Block</th><th>Status</th><th>Tenant</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -278,6 +294,21 @@ export default function PropertyDetailPage() {
                           }`}>{u.status}</span>
                         </td>
                         <td className="text-gray-500">{u.currentTenantName ?? '—'}</td>
+                        <td>
+                          {u.status === 'OCCUPIED' ? (
+                            <button className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed" title="Move the tenant out first" disabled>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUnitToDelete(u)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete unit"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -370,6 +401,37 @@ export default function PropertyDetailPage() {
           )}
         </div>
       )}
+
+      <DeleteBlockDialog
+        block={blockToDelete}
+        units={units}
+        actor={actor}
+        onClose={() => setBlockToDelete(null)}
+        onDeleted={() => { setBlockToDelete(null); reload() }}
+      />
+      <ConfirmDialog
+        isOpen={!!unitToDelete}
+        onClose={() => setUnitToDelete(null)}
+        onConfirm={async () => {
+          if (!unitToDelete) return
+          setDeletingUnit(true)
+          try {
+            await deleteUnit(unitToDelete, actor)
+            toast.success('Unit deleted')
+            setUnitToDelete(null)
+            reload()
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Failed to delete unit')
+          } finally {
+            setDeletingUnit(false)
+          }
+        }}
+        title="Delete unit"
+        message={unitToDelete ? `Delete unit ${unitDisplayName(unitToDelete)}? This cannot be undone.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deletingUnit}
+      />
 
       {tab === 'subscription' && (
         <div className="card p-6">
