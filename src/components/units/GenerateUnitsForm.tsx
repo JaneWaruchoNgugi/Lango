@@ -51,9 +51,9 @@ export function GenerateUnitsForm({ propertyId, blockId, blockName, actor, onCre
         <div><label className="label">Start #</label>
           <input className="input" type="number" value={start} onChange={(e) => setStart(Number(e.target.value))} /></div>
         <div><label className="label">Count</label>
-          <input className="input" type="number" value={count} onChange={(e) => setCount(Number(e.target.value))} /></div>
+          <input className="input" type="number" min="1" value={count} onChange={(e) => setCount(Number(e.target.value))} /></div>
         <div><label className="label">Leading zeros</label>
-          <input className="input" type="number" value={padding} onChange={(e) => setPadding(Number(e.target.value))} /></div>
+          <input className="input" type="number" min="0" value={padding} onChange={(e) => setPadding(Number(e.target.value))} /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Floor (optional)</label>
@@ -62,8 +62,10 @@ export function GenerateUnitsForm({ propertyId, blockId, blockName, actor, onCre
           <input className="input" value={unitType} onChange={(e) => setUnitType(e.target.value)} placeholder="e.g. 2 Bedroom" /></div>
       </div>
       <div className="rounded-lg border border-gray-200 bg-blue-50/40 p-3">
-        <p className="text-xs font-medium text-gray-600 mb-1">Preview ({preview.length})</p>
-        <p className="text-sm text-gray-800 break-words">{preview.slice(0, 30).join(', ')}{preview.length > 30 ? ' …' : ''}</p>
+        <p className="text-xs font-medium text-gray-600 mb-1">Preview ({preview.length}{count > 500 ? ' — capped at 500' : ''})</p>
+        {preview.length === 0
+          ? <p className="text-sm text-gray-500">Enter a count of 1 or more to preview unit codes.</p>
+          : <p className="text-sm text-gray-800 break-words">{preview.slice(0, 30).join(', ')}{preview.length > 30 ? ' …' : ''}</p>}
       </div>
       <button className="btn-primary" disabled={busy || preview.length === 0} onClick={submit}>
         {busy ? 'Creating…' : `Create ${preview.length} Units`}
