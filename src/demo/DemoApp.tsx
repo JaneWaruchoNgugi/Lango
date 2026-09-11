@@ -6,7 +6,7 @@ import DemoManagerDashboard from './pages/manager/DemoManagerDashboard'
 
 export default function DemoApp() {
   return (
-    <div className="h-screen">
+    <div className="h-screen overflow-y-auto">
       <Routes>
         <Route index element={<DemoEntry />} />
 

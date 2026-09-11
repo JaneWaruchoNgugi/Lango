@@ -20,17 +20,18 @@ const ACTIVITY_TINT: Record<DemoActivityKind, string> = {
 }
 
 export default function DemoManagerDashboard() {
-  const state = useDemoStore()
-  const inside = selectCurrentlyInside(state)
-  const open = selectOpenIncidents(state)
-  const visitorsToday = selectVisitorsToday(state)
-  const expected = selectExpectedToday(state)
+  const property = useDemoStore(s => s.property)
+  const activity = useDemoStore(s => s.activity)
+  const inside = useDemoStore(selectCurrentlyInside)
+  const open = useDemoStore(selectOpenIncidents)
+  const visitorsToday = useDemoStore(selectVisitorsToday)
+  const expected = useDemoStore(selectExpectedToday)
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Good afternoon, Mercy Njeri 👋</h1>
-        <p className="text-sm text-gray-500">{state.property.name} · {state.property.location}</p>
+        <p className="text-sm text-gray-500">{property.name} · {property.location}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -43,7 +44,7 @@ export default function DemoManagerDashboard() {
       <div className="card p-5">
         <h2 className="section-title">Recent Activity</h2>
         <div className="divide-y divide-gray-50">
-          {state.activity.map(a => {
+          {activity.map(a => {
             const Icon = ACTIVITY_ICON[a.kind]
             return (
               <div key={a.id} className="flex items-center gap-3 py-3">
