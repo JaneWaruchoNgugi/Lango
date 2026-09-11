@@ -1,17 +1,22 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { seed } from '../data/seed'
-import type { DemoRole, DemoState, DemoActivity } from '../data/types'
+import type { DemoRole, DemoState, DemoActivity, DemoVisitType } from '../data/types'
 
 // Fixed headline counts for the current demo day (independent of live INSIDE count).
 const VISITORS_TODAY = 8
 const EXPECTED_TODAY = 5
+const VISIT_PURPOSE: Record<DemoVisitType, string> = {
+  FRIENDLY_VISIT: 'Personal visit', WORK: 'Work', DELIVERY: 'Delivery', SERVICE_PROVIDER: 'Service provider',
+}
 
 export const selectCurrentlyInside = (s: DemoState): number => s.visitors.filter(v => v.status === 'INSIDE').length
 export const selectOpenIncidents = (s: DemoState): number => s.incidents.filter(i => i.status === 'OPEN').length
 export const selectVisitorsToday = (_s: DemoState): number => VISITORS_TODAY
 export const selectExpectedToday = (_s: DemoState): number => EXPECTED_TODAY
 export const selectVacantUnits = (s: DemoState) => s.units.filter(u => u.status === 'VACANT')
+export const selectPendingApprovals = (s: DemoState) => s.approvals
+export const selectInsideVisitors = (s: DemoState) => s.visitors.filter(v => v.status === 'INSIDE')
 
 interface DemoActions {
   setRole: (role: DemoRole) => void
@@ -19,6 +24,10 @@ interface DemoActions {
   resetDemo: () => void
   addTenant: (input: { name: string; phone: string; unitNumber: string }) => void
   updateTenant: (id: string, patch: { name?: string; phone?: string }) => void
+  registerVisitor: (input: { name: string; unitNumber: string; type: DemoVisitType }) => void
+  approveVisitor: (approvalId: string) => void
+  declineVisitor: (approvalId: string) => void
+  checkOutVisitor: (visitorId: string) => void
 }
 
 export type DemoStore = DemoState & DemoActions
@@ -42,6 +51,37 @@ export const useDemoStore = create<DemoStore>()(
         return {
           tenants: s.tenants.map(x => x.id === id ? { ...x, ...patch } : x),
           units: (patch.name && t) ? s.units.map(u => u.unitNumber === t.unitNumber ? { ...u, tenantName: patch.name! } : u) : s.units,
+        }
+      }),
+      registerVisitor: ({ name, unitNumber, type }) => set((s) => {
+        const uid = crypto.randomUUID()
+        return {
+          approvals: [...s.approvals, { id: `ap-${uid}`, visitorId: `v-${uid}`, visitorName: name, unitNumber, purpose: VISIT_PURPOSE[type], type }],
+          activity: [{ id: `act-${uid}`, kind: 'APPROVAL' as const, title: 'Visitor registered', subtitle: `${unitNumber} · ${name}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      approveVisitor: (approvalId) => set((s) => {
+        const a = s.approvals.find(x => x.id === approvalId)
+        if (!a) return {}
+        return {
+          approvals: s.approvals.filter(x => x.id !== approvalId),
+          visitors: [{ id: a.visitorId, name: a.visitorName, unitNumber: a.unitNumber, type: a.type, status: 'INSIDE' as const, checkInLabel: 'Just now' }, ...s.visitors],
+          activity: [{ id: `act-${a.visitorId}`, kind: 'CHECK_IN' as const, title: `${a.visitorName} checked in`, subtitle: `${a.unitNumber} · ${a.purpose}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      declineVisitor: (approvalId) => set((s) => {
+        const a = s.approvals.find(x => x.id === approvalId)
+        if (!a) return {}
+        return {
+          approvals: s.approvals.filter(x => x.id !== approvalId),
+          activity: [{ id: `act-dec-${a.id}`, kind: 'CHECK_OUT' as const, title: `${a.visitorName}'s entry declined`, subtitle: a.unitNumber, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      checkOutVisitor: (visitorId) => set((s) => {
+        const v = s.visitors.find(x => x.id === visitorId)
+        return {
+          visitors: s.visitors.map(x => x.id === visitorId ? { ...x, status: 'CHECKED_OUT' as const } : x),
+          activity: v ? [{ id: `act-out-${visitorId}`, kind: 'CHECK_OUT' as const, title: `${v.name} checked out`, subtitle: v.unitNumber, timeLabel: 'Just now' }, ...s.activity] : s.activity,
         }
       }),
       resetDemo: () => set({ ...seed(), role: get().role }),

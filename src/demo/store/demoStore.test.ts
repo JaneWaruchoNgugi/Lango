@@ -73,3 +73,49 @@ describe('demo store tenant mutations', () => {
     expect(s1.units.find(u => u.unitNumber === 'A-101')!.tenantName).toBe('Renamed Person')
   })
 })
+
+import { selectInsideVisitors, selectPendingApprovals } from './demoStore'
+
+describe('demo store visitor lifecycle', () => {
+  beforeEach(() => { useDemoStore.getState().resetDemo() })
+
+  it('registerVisitor adds an approval and a "Visitor registered" activity, no inside visitor', () => {
+    const insideBefore = selectCurrentlyInside(useDemoStore.getState())
+    const apBefore = selectPendingApprovals(useDemoStore.getState()).length
+    useDemoStore.getState().registerVisitor({ name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' })
+    const s = useDemoStore.getState()
+    expect(selectPendingApprovals(s)).toHaveLength(apBefore + 1)
+    expect(selectCurrentlyInside(s)).toBe(insideBefore)
+    expect(s.activity[0].title).toBe('Visitor registered')
+  })
+
+  it('approveVisitor moves the visitor inside and removes the approval', () => {
+    useDemoStore.getState().registerVisitor({ name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' })
+    const ap = selectPendingApprovals(useDemoStore.getState()).find(a => a.visitorName === 'Brian Ochieng')!
+    const insideBefore = selectCurrentlyInside(useDemoStore.getState())
+    useDemoStore.getState().approveVisitor(ap.id)
+    const s = useDemoStore.getState()
+    expect(selectPendingApprovals(s).some(a => a.id === ap.id)).toBe(false)
+    expect(selectCurrentlyInside(s)).toBe(insideBefore + 1)
+    expect(selectInsideVisitors(s).some(v => v.name === 'Brian Ochieng')).toBe(true)
+    expect(s.activity[0].title).toBe('Brian Ochieng checked in')
+  })
+
+  it('declineVisitor removes the approval without adding an inside visitor', () => {
+    const ap = selectPendingApprovals(useDemoStore.getState())[0]
+    const insideBefore = selectCurrentlyInside(useDemoStore.getState())
+    useDemoStore.getState().declineVisitor(ap.id)
+    const s = useDemoStore.getState()
+    expect(selectPendingApprovals(s).some(a => a.id === ap.id)).toBe(false)
+    expect(selectCurrentlyInside(s)).toBe(insideBefore)
+  })
+
+  it('checkOutVisitor lowers the inside count and marks CHECKED_OUT', () => {
+    const inside = selectInsideVisitors(useDemoStore.getState())[0]
+    const insideBefore = selectCurrentlyInside(useDemoStore.getState())
+    useDemoStore.getState().checkOutVisitor(inside.id)
+    const s = useDemoStore.getState()
+    expect(selectCurrentlyInside(s)).toBe(insideBefore - 1)
+    expect(s.visitors.find(v => v.id === inside.id)!.status).toBe('CHECKED_OUT')
+  })
+})
