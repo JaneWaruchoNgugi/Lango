@@ -93,7 +93,7 @@ export function seed(): DemoState {
       { staffId: 's-2', status: 'OFF', startedLabel: null },
     ],
     approvals: [
-      { id: 'ap-1', visitorId: 'v-pending-1', visitorName: 'James Mwangi', unitNumber: 'A-204', purpose: 'Personal visit' },
+      { id: 'ap-1', visitorId: 'v-pending-1', visitorName: 'Cynthia Wairimu', unitNumber: 'D-102', purpose: 'Personal visit', type: 'FRIENDLY_VISIT' },
     ],
   }
 }

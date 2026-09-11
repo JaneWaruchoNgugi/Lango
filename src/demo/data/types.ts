@@ -22,7 +22,7 @@ export interface DemoIncident { id: string; type: string; location: string; repo
 export interface DemoStaff { id: string; name: string; role: string; status: DemoStaffStatus }
 export interface DemoActivity { id: string; kind: DemoActivityKind; title: string; subtitle: string; timeLabel: string }
 export interface DemoShift { staffId: string; status: DemoShiftStatus; startedLabel: string | null }
-export interface DemoApproval { id: string; visitorId: string; visitorName: string; unitNumber: string; purpose: string }
+export interface DemoApproval { id: string; visitorId: string; visitorName: string; unitNumber: string; purpose: string; type: DemoVisitType }
 
 export interface DemoState {
   role: DemoRole | null
