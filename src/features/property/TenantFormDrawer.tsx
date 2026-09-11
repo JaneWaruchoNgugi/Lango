@@ -7,6 +7,7 @@ import { Spinner } from '../../components/ui/LoadingScreen'
 import { assignTenantToUnit, updateTenant } from '../../services/tenantService'
 import type { AppUser, Tenant, Unit } from '../../types'
 import toast from 'react-hot-toast'
+import { tsToInputDate, inputDateToDate } from '../../utils/format'
 
 const schema = z.object({
   fullName: z.string().min(2, 'Name required'),
@@ -14,6 +15,7 @@ const schema = z.object({
   whatsappNumber: z.string().optional().or(z.literal('')),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   nationalId: z.string().optional().or(z.literal('')),
+  moveInDate: z.string().min(1, 'Move-in date required'),
   notes: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
@@ -52,21 +54,22 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: editing
-      ? { fullName: editing.fullName, phoneNumber: editing.phoneNumber, whatsappNumber: editing.whatsappNumber, email: editing.email ?? '', nationalId: editing.nationalId ?? '', notes: editing.notes ?? '' }
-      : {},
+      ? { fullName: editing.fullName, phoneNumber: editing.phoneNumber, whatsappNumber: editing.whatsappNumber, email: editing.email ?? '', nationalId: editing.nationalId ?? '', moveInDate: tsToInputDate(editing.moveInDate), notes: editing.notes ?? '' }
+      : { moveInDate: tsToInputDate(new Date()) },
   })
 
   const submit = async (d: FormData) => {
     setBusy(true)
     try {
       const whatsappNumber = sameWhatsapp ? d.phoneNumber : (d.whatsappNumber || d.phoneNumber)
+      const moveInDate = inputDateToDate(d.moveInDate)
       if (editing) {
-        await updateTenant(editing, { fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, notes: d.notes }, actor)
+        await updateTenant(editing, { fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, notes: d.notes, moveInDate }, actor)
         toast.success('Tenant updated')
       } else {
         const unit = vacantUnits.find(u => u.unitId === unitId)
         if (!unit) { toast.error('Select a vacant unit'); setBusy(false); return }
-        await assignTenantToUnit({ propertyId, actor, unit, fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, moveInDate: new Date(), notes: d.notes })
+        await assignTenantToUnit({ propertyId, actor, unit, fullName: d.fullName, phoneNumber: d.phoneNumber, whatsappNumber, email: d.email, nationalId: d.nationalId, moveInDate, notes: d.notes })
         toast.success('Tenant added')
       }
       onDone(); onClose(); form.reset(); setUnitId(''); setBlockId('')
@@ -107,6 +110,7 @@ export function TenantFormDrawer({ isOpen, onClose, onDone, actor, propertyId, v
           <div><label className="label">Email</label><input className="input" {...form.register('email')} />{form.formState.errors.email && <p className="form-error">{form.formState.errors.email.message}</p>}</div>
           <div><label className="label">National ID</label><input className="input" {...form.register('nationalId')} /></div>
         </div>
+        <div><label className="label">Move-in date *</label><input type="date" className="input" {...form.register('moveInDate')} />{form.formState.errors.moveInDate && <p className="form-error">{form.formState.errors.moveInDate.message}</p>}</div>
         <div><label className="label">Notes</label><textarea rows={2} className="input resize-none" {...form.register('notes')} /></div>
         <button type="submit" disabled={busy} className="btn-primary w-full py-2.5">{busy && <Spinner size="sm" className="text-white" />}{editing ? 'Save changes' : 'Add tenant'}</button>
       </form>
