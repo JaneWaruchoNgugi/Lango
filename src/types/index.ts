@@ -219,6 +219,8 @@ export interface OccupancyRecord {
 // VISITOR
 // ============================================================
 
+export type VehicleType = 'CAR' | 'MOTORBIKE' | 'VAN' | 'TRUCK' | 'OTHER'
+
 export interface Visitor {
   visitorId: string
   propertyId: string
@@ -253,6 +255,10 @@ export interface Visitor {
   expectedDurationMins?: number // WORK / SERVICE_PROVIDER
   appointment?: 'SCHEDULED' | 'UNSCHEDULED' // SERVICE_PROVIDER
   vehicleRegistration?: string  // any type — vehicle plate
+  vehicleType?: VehicleType | null   // complements the plate
+  vehicleDescription?: string        // make / colour, e.g. "white Toyota"
+  gatePassNumber?: string            // physical badge/pass handed over at entry
+  itemsBroughtIn?: string            // notable tools/equipment, checked on exit
   numberOfVisitors?: number     // FRIENDLY_VISIT — party size
   registeredBy: string          // authed guard uid — asserted by rules
   registeredByRole: 'SECURITY_GUARD'
@@ -308,6 +314,9 @@ export interface Delivery {
   deliveryType?: string     // Food, Parcel, Groceries, etc.
   trackingNumber?: string   // courier tracking / order number
   vehicleRegistration?: string
+  vehicleType?: VehicleType | null
+  vehicleDescription?: string
+  gatePassNumber?: string
   packageDescription?: string
   photoUrl?: string
   status: DeliveryStatus
