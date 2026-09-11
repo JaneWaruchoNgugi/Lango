@@ -29,11 +29,14 @@ export const useDemoStore = create<DemoStore>()(
       ...seed(),
       setRole: (role) => set({ role }),
       addActivity: (entry) => set({ activity: [entry, ...get().activity] }),
-      addTenant: ({ name, phone, unitNumber }) => set((s) => ({
-        tenants: [...s.tenants, { id: `t-${unitNumber}`, name, unitNumber, phone }],
-        units: s.units.map(u => u.unitNumber === unitNumber ? { ...u, status: 'OCCUPIED' as const, tenantName: name } : u),
-        activity: [{ id: `act-${unitNumber}`, kind: 'APPROVAL' as const, title: 'Tenant added', subtitle: `${unitNumber} · ${name}`, timeLabel: 'Just now' }, ...s.activity],
-      })),
+      addTenant: ({ name, phone, unitNumber }) => set((s) => {
+        const uid = crypto.randomUUID()
+        return {
+          tenants: [...s.tenants, { id: `t-${uid}`, name, unitNumber, phone }],
+          units: s.units.map(u => u.unitNumber === unitNumber ? { ...u, status: 'OCCUPIED' as const, tenantName: name } : u),
+          activity: [{ id: `act-${uid}`, kind: 'APPROVAL' as const, title: 'Tenant added', subtitle: `${unitNumber} · ${name}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
       updateTenant: (id, patch) => set((s) => {
         const t = s.tenants.find(x => x.id === id)
         return {
