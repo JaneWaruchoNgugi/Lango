@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore'
 import { visitorsCol } from '../firebase/collections'
 import { db } from '../firebase/config'
-import type { AppUser, Visitor, VisitType } from '../types'
+import type { AppUser, Visitor, VisitType, VehicleType } from '../types'
 import { logAudit } from './auditService'
 import { durationMinutes } from '../utils/format'
 
@@ -28,6 +28,10 @@ export interface RegisterVisitorArgs {
   expectedDurationMins?: number
   appointment?: 'SCHEDULED' | 'UNSCHEDULED'
   vehicleRegistration?: string
+  vehicleType?: VehicleType
+  vehicleDescription?: string
+  gatePassNumber?: string
+  itemsBroughtIn?: string
   numberOfVisitors?: number
   notes?: string
 }
@@ -53,6 +57,10 @@ export async function registerVisitor(a: RegisterVisitorArgs): Promise<string> {
     expectedDurationMins: a.expectedDurationMins ?? null,
     appointment: a.appointment ?? null,
     vehicleRegistration: a.vehicleRegistration ?? '',
+    vehicleType: a.vehicleType ?? null,
+    vehicleDescription: a.vehicleDescription ?? '',
+    gatePassNumber: a.gatePassNumber ?? '',
+    itemsBroughtIn: a.itemsBroughtIn ?? '',
     numberOfVisitors: a.numberOfVisitors ?? null,
     status: 'INSIDE',
     checkInTime: serverTimestamp(), checkOutTime: null, durationMinutes: null,

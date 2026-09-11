@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore'
 import { deliveriesCol } from '../firebase/collections'
 import { db } from '../firebase/config'
-import type { AppUser, Delivery, DeliveryStatus } from '../types'
+import type { AppUser, Delivery, DeliveryStatus, VehicleType } from '../types'
 import { logAudit } from './auditService'
 
 export interface RegisterDeliveryArgs {
@@ -21,6 +21,9 @@ export interface RegisterDeliveryArgs {
   deliveryType?: string
   trackingNumber?: string
   vehicleRegistration?: string
+  vehicleType?: VehicleType
+  vehicleDescription?: string
+  gatePassNumber?: string
   packageDescription?: string
   photoUrl?: string
   notes?: string
@@ -38,6 +41,9 @@ export async function registerDelivery(a: RegisterDeliveryArgs): Promise<string>
     riderIdNumber: a.riderIdNumber ?? '',
     deliveryType: a.deliveryType ?? '', trackingNumber: a.trackingNumber ?? '',
     vehicleRegistration: a.vehicleRegistration ?? '',
+    vehicleType: a.vehicleType ?? null,
+    vehicleDescription: a.vehicleDescription ?? '',
+    gatePassNumber: a.gatePassNumber ?? '',
     packageDescription: a.packageDescription ?? '', photoUrl: a.photoUrl ?? '',
     status: 'RECEIVED', receivedAt: serverTimestamp(), collectedAt: null,
     notificationSent: false, notes: a.notes ?? '',
