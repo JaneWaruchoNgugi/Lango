@@ -11,11 +11,14 @@ export const selectCurrentlyInside = (s: DemoState): number => s.visitors.filter
 export const selectOpenIncidents = (s: DemoState): number => s.incidents.filter(i => i.status === 'OPEN').length
 export const selectVisitorsToday = (_s: DemoState): number => VISITORS_TODAY
 export const selectExpectedToday = (_s: DemoState): number => EXPECTED_TODAY
+export const selectVacantUnits = (s: DemoState) => s.units.filter(u => u.status === 'VACANT')
 
 interface DemoActions {
   setRole: (role: DemoRole) => void
   addActivity: (entry: DemoActivity) => void
   resetDemo: () => void
+  addTenant: (input: { name: string; phone: string; unitNumber: string }) => void
+  updateTenant: (id: string, patch: { name?: string; phone?: string }) => void
 }
 
 export type DemoStore = DemoState & DemoActions
@@ -26,6 +29,18 @@ export const useDemoStore = create<DemoStore>()(
       ...seed(),
       setRole: (role) => set({ role }),
       addActivity: (entry) => set({ activity: [entry, ...get().activity] }),
+      addTenant: ({ name, phone, unitNumber }) => set((s) => ({
+        tenants: [...s.tenants, { id: `t-${unitNumber}`, name, unitNumber, phone }],
+        units: s.units.map(u => u.unitNumber === unitNumber ? { ...u, status: 'OCCUPIED' as const, tenantName: name } : u),
+        activity: [{ id: `act-${unitNumber}`, kind: 'APPROVAL' as const, title: 'Tenant added', subtitle: `${unitNumber} · ${name}`, timeLabel: 'Just now' }, ...s.activity],
+      })),
+      updateTenant: (id, patch) => set((s) => {
+        const t = s.tenants.find(x => x.id === id)
+        return {
+          tenants: s.tenants.map(x => x.id === id ? { ...x, ...patch } : x),
+          units: (patch.name && t) ? s.units.map(u => u.unitNumber === t.unitNumber ? { ...u, tenantName: patch.name! } : u) : s.units,
+        }
+      }),
       resetDemo: () => set({ ...seed(), role: get().role }),
     }),
     {
