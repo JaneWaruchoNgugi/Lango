@@ -10,18 +10,18 @@ import { MoveOutDialog } from './MoveOutDialog'
 import { TenantDetailDrawer } from './TenantDetailDrawer'
 import { formatMonthYear } from '../../utils/format'
 import { TenantFormDrawer } from './TenantFormDrawer'
-import { Users, Plus, Search, Home, User, Filter, AlertTriangle } from 'lucide-react'
+import { Users, Plus, Search, Home, User, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Tenant } from '../../types'
 
-type StatusFilter = 'ACTIVE' | 'MOVED_OUT' | 'ALL'
+type Tab = 'ACTIVE' | 'MOVED_OUT'
 
 export default function TenantsPage() {
   const { user } = useAuth()
   const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Caretaker', role: user?.role ?? 'CARETAKER' as const }
   const canManage = canManageTenants(user?.role)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE')
-  const { tenants, loading, error, reload } = useTenants(user?.propertyId, statusFilter === 'ACTIVE' ? 'ACTIVE' : undefined)
+  const [tab, setTab] = useState<Tab>('ACTIVE')
+  const { tenants, loading, error, reload } = useTenants(user?.propertyId)
   const { units, reload: reloadUnits } = useUnitsWithTenants(user?.propertyId)
   const [term, setTerm] = useState('')
   const [drawer, setDrawer] = useState<{ open: boolean; editing: Tenant | null }>({ open: false, editing: null })
@@ -30,10 +30,11 @@ export default function TenantsPage() {
   const [busy, setBusy] = useState(false)
 
   const vacantUnits = useMemo(() => units.filter(u => u.status === 'VACANT'), [units])
-  const shown = useMemo(() => {
-    const list = filterTenants(tenants, term)
-    return statusFilter === 'MOVED_OUT' ? list.filter(t => t.status === 'MOVED_OUT') : list
-  }, [tenants, term, statusFilter])
+  const activeTenants = useMemo(() => tenants.filter(t => t.status === 'ACTIVE'), [tenants])
+  const movedOutTenants = useMemo(() => tenants.filter(t => t.status === 'MOVED_OUT'), [tenants])
+  const shown = useMemo(
+    () => filterTenants(tab === 'ACTIVE' ? activeTenants : movedOutTenants, term),
+    [tab, activeTenants, movedOutTenants, term])
 
   const doMoveOut = async (t: Tenant, moveOutDate: Date) => {
     setBusy(true)
@@ -55,22 +56,28 @@ export default function TenantsPage() {
         {canManage && <button className="btn-primary" onClick={openAdd}><Plus className="w-4 h-4" /> Add Tenant</button>}
       </div>
 
-      {/* Search + filters */}
-      <div className="flex gap-2 flex-col sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className="input pl-9" placeholder="Search by name, phone, unit or ID…" value={term} onChange={e => setTerm(e.target.value)} />
-        </div>
-        <div className="flex gap-2">
-          <select className="input sm:w-40" value={statusFilter} onChange={e => setStatusFilter(e.target.value as StatusFilter)}>
-            <option value="ACTIVE">Active</option>
-            <option value="MOVED_OUT">Moved out</option>
-            <option value="ALL">All statuses</option>
-          </select>
-          <button className="btn-secondary shrink-0" title="Reset filters" onClick={() => { setTerm(''); setStatusFilter('ACTIVE') }}>
-            <Filter className="w-4 h-4" /> <span className="hidden sm:inline">Filters</span>
-          </button>
-        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input className="input pl-9" placeholder="Search by name, phone, unit or ID…" value={term} onChange={e => setTerm(e.target.value)} />
+      </div>
+
+      {/* Status tabs */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
+        {([['ACTIVE', 'Active', activeTenants.length], ['MOVED_OUT', 'Moved out', movedOutTenants.length]] as const).map(([key, label, count]) => {
+          const selected = tab === key
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${selected ? 'bg-white text-lango-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {label}
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${selected ? 'bg-lango-primary/10 text-lango-primary' : 'bg-gray-200 text-gray-500'}`}>{count}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
@@ -90,9 +97,9 @@ export default function TenantsPage() {
             <Home className="absolute top-6 right-7 w-6 h-6 text-lango-primary/40" />
             <div className="absolute bottom-5 right-6 w-7 h-7 rounded-full bg-lango-primary flex items-center justify-center ring-4 ring-white"><Plus className="w-4 h-4 text-white" /></div>
           </div>
-          <h3 className="font-bold text-gray-900">No tenants</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-xs">Add a tenant to a vacant unit.</p>
-          {canManage && <button className="btn-primary mt-5" onClick={openAdd}><Plus className="w-4 h-4" /> Add Tenant</button>}
+          <h3 className="font-bold text-gray-900">{tab === 'MOVED_OUT' ? 'No moved-out tenants' : term ? 'No matches' : 'No tenants'}</h3>
+          <p className="text-sm text-gray-500 mt-1 max-w-xs">{tab === 'MOVED_OUT' ? 'Tenants you move out will appear here.' : term ? 'Try a different search.' : 'Add a tenant to a vacant unit.'}</p>
+          {canManage && tab === 'ACTIVE' && !term && <button className="btn-primary mt-5" onClick={openAdd}><Plus className="w-4 h-4" /> Add Tenant</button>}
         </div>
       ) : (
         <div className="card divide-y divide-gray-50">
