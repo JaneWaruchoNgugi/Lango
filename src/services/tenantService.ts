@@ -90,21 +90,25 @@ export async function updateTenant(tenant: Tenant, patch: UpdateTenantPatch, act
   })
 }
 
-/** Moves a tenant out: tenant→MOVED_OUT, unit→VACANT, close the open occupancy — atomically. Never deletes. */
-export async function moveOutTenant(tenant: Tenant, actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<void> {
+/** Moves a tenant out on `moveOutDate`: tenant→MOVED_OUT, unit→VACANT, close the open occupancy — atomically. Never deletes. */
+export async function moveOutTenant(tenant: Tenant, actor: Pick<AppUser, 'uid' | 'name' | 'role'>, moveOutDate: Date): Promise<void> {
+  if (moveOutDate.getTime() < tenant.moveInDate.toDate().getTime()) {
+    throw new Error('Vacate date cannot be before the move-in date.')
+  }
+  const moveOutTs = Timestamp.fromDate(moveOutDate)
   // Find the open occupancy via the indexed propertyId+unitId pair, then match tenant + null moveOut in code.
   const occSnap = await getDocs(query(occupanciesCol,
     where('propertyId', '==', tenant.propertyId), where('unitId', '==', tenant.unitId)))
   const batch = writeBatch(db)
   batch.update(tenantDoc(tenant.tenantId), {
-    status: 'MOVED_OUT', moveOutDate: serverTimestamp(), updatedAt: serverTimestamp(),
+    status: 'MOVED_OUT', moveOutDate: moveOutTs, updatedAt: serverTimestamp(),
   })
   batch.update(doc(unitsCol, tenant.unitId), {
     status: 'VACANT', currentTenantId: null, currentTenantName: null, updatedAt: serverTimestamp(),
   })
   occSnap.docs
     .filter(d => { const data = d.data(); return data.tenantId === tenant.tenantId && data.moveOutDate === null })
-    .forEach(d => batch.update(d.ref, { moveOutDate: serverTimestamp() }))
+    .forEach(d => batch.update(d.ref, { moveOutDate: moveOutTs }))
   await batch.commit()
   await logAudit({
     actor, propertyId: tenant.propertyId, action: 'TENANT_MOVED_OUT',
