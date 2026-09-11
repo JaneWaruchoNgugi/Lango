@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, ArrowRight, ChevronRight, CheckCircle, ShieldCheck, Building2,
   User, Phone, CreditCard, Car, Users, Home, Wrench, Clock, Package, Hash,
-  Briefcase, Minus, Plus, CalendarClock, type LucideIcon,
+  Briefcase, Minus, Plus, CalendarClock, Ticket, Boxes, type LucideIcon,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -32,6 +32,7 @@ type DoneResult = {
   id: string; name: string; type: VisitType; subtitle: string
   visiting: string; vehicle?: string; validUntil: string; arrival: string
   phone: string; idNumber?: string; duration?: string; qrValue: string; passId: string
+  gatePass?: string
 }
 
 const PURPOSES: { value: VisitType; icon: LucideIcon; label: string; hint: string }[] = [
@@ -128,6 +129,9 @@ export default function RegisterGuestPage() {
           tenantId: visiting.tenantId, tenantName: visiting.tenantName,
           deliveryType: data.deliveryType || undefined, trackingNumber: data.trackingNumber || undefined,
           vehicleRegistration: data.vehicleRegistration || undefined,
+          vehicleType: data.vehicleType || undefined,
+          vehicleDescription: data.vehicleDescription || undefined,
+          gatePassNumber: data.gatePassNumber || undefined,
           packageDescription: data.packageDescription, photoUrl, notes: data.notes,
         })
         await bumpShiftCounter(shift?.shiftId ?? '', 'deliveriesRegistered')
@@ -137,6 +141,10 @@ export default function RegisterGuestPage() {
           propertyId, guard: actor, shiftId: shift?.shiftId, visitType: data.visitType,
           visitorName: data.visitorName, phone: data.phone, idNumber: data.idNumber || undefined, nationality: data.nationality || undefined, photoUrl,
           vehicleRegistration: data.vehicleRegistration || undefined,
+          vehicleType: data.vehicleType || undefined,
+          vehicleDescription: data.vehicleDescription || undefined,
+          gatePassNumber: data.gatePassNumber || undefined,
+          itemsBroughtIn: data.itemsBroughtIn || undefined,
           blockId: visiting.blockId, blockName: visiting.blockName, unitId: visiting.unitId, unitNumber: visiting.unitNumber,
           tenantId: visiting.tenantId, tenantName: visiting.tenantName,
           reason: data.visitType === 'FRIENDLY_VISIT' ? data.reason : undefined,
@@ -166,6 +174,7 @@ export default function RegisterGuestPage() {
       setDone({
         id, name: data.visitorName, type: data.visitType, subtitle,
         visiting: visitingLabel, vehicle: data.vehicleRegistration || undefined,
+        gatePass: data.gatePassNumber || undefined,
         phone: data.phone, idNumber: data.idNumber || undefined,
         arrival: format(now, 'h:mm a'),
         duration: 'expectedDurationMins' in data && data.expectedDurationMins ? `${Math.round(data.expectedDurationMins / 60)} hour${data.expectedDurationMins >= 120 ? 's' : ''}` : undefined,
@@ -274,6 +283,7 @@ export default function RegisterGuestPage() {
             <SummaryRow icon={Head} label="Visit Type" value={done.subtitle} />
             <SummaryRow icon={Home} label="Visiting" value={done.visiting} />
             {done.vehicle && <SummaryRow icon={Car} label="Vehicle" value={done.vehicle} />}
+            {done.gatePass && <SummaryRow icon={Ticket} label="Gate Pass" value={done.gatePass} />}
             <SummaryRow icon={Clock} label="Expected Arrival" value={done.arrival} />
             {done.duration && <SummaryRow icon={Clock} label="Expected Duration" value={done.duration} />}
           </div>
@@ -411,10 +421,35 @@ export default function RegisterGuestPage() {
               )}
             </div>
 
-            {(visitType === 'DELIVERY' || visitType === 'SERVICE_PROVIDER' || visitType === 'FRIENDLY_VISIT') && (
+            <Field icon={Ticket} label="Gate Pass / Badge No.">
+              <input className="input" placeholder="Optional" {...form.register('gatePassNumber')} />
+            </Field>
+
+            <div className="md:col-span-2 grid md:grid-cols-3 gap-x-5 gap-y-4">
               <Field icon={Car} label="Vehicle Registration">
                 <input className="input" placeholder="Optional" {...form.register('vehicleRegistration')} />
               </Field>
+              <Field icon={Car} label="Vehicle Type">
+                <select className="input" {...form.register('vehicleType')}>
+                  <option value="">—</option>
+                  <option value="CAR">Car</option>
+                  <option value="MOTORBIKE">Motorbike</option>
+                  <option value="VAN">Van</option>
+                  <option value="TRUCK">Truck</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </Field>
+              <Field icon={Car} label="Make & Colour">
+                <input className="input" placeholder="e.g. white Toyota" {...form.register('vehicleDescription')} />
+              </Field>
+            </div>
+
+            {visitType !== 'DELIVERY' && (
+              <div className="md:col-span-2">
+                <Field icon={Boxes} label={visitType === 'WORK' ? 'Tools / equipment brought in (checked on exit)' : 'Items brought in (checked on exit)'}>
+                  <textarea rows={2} className="input resize-none" placeholder="Optional" {...form.register('itemsBroughtIn')} />
+                </Field>
+              </div>
             )}
 
             {(visitType === 'WORK' || visitType === 'SERVICE_PROVIDER') && <div className="md:col-span-2">{durationField}</div>}
