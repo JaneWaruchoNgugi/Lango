@@ -1,6 +1,6 @@
 import {
   getDocs, query, where, orderBy,
-  updateDoc, writeBatch, doc, serverTimestamp, Timestamp,
+  writeBatch, doc, serverTimestamp, Timestamp,
 } from 'firebase/firestore'
 import { tenantsCol, unitsCol, occupanciesCol, tenantDoc } from '../firebase/collections'
 import { db } from '../firebase/config'
@@ -80,10 +80,27 @@ export async function assignTenantToUnit(a: AssignTenantArgs): Promise<string> {
 export interface UpdateTenantPatch {
   fullName?: string; phoneNumber?: string; whatsappNumber?: string
   email?: string; nationalId?: string; notes?: string
+  moveInDate?: Date
 }
 
 export async function updateTenant(tenant: Tenant, patch: UpdateTenantPatch, actor: Pick<AppUser, 'uid' | 'name' | 'role'>): Promise<void> {
-  await updateDoc(tenantDoc(tenant.tenantId), { ...patch, updatedAt: serverTimestamp() })
+  const { moveInDate, ...rest } = patch
+  const batch = writeBatch(db)
+  const tenantPatch: Record<string, unknown> = { ...rest, updatedAt: serverTimestamp() }
+  if (moveInDate) {
+    const moveInTs = Timestamp.fromDate(moveInDate)
+    tenantPatch.moveInDate = moveInTs
+    // Keep the still-open occupancy record's move-in date consistent with the tenant.
+    if (tenant.status === 'ACTIVE') {
+      const occSnap = await getDocs(query(occupanciesCol,
+        where('propertyId', '==', tenant.propertyId), where('unitId', '==', tenant.unitId)))
+      occSnap.docs
+        .filter(d => { const data = d.data(); return data.tenantId === tenant.tenantId && data.moveOutDate === null })
+        .forEach(d => batch.update(d.ref, { moveInDate: moveInTs }))
+    }
+  }
+  batch.update(tenantDoc(tenant.tenantId), tenantPatch)
+  await batch.commit()
   await logAudit({
     actor, propertyId: tenant.propertyId, action: 'TENANT_UPDATED',
     entityType: 'tenant', entityId: tenant.tenantId, description: `Updated ${tenant.fullName}`,
