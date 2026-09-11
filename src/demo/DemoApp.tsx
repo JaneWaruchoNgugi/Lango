@@ -6,6 +6,7 @@ import DemoManagerDashboard from './pages/manager/DemoManagerDashboard'
 import DemoTenantsPage from './pages/manager/DemoTenantsPage'
 import DemoUnitsPage from './pages/manager/DemoUnitsPage'
 import DemoStaffPage from './pages/manager/DemoStaffPage'
+import DemoVisitorsPage from './pages/manager/DemoVisitorsPage'
 
 export default function DemoApp() {
   return (
@@ -15,6 +16,7 @@ export default function DemoApp() {
 
         <Route path="manager" element={<DemoShell role="MANAGER" />}>
           <Route index element={<DemoManagerDashboard />} />
+          <Route path="visitors" element={<DemoVisitorsPage />} />
           <Route path="tenants" element={<DemoTenantsPage />} />
           <Route path="units" element={<DemoUnitsPage />} />
           <Route path="staff" element={<DemoStaffPage />} />
