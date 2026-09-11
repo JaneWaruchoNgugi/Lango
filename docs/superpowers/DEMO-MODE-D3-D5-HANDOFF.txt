@@ -1,0 +1,192 @@
+================================================================================
+ LANGO INTERACTIVE DEMO MODE — HANDOFF FOR D3, D4, D5
+ Written: 2026-09-11   Branch: feat/demo-mode
+================================================================================
+
+PURPOSE
+  A polished, sales-focused, fully-isolated "Demo Mode" that lets prospects
+  experience Lango with seeded fictional data (Greenview Apartments, Nairobi;
+  PM = Mercy Njeri). Nothing touches Firebase/auth/production data.
+
+--------------------------------------------------------------------------------
+ WHERE WE ARE (done so far)
+--------------------------------------------------------------------------------
+  D0  DONE (pushed)        Foundation: zustand store, /demo/* routing outside
+                           auth, role-select entry, DEMO banner (Reset / role
+                           switch / Exit), DemoShell (wraps AppShell), PM
+                           dashboard, landing "Explore Interactive Demo" CTA.
+  D1  DONE (committed,     PM read views: Tenants (with add/edit), Blocks &
+      NOT pushed)          Units (unit-detail modal w/ prev tenants + activity),
+                           Staff. Reconciled units to floor-based A-101..A-604.
+  D2  DONE (committed,     Interactive visitor journey: store lifecycle actions
+      NOT pushed)          + DemoVisitorsPage (scripted + form register,
+                           approve/decline, Currently-Inside checkout) +
+                           reusable DemoCurrentlyInside. Route /demo/manager/visitors.
+
+  REMAINING:  D3 (deliveries + incidents), D4 (guard/caretaker/resident +
+              shifts), D5 (guided tour + completion CTA).
+
+--------------------------------------------------------------------------------
+ HOW TO WORK (the established process — follow it every sub-project)
+--------------------------------------------------------------------------------
+  For EACH of D3, D4, D5, run this cycle:
+    1. superpowers:brainstorming  -> agree scope + decisions, write spec to
+       docs/superpowers/specs/YYYY-MM-DD-demo-mode-<slice>-design.md, commit.
+    2. superpowers:writing-plans  -> bite-sized TDD plan to
+       docs/superpowers/plans/YYYY-MM-DD-demo-mode-<slice>.md, commit.
+    3. superpowers:subagent-driven-development -> implement task-by-task,
+       verify + review each, final code review.
+    4. superpowers:finishing-a-development-branch.
+
+  HARD RULES (isolation is enforced, not just intended):
+    - Everything lives under src/demo/. NOTHING in src/demo may import
+      firebase, AuthContext, or /services/. Verify with:
+        grep -rEn "firebase|AuthContext|/services/" src/demo   (expect: no hits)
+    - Reuse the design system: DemoShell(AppShell), StatusBadge, Modal,
+      CSS classes (.card .stat-card .btn-primary .btn-secondary .input .label
+      .section-title), theme tokens (lango-primary #2563eb, lango-dark navy),
+      lucide-react icons.
+    - Store mutations only; new ids via crypto.randomUUID(); activity entries
+      are prepended with timeLabel 'Just now'.
+    - TDD the store/logic. Reuse existing selectors so dashboard counts update.
+
+  VERIFY COMMANDS (this repo uses project-reference tsconfigs):
+    npx tsc -p tsconfig.app.json --noEmit     (root `tsc --noEmit` checks nothing)
+    npx vitest run src/demo
+    npm run build
+  Commit trailer:  Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
+--------------------------------------------------------------------------------
+ CURRENT DEMO ARCHITECTURE (facts you need)
+--------------------------------------------------------------------------------
+  Store:  src/demo/store/demoStore.ts  (zustand + persist -> sessionStorage)
+    State slices: role, property, blocks, units, tenants, visitors, deliveries,
+      incidents, staff, activity, shifts, approvals.
+    Actions: setRole, addActivity, addTenant, updateTenant, resetDemo,
+      registerVisitor, approveVisitor, declineVisitor, checkOutVisitor.
+    Selectors: selectCurrentlyInside, selectOpenIncidents, selectVisitorsToday,
+      selectExpectedToday, selectVacantUnits, selectPendingApprovals,
+      selectInsideVisitors.
+    Pattern for a lifecycle action (copy this shape):
+      actionName: (arg) => set((s) => { const x = s.list.find(...); if (!x) return {};
+        return { list: ..., activity: [ { id:`act-${crypto.randomUUID()}`,
+        kind:'...', title:'...', subtitle:'...', timeLabel:'Just now' }, ...s.activity ] } })
+
+  Types:  src/demo/data/types.ts   Seed: src/demo/data/seed.ts
+    DemoDelivery { id, company, unitNumber, expectedLabel,
+                   status: 'RECEIVED'|'COLLECTED'|'HELD' }
+    DemoIncident { id, type, location, reportedBy, timeLabel,
+                   status: 'OPEN'|'INVESTIGATING'|'RESOLVED' }
+    DemoShift    { staffId, status: 'ON'|'OFF', startedLabel: string|null }
+    DemoActivityKind includes 'DELIVERY' and 'INCIDENT' (icons/tints already
+      mapped in DemoManagerDashboard.tsx).
+    Seed today: deliveries d-1..d-4 (Uber Eats A-204, Courier B-102, FedEx
+      C-301, Amazon A-103 — all RECEIVED); incident i-1 (Suspicious Person,
+      Block B, OPEN); shift {staffId:'s-2', OFF}; staff s-1..s-5.
+
+  Routing: src/demo/DemoApp.tsx  (nested <Routes> under App's /demo/*)
+    manager: index(dashboard), visitors, tenants, units, staff, * -> placeholder
+    guard / caretaker / resident: all -> DemoPlaceholder (D4 replaces these)
+  Nav:     src/demo/config/nav.ts  (DEMO_NAV per role — items already listed)
+  Reusable components: DemoShell, DemoBanner, DemoPlaceholder, DemoCurrentlyInside.
+
+  NOTE: production StatusBadge has DeliveryStatusBadge (RECEIVED/COLLECTED/HELD/
+  RETURNED) but NO incident-status badge (it has IncidentSeverityBadge). For the
+  incident OPEN->INVESTIGATING->RESOLVED lifecycle, render a small custom pill.
+
+================================================================================
+ D3 — DELIVERY + INCIDENT WORKFLOWS
+================================================================================
+  GOAL: make manager Deliveries and Incidents pages interactive; remove those
+        two placeholders. Everything mutates the store + logs activity.
+
+  DELIVERIES
+    Decision to make: the brief flow is Waiting -> [Check In] -> Received/Inside
+      -> [Collected] -> Collected. Current DemoDeliveryStatus lacks a "waiting"
+      state. RECOMMEND: add 'EXPECTED' to DemoDeliveryStatus, seed the 4
+      deliveries as 'EXPECTED', and add actions:
+        checkInDelivery(id):  EXPECTED -> RECEIVED  (+activity "Delivery checked in")
+        collectDelivery(id):  RECEIVED -> COLLECTED (+activity "Delivery collected")
+      Optional: registerDelivery({company, unitNumber}) to add a new one.
+    Page: src/demo/pages/manager/DemoDeliveriesPage.tsx — list rows (company ·
+      unit · expected) with a DeliveryStatusBadge and the contextual button
+      (Check In when EXPECTED, Collected when RECEIVED). Route
+      /demo/manager/deliveries. Reuse .card list pattern like DemoTenantsPage.
+
+  INCIDENTS
+    Actions:
+        createIncident({type, location, reportedBy}): adds an OPEN incident
+          (+activity "Incident reported").
+        setIncidentStatus(id, status): OPEN->INVESTIGATING->RESOLVED
+          (+activity). Optionally assignIncident(id, staffName).
+    Page: src/demo/pages/manager/DemoIncidentsPage.tsx — list incidents; each
+      shows a lifecycle pill (OPEN red / INVESTIGATING amber / RESOLVED green)
+      and buttons [Mark Investigating] / [Resolve] depending on status; a
+      [Report incident] Modal form (type, location). Route /demo/manager/incidents.
+      selectOpenIncidents already drives the dashboard's Open-Incidents stat, so
+      resolving one lowers it live.
+    Tests: checkInDelivery/collectDelivery transitions; createIncident adds OPEN
+      + raises selectOpenIncidents; setIncidentStatus RESOLVED lowers it.
+    Wire both routes in DemoApp.tsx manager block (before the * placeholder).
+
+================================================================================
+ D4 — GUARD / CARETAKER / RESIDENT EXPERIENCES + SHIFTS
+================================================================================
+  GOAL: replace the guard/caretaker/resident placeholders with real dashboards,
+        reusing the D2/D3 components. Lights up the role-switcher fully.
+
+  SHIFT ACTIONS (store):
+        startShift(staffId): shift.status OFF->ON, startedLabel = 'Started 8:02 AM'
+        endShift(staffId):   ON->OFF, startedLabel = null
+    selector selectShiftFor(staffId) or read shifts[0].
+
+  GUARD  (/demo/guard, nav: Home, Register Visitor, Currently Inside, My Shift)
+    Dashboard: ON/OFF SHIFT banner + [Start Shift]/[End Shift]; stat tiles
+      (Visitors Today, Currently Inside, Expected, Pending Approval); primary
+      action buttons that route to register/inside/incident.
+    Reuse DemoVisitorsPage register+approve pieces, DemoCurrentlyInside.
+    Pages: DemoGuardDashboard, plus route guard/register (reuse the register
+      flow), guard/inside (DemoCurrentlyInside), guard/shift.
+
+  CARETAKER (/demo/caretaker) — simpler than manager. Home with the same
+    primary actions (Register Visitor, Delivery Check-in, Currently Inside,
+    Report Incident, My Shift, Recent Activity). Reuse everything.
+
+  RESIDENT (/demo/resident) — lightweight. "Welcome, John 👋 · Apartment A-204".
+    Shows visitor requests (reuse approvals -> approve/decline), visitors today,
+    deliveries, current visitors. The approve here updates the SAME store, so
+    the guard/manager views reflect it. No new role in auth — resident is
+    demo-only.
+    Build: DemoResidentDashboard; wire routes replacing the placeholders.
+  Update DEMO_NAV routes/pages as needed; expand DemoApp.tsx guard/caretaker/
+  resident blocks with real nested routes.
+
+================================================================================
+ D5 — GUIDED TOUR + COMPLETION CTA
+================================================================================
+  GOAL: an optional, skippable 5-step guided tour that walks a prospect through
+        the highest-value flow, then a celebratory close.
+
+  Steps (from the brief):
+    1 Register visitor  -> 2 Approve visitor  -> 3 View who's inside  ->
+    4 Check in a delivery -> 5 View the activity timeline.
+  Completion card: "YOU'VE SEEN LANGO IN ACTION 🎉 — Visitors. Deliveries.
+    Incidents. Access. Accountability. All connected in one system."
+    + [Book a Free Demo] (navigate to '/' then #demo, or Link to '/').
+
+  Implementation sketch: a small tour slice (step index in the store OR a
+    DemoTourContext), a floating card (fixed bottom, reuses .card) showing
+    "STEP n OF 5" + copy + a button that performs/navigates to the step, plus
+    Skip/Exit. Must be dismissible so users can free-explore. Start it from a
+    "Take the tour" button on the entry screen or PM dashboard.
+  Keep it lightweight; don't block free navigation.
+
+================================================================================
+ HOUSEKEEPING / OPEN ITEMS
+================================================================================
+  - feat/demo-mode has D1 + D2 committed but NOT pushed. Push when ready:
+      git push   (branch already tracks origin/feat/demo-mode)
+  - Manual browser QA of D1 + D2 still pending (npm run dev, click through).
+  - Landing page was trimmed to 6 sections on this branch (Segments + FAQ removed).
+  - Memory note: ~/.claude/.../memory/lango-demo-mode.md tracks this roadmap.
+================================================================================
