@@ -3,6 +3,9 @@ import DemoEntry from './pages/DemoEntry'
 import { DemoShell } from './components/DemoShell'
 import { DemoPlaceholder } from './components/DemoPlaceholder'
 import DemoManagerDashboard from './pages/manager/DemoManagerDashboard'
+import DemoTenantsPage from './pages/manager/DemoTenantsPage'
+import DemoUnitsPage from './pages/manager/DemoUnitsPage'
+import DemoStaffPage from './pages/manager/DemoStaffPage'
 
 export default function DemoApp() {
   return (
@@ -12,6 +15,9 @@ export default function DemoApp() {
 
         <Route path="manager" element={<DemoShell role="MANAGER" />}>
           <Route index element={<DemoManagerDashboard />} />
+          <Route path="tenants" element={<DemoTenantsPage />} />
+          <Route path="units" element={<DemoUnitsPage />} />
+          <Route path="staff" element={<DemoStaffPage />} />
           <Route path="*" element={<DemoPlaceholder />} />
         </Route>
 
