@@ -78,10 +78,11 @@ export const useDemoStore = create<DemoStore>()(
         }
       }),
       checkOutVisitor: (visitorId) => set((s) => {
-        const v = s.visitors.find(x => x.id === visitorId)
+        const v = s.visitors.find(x => x.id === visitorId && x.status === 'INSIDE')
+        if (!v) return {}
         return {
           visitors: s.visitors.map(x => x.id === visitorId ? { ...x, status: 'CHECKED_OUT' as const } : x),
-          activity: v ? [{ id: `act-out-${visitorId}`, kind: 'CHECK_OUT' as const, title: `${v.name} checked out`, subtitle: v.unitNumber, timeLabel: 'Just now' }, ...s.activity] : s.activity,
+          activity: [{ id: `act-out-${visitorId}`, kind: 'CHECK_OUT' as const, title: `${v.name} checked out`, subtitle: v.unitNumber, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
       resetDemo: () => set({ ...seed(), role: get().role }),
