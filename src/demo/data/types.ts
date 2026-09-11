@@ -11,7 +11,7 @@ export type DemoActivityKind = 'CHECK_IN' | 'CHECK_OUT' | 'DELIVERY' | 'INCIDENT
 
 export interface DemoProperty { name: string; location: string; residentCount: number }
 export interface DemoBlock { id: string; name: string }
-export interface DemoUnit { id: string; blockId: string; unitNumber: string; status: DemoUnitStatus; tenantName: string | null }
+export interface DemoUnit { id: string; blockId: string; unitNumber: string; status: DemoUnitStatus; tenantName: string | null; previousTenants: string[] }
 export interface DemoTenant { id: string; name: string; unitNumber: string; phone: string }
 export interface DemoVisitor {
   id: string; name: string; unitNumber: string; type: DemoVisitType

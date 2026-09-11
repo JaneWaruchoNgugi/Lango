@@ -17,29 +17,38 @@ const NAMES = [
 const PHONES = ['+254712000001', '+254712000002', '+254712000003', '+254712000004']
 
 // A unit is vacant when its 1-based index within the block is 4 or 5 (mod 6).
-// → A04, A05, A10, A11, A16, A17, A22, A23 vacant per block (8 vacant, 16 occupied).
-function isVacant(i: number): boolean { const m = i % 6; return m === 4 || m === 5 }
+// 8 vacant / 16 occupied per block. Keeps A-101/102/103 and A-204 occupied.
+function isVacant(idx: number): boolean { const m = idx % 6; return m === 4 || m === 5 }
+
+// A few showcase units carry a light previous-tenant history; the rest are empty.
+const PREVIOUS: Record<string, string[]> = {
+  'A-204': ['Kevin Barasa (2022–2024)'],
+  'B-103': ['Nancy Adhiambo (2021–2023)'],
+}
 
 function buildUnits(): { units: DemoUnit[]; tenants: DemoTenant[] } {
   const units: DemoUnit[] = []
   const tenants: DemoTenant[] = []
   let nameIdx = 0
   for (const b of BLOCKS) {
-    for (let i = 1; i <= 24; i++) {
-      const unitNumber = `${b.id}${String(i).padStart(2, '0')}`
-      const vacant = isVacant(i)
-      let tenantName: string | null = null
-      if (!vacant) {
-        // Fixed overrides so the brief's examples hold, else cycle the pool.
-        tenantName =
-          unitNumber === 'A01' ? 'John Kamau' :
-          unitNumber === 'A02' ? 'Mary Wanjiku' :
-          unitNumber === 'A03' ? 'Jane Njeri' :
-          NAMES[nameIdx % NAMES.length]
-        nameIdx++
-        tenants.push({ id: `t-${unitNumber}`, name: tenantName, unitNumber, phone: PHONES[tenants.length % PHONES.length] })
+    let idx = 0
+    for (let floor = 1; floor <= 6; floor++) {
+      for (let n = 1; n <= 4; n++) {
+        idx++
+        const unitNumber = `${b.id}-${floor}${String(n).padStart(2, '0')}`
+        const vacant = isVacant(idx)
+        let tenantName: string | null = null
+        if (!vacant) {
+          tenantName =
+            unitNumber === 'A-101' ? 'John Kamau' :
+            unitNumber === 'A-102' ? 'Mary Wanjiku' :
+            unitNumber === 'A-103' ? 'Jane Njeri' :
+            NAMES[nameIdx % NAMES.length]
+          nameIdx++
+          tenants.push({ id: `t-${unitNumber}`, name: tenantName, unitNumber, phone: PHONES[tenants.length % PHONES.length] })
+        }
+        units.push({ id: unitNumber, blockId: b.id, unitNumber, status: vacant ? 'VACANT' : 'OCCUPIED', tenantName, previousTenants: PREVIOUS[unitNumber] ?? [] })
       }
-      units.push({ id: unitNumber, blockId: b.id, unitNumber, status: vacant ? 'VACANT' : 'OCCUPIED', tenantName })
     }
   }
   return { units, tenants }

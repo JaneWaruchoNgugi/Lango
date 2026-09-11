@@ -14,14 +14,21 @@ describe('demo seed', () => {
     expect(s.units).toHaveLength(96)
   })
 
-  it('assigns the brief units correctly', () => {
+  it('assigns the brief units correctly (floor-based numbering)', () => {
     const u = seed().units
     const byNumber = (n: string) => u.find(x => x.unitNumber === n)!
-    expect(byNumber('A01').tenantName).toBe('John Kamau')
-    expect(byNumber('A02').tenantName).toBe('Mary Wanjiku')
-    expect(byNumber('A03').tenantName).toBe('Jane Njeri')
-    expect(byNumber('A04').status).toBe('VACANT')
-    expect(byNumber('A05').status).toBe('VACANT')
+    expect(byNumber('A-101').tenantName).toBe('John Kamau')
+    expect(byNumber('A-102').tenantName).toBe('Mary Wanjiku')
+    expect(byNumber('A-103').tenantName).toBe('Jane Njeri')
+    expect(byNumber('A-204').status).toBe('OCCUPIED')
+    expect(byNumber('B-103').status).toBe('OCCUPIED')
+  })
+
+  it('uses floor-based unit numbers', () => {
+    const nums = seed().units.map(u => u.unitNumber)
+    expect(nums).toContain('A-101')
+    expect(nums).toContain('A-604')
+    expect(nums).not.toContain('A01')
   })
 
   it('tenants list matches occupied units', () => {
