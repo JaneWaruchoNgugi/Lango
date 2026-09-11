@@ -1,4 +1,5 @@
 import { CalendarCheck, PlayCircle, ShieldCheck, MessageCircle, Star } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export function Hero() {
   return (
@@ -10,7 +11,7 @@ export function Hero() {
           <p className="mt-5 text-lg text-gray-600 max-w-xl">Lango replaces the paper gate book with instant WhatsApp alerts, digital visitor records, and full incident tracking — tighter security and a smoother experience for every kind of property.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#demo" className="btn-primary px-6 py-3"><CalendarCheck className="w-4 h-4" /> Book a Free Demo</a>
-            <a href="#how" className="btn-secondary px-6 py-3"><PlayCircle className="w-4 h-4" /> See How It Works</a>
+            <Link to="/demo" className="btn-secondary px-6 py-3"><PlayCircle className="w-4 h-4" /> Explore Interactive Demo</Link>
           </div>
           <div className="mt-8 flex items-center gap-4">
             <div className="flex -space-x-2">
