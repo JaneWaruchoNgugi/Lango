@@ -120,7 +120,7 @@ export default function TenantsPage() {
 
       <TenantFormDrawer isOpen={drawer.open} editing={drawer.editing} onClose={() => setDrawer({ open: false, editing: null })}
         onDone={() => { reload(); reloadUnits() }} actor={actor} propertyId={user?.propertyId ?? ''} vacantUnits={vacantUnits} />
-      <MoveOutDialog tenant={moveOut} loading={busy} onClose={() => setMoveOut(null)} onConfirm={(date) => moveOut && doMoveOut(moveOut, date)} />
+      <MoveOutDialog key={moveOut?.tenantId ?? 'none'} tenant={moveOut} loading={busy} onClose={() => setMoveOut(null)} onConfirm={(date) => moveOut && doMoveOut(moveOut, date)} />
       <TenantDetailDrawer tenant={detail} onClose={() => setDetail(null)} />
     </div>
   )
