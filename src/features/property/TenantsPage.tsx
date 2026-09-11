@@ -6,7 +6,9 @@ import { filterTenants, moveOutTenant } from '../../services/tenantService'
 import { canManageTenants } from '../../domain/permissions'
 import { TenantStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
-import { ConfirmDialog } from '../../components/ui/Modal'
+import { MoveOutDialog } from './MoveOutDialog'
+import { TenantDetailDrawer } from './TenantDetailDrawer'
+import { formatMonthYear } from '../../utils/format'
 import { TenantFormDrawer } from './TenantFormDrawer'
 import { Users, Plus, Search, Home, User, Filter, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -24,6 +26,7 @@ export default function TenantsPage() {
   const [term, setTerm] = useState('')
   const [drawer, setDrawer] = useState<{ open: boolean; editing: Tenant | null }>({ open: false, editing: null })
   const [moveOut, setMoveOut] = useState<Tenant | null>(null)
+  const [detail, setDetail] = useState<Tenant | null>(null)
   const [busy, setBusy] = useState(false)
 
   const vacantUnits = useMemo(() => units.filter(u => u.status === 'VACANT'), [units])
@@ -32,10 +35,10 @@ export default function TenantsPage() {
     return statusFilter === 'MOVED_OUT' ? list.filter(t => t.status === 'MOVED_OUT') : list
   }, [tenants, term, statusFilter])
 
-  const doMoveOut = async (t: Tenant) => {
+  const doMoveOut = async (t: Tenant, moveOutDate: Date) => {
     setBusy(true)
-    try { await moveOutTenant(t, actor); toast.success(`${t.fullName} moved out`); reload(); reloadUnits() }
-    catch (e) { console.error(e); toast.error('Move-out failed') } finally { setBusy(false); setMoveOut(null) }
+    try { await moveOutTenant(t, actor, moveOutDate); toast.success(`${t.fullName} moved out`); reload(); reloadUnits() }
+    catch (e) { console.error(e); toast.error(e instanceof Error ? e.message : 'Move-out failed') } finally { setBusy(false); setMoveOut(null) }
   }
   if (loading) return <PageLoader />
 
@@ -95,10 +98,15 @@ export default function TenantsPage() {
         <div className="card divide-y divide-gray-50">
           {shown.map(t => (
             <div key={t.tenantId} className="px-4 py-3 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2"><span className="font-medium text-gray-900 truncate">{t.fullName}</span><TenantStatusBadge status={t.status} /></div>
+              <button type="button" className="min-w-0 text-left" onClick={() => setDetail(t)}>
+                <div className="flex items-center gap-2"><span className="font-medium text-gray-900 truncate hover:text-lango-primary">{t.fullName}</span><TenantStatusBadge status={t.status} /></div>
                 <p className="text-xs text-gray-500 truncate">{t.blockName} • {t.unitNumber} · {t.phoneNumber}</p>
-              </div>
+                <p className="text-xs text-gray-400 truncate">
+                  {t.status === 'MOVED_OUT' && t.moveOutDate
+                    ? `${formatMonthYear(t.moveInDate)} – ${formatMonthYear(t.moveOutDate)}`
+                    : `Since ${formatMonthYear(t.moveInDate)}`}
+                </p>
+              </button>
               {canManage && (
                 <div className="flex gap-2 shrink-0">
                   <button className="btn-secondary text-xs" onClick={() => setDrawer({ open: true, editing: t })}>Edit</button>
@@ -112,8 +120,8 @@ export default function TenantsPage() {
 
       <TenantFormDrawer isOpen={drawer.open} editing={drawer.editing} onClose={() => setDrawer({ open: false, editing: null })}
         onDone={() => { reload(); reloadUnits() }} actor={actor} propertyId={user?.propertyId ?? ''} vacantUnits={vacantUnits} />
-      <ConfirmDialog isOpen={!!moveOut} onClose={() => setMoveOut(null)} onConfirm={() => moveOut && doMoveOut(moveOut)}
-        title="Move out tenant" message={`Move ${moveOut?.fullName} out of ${moveOut?.unitNumber}? The unit becomes vacant; history is preserved.`} confirmLabel="Move out" loading={busy} />
+      <MoveOutDialog tenant={moveOut} loading={busy} onClose={() => setMoveOut(null)} onConfirm={(date) => moveOut && doMoveOut(moveOut, date)} />
+      <TenantDetailDrawer tenant={detail} onClose={() => setDetail(null)} />
     </div>
   )
 }
