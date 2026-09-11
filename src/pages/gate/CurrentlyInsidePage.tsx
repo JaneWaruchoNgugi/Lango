@@ -79,6 +79,11 @@ export default function CurrentlyInsidePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2"><p className="font-medium text-gray-900 truncate">{v.visitorName}</p><VisitTypeBadge type={v.visitType} /></div>
                 <p className="text-xs text-gray-500 truncate">{v.unitNumber} · in {format(v.checkInTime.toDate(), 'h:mm a')} · {formatDuration(durationMinutes(v.checkInTime.toDate(), new Date()))}</p>
+                {(v.gatePassNumber || v.itemsBroughtIn) && (
+                  <p className="text-xs text-gray-400 truncate">
+                    {v.gatePassNumber ? `Pass ${v.gatePassNumber}` : ''}{v.gatePassNumber && v.itemsBroughtIn ? ' · ' : ''}{v.itemsBroughtIn ? `Items: ${v.itemsBroughtIn}` : ''}
+                  </p>
+                )}
               </div>
               <button className="btn-secondary text-xs shrink-0" onClick={() => setConfirm(v)}>Check Out</button>
             </div>

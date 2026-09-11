@@ -124,6 +124,9 @@ export default function VisitorsPage() {
             {selected.serviceType && <Row k="Service" v={selected.serviceType} />}
             {selected.workType && <Row k="Work" v={`${selected.workType} — ${selected.workDescription ?? ''}`} />}
             {selected.company && <Row k="Company" v={selected.company} />}
+            {selected.gatePassNumber && <Row k="Gate pass" v={selected.gatePassNumber} />}
+            {(selected.vehicleRegistration || selected.vehicleType || selected.vehicleDescription) && <Row k="Vehicle" v={[selected.vehicleRegistration, selected.vehicleType, selected.vehicleDescription].filter(Boolean).join(' · ')} />}
+            {selected.itemsBroughtIn && <Row k="Items brought in" v={selected.itemsBroughtIn} />}
           </div>
         )}
       </Modal>

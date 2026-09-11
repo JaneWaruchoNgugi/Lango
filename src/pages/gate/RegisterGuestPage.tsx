@@ -491,6 +491,10 @@ export default function RegisterGuestPage() {
             <ReviewRow icon={STEP_HEADER[visitType].icon} title="Visit Type" lines={[VISIT_TYPE_LABEL[visitType], visitType === 'WORK' ? form.watch('workType') : visitType === 'SERVICE_PROVIDER' ? form.watch('serviceType') : visitType === 'DELIVERY' ? form.watch('company') : (form.watch('reason') || '')]} />
             <ReviewRow icon={Home} title="Visiting" lines={[visitingLabel]} />
             {form.watch('vehicleRegistration') && <ReviewRow icon={Car} title="Vehicle" lines={[form.watch('vehicleRegistration')]} />}
+            {form.watch('vehicleType') && <ReviewRow icon={Car} title="Vehicle Type" lines={[String(form.watch('vehicleType'))]} />}
+            {form.watch('vehicleDescription') && <ReviewRow icon={Car} title="Vehicle Description" lines={[form.watch('vehicleDescription')]} />}
+            {form.watch('gatePassNumber') && <ReviewRow icon={Ticket} title="Gate Pass" lines={[form.watch('gatePassNumber')]} />}
+            {form.watch('itemsBroughtIn') && <ReviewRow icon={Boxes} title="Items Brought In" lines={[form.watch('itemsBroughtIn')]} />}
             {form.watch('expectedDurationMins') && <ReviewRow icon={Clock} title="Expected Duration" lines={[`${Math.round(Number(form.watch('expectedDurationMins')) / 60)} hour(s)`]} />}
           </div>
           <button type="submit" disabled={submitting} className="btn-primary w-full py-3">
