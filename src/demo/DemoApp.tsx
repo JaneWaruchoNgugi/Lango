@@ -1,0 +1,35 @@
+import { Routes, Route } from 'react-router-dom'
+import DemoEntry from './pages/DemoEntry'
+import { DemoShell } from './components/DemoShell'
+import { DemoPlaceholder } from './components/DemoPlaceholder'
+import DemoManagerDashboard from './pages/manager/DemoManagerDashboard'
+
+export default function DemoApp() {
+  return (
+    <div className="h-screen">
+      <Routes>
+        <Route index element={<DemoEntry />} />
+
+        <Route path="manager" element={<DemoShell role="MANAGER" />}>
+          <Route index element={<DemoManagerDashboard />} />
+          <Route path="*" element={<DemoPlaceholder />} />
+        </Route>
+
+        <Route path="guard" element={<DemoShell role="GUARD" />}>
+          <Route index element={<DemoPlaceholder title="Security Guard demo — coming up" />} />
+          <Route path="*" element={<DemoPlaceholder title="Security Guard demo — coming up" />} />
+        </Route>
+
+        <Route path="caretaker" element={<DemoShell role="CARETAKER" />}>
+          <Route index element={<DemoPlaceholder title="Caretaker demo — coming up" />} />
+          <Route path="*" element={<DemoPlaceholder title="Caretaker demo — coming up" />} />
+        </Route>
+
+        <Route path="resident" element={<DemoShell role="RESIDENT" />}>
+          <Route index element={<DemoPlaceholder title="Resident demo — coming up" />} />
+          <Route path="*" element={<DemoPlaceholder title="Resident demo — coming up" />} />
+        </Route>
+      </Routes>
+    </div>
+  )
+}
