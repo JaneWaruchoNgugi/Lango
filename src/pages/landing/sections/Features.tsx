@@ -1,12 +1,9 @@
-import { UserCheck, MessageCircle, Truck, AlertTriangle, Clock, LayoutDashboard, Check, type LucideIcon } from 'lucide-react'
+import { UserCheck, MessageCircle, LayoutDashboard, Check, type LucideIcon } from 'lucide-react'
 
 const FEATURES: { icon: LucideIcon; title: string; points: string[] }[] = [
-  { icon: UserCheck, title: 'Visitor check-in / out', points: ['Fast registration with photo and ID', 'Real-time host notifications', 'Live visitor log'] },
-  { icon: MessageCircle, title: 'Instant WhatsApp alerts', points: ['Visitor approvals & denials', 'Delivery notifications', 'Incident alerts'] },
-  { icon: Truck, title: 'Delivery management', points: ['Track deliveries and contractors', 'Scan QR / record manually', 'Delivery history'] },
-  { icon: AlertTriangle, title: 'Incident reporting', points: ['Report and track incidents', 'Attach photos and notes', 'Automatic notifications'] },
-  { icon: Clock, title: 'Shift accountability', points: ['Guard check-in/out', 'Activity logs', 'Performance tracking'] },
-  { icon: LayoutDashboard, title: 'Live dashboard', points: ['Real-time updates', 'Reports & analytics', 'Exportable data'] },
+  { icon: UserCheck, title: 'Visitor check-in / out', points: ['Fast photo + ID registration', 'Real-time host approvals'] },
+  { icon: MessageCircle, title: 'Instant WhatsApp alerts', points: ['Visitor, delivery & incident alerts', 'No app for residents to install'] },
+  { icon: LayoutDashboard, title: 'Live dashboard', points: ['Everyone on your property, live', 'Reports & exportable records'] },
 ]
 
 export function Features() {
@@ -14,7 +11,7 @@ export function Features() {
     <section id="features" className="max-w-6xl mx-auto px-4 py-16 lg:py-20">
       <span className="text-xs font-semibold tracking-wide uppercase text-lango-primary">Powerful features</span>
       <h2 className="mt-3 text-3xl font-bold text-lango-dark">Everything you need at the gate</h2>
-      <p className="mt-3 text-gray-500 max-w-2xl">From visitor management to incident reporting, Lango keeps your property secure, organized and running smoothly.</p>
+      <p className="mt-3 text-gray-500 max-w-2xl">Visitors, deliveries and incidents — recorded and visible in real time.</p>
       <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {FEATURES.map(f => (
           <div key={f.title} className="card p-6 h-full hover:shadow-card-hover transition-shadow">

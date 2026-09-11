@@ -8,10 +8,15 @@ export function Hero() {
         <div>
           <span className="inline-block text-xs font-semibold tracking-wide uppercase text-lango-secondary bg-white px-3 py-1 rounded-full border border-lango-primary/10">Modern Property Management</span>
           <h1 className="mt-5 text-4xl sm:text-5xl font-bold text-lango-dark leading-[1.1]">Smarter property management, all in one place.</h1>
-          <p className="mt-5 text-lg text-gray-600 max-w-xl">Lango replaces the paper gate book with instant WhatsApp alerts, digital visitor records, and full incident tracking — tighter security and a smoother experience for every kind of property.</p>
+          <p className="mt-5 text-lg text-gray-600 max-w-xl">Replace the paper gate book with instant WhatsApp alerts, digital visitor records, and live incident tracking.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#demo" className="btn-primary px-6 py-3"><CalendarCheck className="w-4 h-4" /> Book a Free Demo</a>
             <Link to="/demo" className="btn-secondary px-6 py-3"><PlayCircle className="w-4 h-4" /> Explore Interactive Demo</Link>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {['Residential', 'Commercial', 'Gated estates', 'Mixed-use'].map(t => (
+              <span key={t} className="text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1">{t}</span>
+            ))}
           </div>
           <div className="mt-8 flex items-center gap-4">
             <div className="flex -space-x-2">
