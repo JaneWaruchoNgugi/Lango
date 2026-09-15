@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Users, UserPlus, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useShallow } from 'zustand/react/shallow'
 import { useDemoStore } from '../../store/demoStore'
 import { DemoCurrentlyInside } from '../../components/DemoCurrentlyInside'
 import { DemoRegisterVisitorForm } from '../../components/DemoRegisterVisitorForm'
@@ -10,7 +11,7 @@ import type { DemoVisitType } from '../../data/types'
 const SAMPLE = { name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' as DemoVisitType }
 
 export default function DemoVisitorsPage() {
-  const recent = useDemoStore(s => s.visitors.filter(v => v.status === 'CHECKED_OUT'))
+  const recent = useDemoStore(useShallow((s) => s.visitors.filter(v => v.status === 'CHECKED_OUT')))
   const registerVisitor = useDemoStore(s => s.registerVisitor)
   const [formOpen, setFormOpen] = useState(false)
 

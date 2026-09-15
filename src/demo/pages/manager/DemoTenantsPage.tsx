@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Users, Plus, Search, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useShallow } from 'zustand/react/shallow'
 import { useDemoStore, selectVacantUnits } from '../../store/demoStore'
 import { TenantStatusBadge } from '../../../components/ui/StatusBadge'
 import { Modal } from '../../../components/ui/Modal'
@@ -9,7 +10,7 @@ import type { DemoTenant } from '../../data/types'
 function TenantForm({ editing, onClose }: { editing: DemoTenant | null; onClose: () => void }) {
   const addTenant = useDemoStore(s => s.addTenant)
   const updateTenant = useDemoStore(s => s.updateTenant)
-  const vacant = useDemoStore(selectVacantUnits)
+  const vacant = useDemoStore(useShallow(selectVacantUnits))
   const [name, setName] = useState(editing?.name ?? '')
   const [phone, setPhone] = useState(editing?.phone ?? '')
   const [unitNumber, setUnitNumber] = useState(vacant[0]?.unitNumber ?? '')

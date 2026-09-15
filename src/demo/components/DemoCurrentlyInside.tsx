@@ -1,9 +1,10 @@
 import { DoorOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useShallow } from 'zustand/react/shallow'
 import { useDemoStore, selectInsideVisitors } from '../store/demoStore'
 
 export function DemoCurrentlyInside() {
-  const inside = useDemoStore(selectInsideVisitors)
+  const inside = useDemoStore(useShallow(selectInsideVisitors))
   const checkOut = useDemoStore(s => s.checkOutVisitor)
   const doCheckout = (id: string, name: string) => { checkOut(id); toast.success(`${name} checked out`) }
 

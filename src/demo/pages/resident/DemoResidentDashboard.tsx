@@ -1,4 +1,5 @@
 import { Home, Package, DoorOpen } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import { useDemoStore, selectInsideVisitors } from '../../store/demoStore'
 import { DemoPendingApprovals } from '../../components/DemoPendingApprovals'
 import { DemoDeliveryBadge } from '../../components/DemoBadges'
@@ -6,8 +7,8 @@ import { RESIDENT_UNIT } from '../../data/personas'
 
 export default function DemoResidentDashboard() {
   const residentName = useDemoStore(s => s.tenants.find(t => t.unitNumber === RESIDENT_UNIT)?.name ?? 'Resident')
-  const myVisitors = useDemoStore(selectInsideVisitors).filter(v => v.unitNumber === RESIDENT_UNIT)
-  const myDeliveries = useDemoStore(s => s.deliveries.filter(d => d.unitNumber === RESIDENT_UNIT))
+  const myVisitors = useDemoStore(useShallow(selectInsideVisitors)).filter(v => v.unitNumber === RESIDENT_UNIT)
+  const myDeliveries = useDemoStore(useShallow((s) => s.deliveries.filter(d => d.unitNumber === RESIDENT_UNIT)))
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
