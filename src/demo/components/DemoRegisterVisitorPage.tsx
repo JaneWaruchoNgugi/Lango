@@ -1,18 +1,11 @@
 import { useState } from 'react'
 import { UserPlus, Sparkles } from 'lucide-react'
-import toast from 'react-hot-toast'
-import { useDemoStore } from '../store/demoStore'
 import { DemoCurrentlyInside } from './DemoCurrentlyInside'
 import { DemoRegisterVisitorForm } from './DemoRegisterVisitorForm'
 import { DemoPendingApprovals } from './DemoPendingApprovals'
-import type { DemoVisitType } from '../data/types'
-
-const SAMPLE = { name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' as DemoVisitType }
 
 export default function DemoRegisterVisitorPage() {
-  const registerVisitor = useDemoStore(s => s.registerVisitor)
   const [formOpen, setFormOpen] = useState(false)
-  const registerSample = () => { registerVisitor(SAMPLE); toast.success(`${SAMPLE.name} registered`) }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -24,9 +17,8 @@ export default function DemoRegisterVisitorPage() {
       <div className="rounded-2xl bg-lango-dark text-white p-5">
         <div className="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase tracking-wide"><Sparkles className="w-3.5 h-3.5" /> Try it</div>
         <p className="mt-2 text-sm text-white/70 max-w-xl">Register a visitor at the gate — they're checked in instantly and appear in Currently Inside below. Pending approvals are resident-raised requests awaiting your OK.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="btn-primary" onClick={registerSample}><UserPlus className="w-4 h-4" /> Register the sample visitor</button>
-          <button className="px-4 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/20" onClick={() => setFormOpen(true)}>Register your own</button>
+        <div className="mt-4">
+          <button className="btn-primary" onClick={() => setFormOpen(true)}><UserPlus className="w-4 h-4" /> Register a visitor</button>
         </div>
       </div>
 
