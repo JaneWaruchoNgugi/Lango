@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { seed } from '../data/seed'
-import type { DemoRole, DemoState, DemoActivity, DemoVisitType } from '../data/types'
+import type { DemoRole, DemoState, DemoActivity, DemoVisitType, DemoIncidentStatus } from '../data/types'
 
 // Fixed headline counts for the current demo day (independent of live INSIDE count).
 const VISITORS_TODAY = 8
@@ -11,7 +11,8 @@ const VISIT_PURPOSE: Record<DemoVisitType, string> = {
 }
 
 export const selectCurrentlyInside = (s: DemoState): number => s.visitors.filter(v => v.status === 'INSIDE').length
-export const selectOpenIncidents = (s: DemoState): number => s.incidents.filter(i => i.status === 'OPEN').length
+// "Open" = not yet resolved; an incident under investigation is still open.
+export const selectOpenIncidents = (s: DemoState): number => s.incidents.filter(i => i.status !== 'RESOLVED').length
 export const selectVisitorsToday = (_s: DemoState): number => VISITORS_TODAY
 export const selectExpectedToday = (_s: DemoState): number => EXPECTED_TODAY
 export const selectVacantUnits = (s: DemoState) => s.units.filter(u => u.status === 'VACANT')
@@ -28,6 +29,12 @@ interface DemoActions {
   approveVisitor: (approvalId: string) => void
   declineVisitor: (approvalId: string) => void
   checkOutVisitor: (visitorId: string) => void
+  checkInDelivery: (id: string) => void
+  collectDelivery: (id: string) => void
+  registerDelivery: (input: { company: string; unitNumber: string }) => void
+  createIncident: (input: { type: string; location: string; reportedBy: string }) => void
+  setIncidentStatus: (id: string, status: DemoIncidentStatus) => void
+  assignIncident: (id: string, staffName: string) => void
 }
 
 export type DemoStore = DemoState & DemoActions
@@ -83,6 +90,55 @@ export const useDemoStore = create<DemoStore>()(
         return {
           visitors: s.visitors.map(x => x.id === visitorId ? { ...x, status: 'CHECKED_OUT' as const } : x),
           activity: [{ id: `act-out-${visitorId}`, kind: 'CHECK_OUT' as const, title: `${v.name} checked out`, subtitle: v.unitNumber, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      checkInDelivery: (id) => set((s) => {
+        const d = s.deliveries.find(x => x.id === id && x.status === 'EXPECTED')
+        if (!d) return {}
+        return {
+          deliveries: s.deliveries.map(x => x.id === id ? { ...x, status: 'RECEIVED' as const } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'DELIVERY' as const, title: 'Delivery checked in', subtitle: `${d.unitNumber} · ${d.company}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      collectDelivery: (id) => set((s) => {
+        const d = s.deliveries.find(x => x.id === id && x.status === 'RECEIVED')
+        if (!d) return {}
+        return {
+          deliveries: s.deliveries.map(x => x.id === id ? { ...x, status: 'COLLECTED' as const } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'DELIVERY' as const, title: 'Delivery collected', subtitle: `${d.unitNumber} · ${d.company}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      registerDelivery: ({ company, unitNumber }) => set((s) => {
+        const uid = crypto.randomUUID()
+        return {
+          deliveries: [...s.deliveries, { id: `d-${uid}`, company, unitNumber, expectedLabel: 'Just now', status: 'EXPECTED' as const }],
+          activity: [{ id: `act-${uid}`, kind: 'DELIVERY' as const, title: 'Delivery registered', subtitle: `${unitNumber} · ${company}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      createIncident: ({ type, location, reportedBy }) => set((s) => {
+        const uid = crypto.randomUUID()
+        return {
+          incidents: [...s.incidents, { id: `i-${uid}`, type, location, reportedBy, timeLabel: 'Just now', status: 'OPEN' as const }],
+          activity: [{ id: `act-${uid}`, kind: 'INCIDENT' as const, title: 'Incident reported', subtitle: `${location} · ${type}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      setIncidentStatus: (id, status) => set((s) => {
+        const inc = s.incidents.find(x => x.id === id)
+        if (!inc) return {}
+        const title = status === 'RESOLVED' ? 'Incident resolved'
+          : status === 'INVESTIGATING' ? 'Incident under investigation'
+          : 'Incident reopened'
+        return {
+          incidents: s.incidents.map(x => x.id === id ? { ...x, status } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'INCIDENT' as const, title, subtitle: `${inc.location} · ${inc.type}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      assignIncident: (id, staffName) => set((s) => {
+        const inc = s.incidents.find(x => x.id === id)
+        if (!inc) return {}
+        return {
+          incidents: s.incidents.map(x => x.id === id ? { ...x, assignedTo: staffName } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'INCIDENT' as const, title: 'Incident assigned', subtitle: `${staffName} · ${inc.location}`, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
       resetDemo: () => set({ ...seed(), role: get().role }),

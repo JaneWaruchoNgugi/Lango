@@ -119,3 +119,89 @@ describe('demo store visitor lifecycle', () => {
     expect(s.visitors.find(v => v.id === inside.id)!.status).toBe('CHECKED_OUT')
   })
 })
+
+describe('demo store delivery lifecycle', () => {
+  beforeEach(() => { useDemoStore.getState().resetDemo() })
+
+  it('checkInDelivery moves an EXPECTED delivery to RECEIVED and logs activity', () => {
+    const d = useDemoStore.getState().deliveries.find(x => x.status === 'EXPECTED')!
+    useDemoStore.getState().checkInDelivery(d.id)
+    const s = useDemoStore.getState()
+    expect(s.deliveries.find(x => x.id === d.id)!.status).toBe('RECEIVED')
+    expect(s.activity[0].title).toBe('Delivery checked in')
+    expect(s.activity[0].kind).toBe('DELIVERY')
+  })
+
+  it('checkInDelivery is a no-op on a non-EXPECTED delivery', () => {
+    const d = useDemoStore.getState().deliveries.find(x => x.status === 'EXPECTED')!
+    useDemoStore.getState().checkInDelivery(d.id)          // -> RECEIVED
+    const activityLen = useDemoStore.getState().activity.length
+    useDemoStore.getState().checkInDelivery(d.id)          // no-op
+    const s = useDemoStore.getState()
+    expect(s.deliveries.find(x => x.id === d.id)!.status).toBe('RECEIVED')
+    expect(s.activity).toHaveLength(activityLen)
+  })
+
+  it('collectDelivery moves a RECEIVED delivery to COLLECTED and logs activity', () => {
+    const d = useDemoStore.getState().deliveries.find(x => x.status === 'EXPECTED')!
+    useDemoStore.getState().checkInDelivery(d.id)          // -> RECEIVED
+    useDemoStore.getState().collectDelivery(d.id)          // -> COLLECTED
+    const s = useDemoStore.getState()
+    expect(s.deliveries.find(x => x.id === d.id)!.status).toBe('COLLECTED')
+    expect(s.activity[0].title).toBe('Delivery collected')
+  })
+
+  it('collectDelivery is a no-op on a non-RECEIVED delivery', () => {
+    const d = useDemoStore.getState().deliveries.find(x => x.status === 'EXPECTED')!
+    const activityLen = useDemoStore.getState().activity.length
+    useDemoStore.getState().collectDelivery(d.id)          // still EXPECTED -> no-op
+    const s = useDemoStore.getState()
+    expect(s.deliveries.find(x => x.id === d.id)!.status).toBe('EXPECTED')
+    expect(s.activity).toHaveLength(activityLen)
+  })
+
+  it('registerDelivery appends an EXPECTED delivery and logs activity', () => {
+    const before = useDemoStore.getState().deliveries.length
+    useDemoStore.getState().registerDelivery({ company: 'Glovo', unitNumber: 'A-101' })
+    const s = useDemoStore.getState()
+    expect(s.deliveries).toHaveLength(before + 1)
+    const added = s.deliveries[s.deliveries.length - 1]
+    expect(added.company).toBe('Glovo')
+    expect(added.status).toBe('EXPECTED')
+    expect(s.activity[0].title).toBe('Delivery registered')
+  })
+})
+
+describe('demo store incident lifecycle', () => {
+  beforeEach(() => { useDemoStore.getState().resetDemo() })
+
+  it('createIncident adds an OPEN incident and raises selectOpenIncidents', () => {
+    const openBefore = selectOpenIncidents(useDemoStore.getState())
+    useDemoStore.getState().createIncident({ type: 'Noise Complaint', location: 'Block C', reportedBy: 'Mercy Njeri' })
+    const s = useDemoStore.getState()
+    expect(selectOpenIncidents(s)).toBe(openBefore + 1)
+    expect(s.incidents[s.incidents.length - 1].status).toBe('OPEN')
+    expect(s.activity[0].title).toBe('Incident reported')
+    expect(s.activity[0].kind).toBe('INCIDENT')
+  })
+
+  it('setIncidentStatus RESOLVED lowers selectOpenIncidents; INVESTIGATING does not', () => {
+    const inc = useDemoStore.getState().incidents.find(i => i.status === 'OPEN')!
+    const openBefore = selectOpenIncidents(useDemoStore.getState())
+    useDemoStore.getState().setIncidentStatus(inc.id, 'INVESTIGATING')
+    expect(selectOpenIncidents(useDemoStore.getState())).toBe(openBefore) // OPEN count unchanged
+    useDemoStore.getState().setIncidentStatus(inc.id, 'RESOLVED')
+    const s = useDemoStore.getState()
+    expect(s.incidents.find(i => i.id === inc.id)!.status).toBe('RESOLVED')
+    expect(selectOpenIncidents(s)).toBe(openBefore - 1)
+    expect(s.activity[0].title).toBe('Incident resolved')
+  })
+
+  it('assignIncident sets assignedTo and logs activity', () => {
+    const inc = useDemoStore.getState().incidents.find(i => i.status === 'OPEN')!
+    useDemoStore.getState().assignIncident(inc.id, 'James Mwangi')
+    const s = useDemoStore.getState()
+    expect(s.incidents.find(i => i.id === inc.id)!.assignedTo).toBe('James Mwangi')
+    expect(s.activity[0].title).toBe('Incident assigned')
+  })
+})
