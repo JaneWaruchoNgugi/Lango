@@ -28,6 +28,9 @@
       { "fieldPath": "receivedAt", "order": "DESCENDING" } ] },
     { "collectionGroup": "deliveries", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "receivedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "deliveries", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
       { "fieldPath": "status", "order": "ASCENDING" },
       { "fieldPath": "receivedAt", "order": "DESCENDING" } ] },
     { "collectionGroup": "incidents", "queryScope": "COLLECTION", "fields": [
