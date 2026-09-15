@@ -7,6 +7,8 @@ import DemoTenantsPage from './pages/manager/DemoTenantsPage'
 import DemoUnitsPage from './pages/manager/DemoUnitsPage'
 import DemoStaffPage from './pages/manager/DemoStaffPage'
 import DemoVisitorsPage from './pages/manager/DemoVisitorsPage'
+import DemoDeliveriesPage from './pages/manager/DemoDeliveriesPage'
+import DemoIncidentsPage from './pages/manager/DemoIncidentsPage'
 
 export default function DemoApp() {
   return (
@@ -20,6 +22,8 @@ export default function DemoApp() {
           <Route path="tenants" element={<DemoTenantsPage />} />
           <Route path="units" element={<DemoUnitsPage />} />
           <Route path="staff" element={<DemoStaffPage />} />
+          <Route path="deliveries" element={<DemoDeliveriesPage />} />
+          <Route path="incidents" element={<DemoIncidentsPage />} />
           <Route path="*" element={<DemoPlaceholder />} />
         </Route>
 
