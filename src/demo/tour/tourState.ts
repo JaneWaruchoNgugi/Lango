@@ -1,7 +1,7 @@
 export const TOUR_STEPS = [
-  { title: 'Register a visitor',   body: "A visitor's at the gate. On Visitors, tap “Register the sample visitor.”", to: '/demo/manager/visitors' },
-  { title: 'Approve the request',  body: 'Approve them under Pending approvals — they move to Currently Inside instantly.', to: '/demo/manager/visitors' },
-  { title: "See who's inside",     body: 'They now appear under Currently Inside — live across every role.', to: '/demo/manager/visitors' },
+  { title: 'Register a visitor',   body: "A visitor's at the gate. On Visitors, tap “Register the sample visitor” — they're checked in instantly.", to: '/demo/manager/visitors' },
+  { title: 'Approve a request',    body: 'A resident pre-registered a guest. Approve them under Pending approvals to let them in.', to: '/demo/manager/visitors' },
+  { title: "See who's inside",     body: 'Everyone you admitted now appears under Currently Inside — live across every role.', to: '/demo/manager/visitors' },
   { title: 'Check in a delivery',  body: 'Open Deliveries and check in a parcel at the gate.', to: '/demo/manager/deliveries' },
   { title: 'Follow the timeline',  body: 'Everything you did lands on the dashboard activity feed — one connected system.', to: '/demo/manager' },
 ] as const

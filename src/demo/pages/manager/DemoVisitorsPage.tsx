@@ -26,7 +26,7 @@ export default function DemoVisitorsPage() {
 
       <div className="rounded-2xl bg-lango-dark text-white p-5">
         <div className="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase tracking-wide"><Sparkles className="w-3.5 h-3.5" /> See how visitor management works</div>
-        <p className="mt-2 text-sm text-white/70 max-w-xl">A visitor arrives at the gate. Register them, then approve the request — watch them appear in Currently Inside and on your dashboard activity.</p>
+        <p className="mt-2 text-sm text-white/70 max-w-xl">A visitor arrives at the gate. Register them and they're checked in on the spot — watch them appear in Currently Inside and on your dashboard activity.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button className="btn-primary" onClick={registerSample}><UserPlus className="w-4 h-4" /> Register the sample visitor</button>
           <button className="px-4 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/20" onClick={() => setFormOpen(true)}>Register your own</button>

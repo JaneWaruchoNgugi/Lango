@@ -63,11 +63,12 @@ export const useDemoStore = create<DemoStore>()(
           units: (patch.name && t) ? s.units.map(u => u.unitNumber === t.unitNumber ? { ...u, tenantName: patch.name! } : u) : s.units,
         }
       }),
+      // Registering at the gate admits the visitor directly — no approval step.
       registerVisitor: ({ name, unitNumber, type }) => set((s) => {
         const uid = crypto.randomUUID()
         return {
-          approvals: [...s.approvals, { id: `ap-${uid}`, visitorId: `v-${uid}`, visitorName: name, unitNumber, purpose: VISIT_PURPOSE[type], type }],
-          activity: [{ id: `act-${uid}`, kind: 'APPROVAL' as const, title: 'Visitor registered', subtitle: `${unitNumber} · ${name}`, timeLabel: 'Just now' }, ...s.activity],
+          visitors: [{ id: `v-${uid}`, name, unitNumber, type, status: 'INSIDE' as const, checkInLabel: 'Just now' }, ...s.visitors],
+          activity: [{ id: `act-${uid}`, kind: 'CHECK_IN' as const, title: `${name} checked in`, subtitle: `${unitNumber} · ${VISIT_PURPOSE[type]}`, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
       approveVisitor: (approvalId) => set((s) => {

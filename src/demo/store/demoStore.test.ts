@@ -79,26 +79,26 @@ import { selectInsideVisitors, selectPendingApprovals } from './demoStore'
 describe('demo store visitor lifecycle', () => {
   beforeEach(() => { useDemoStore.getState().resetDemo() })
 
-  it('registerVisitor adds an approval and a "Visitor registered" activity, no inside visitor', () => {
+  it('registerVisitor checks the visitor in directly (no approval required)', () => {
     const insideBefore = selectCurrentlyInside(useDemoStore.getState())
     const apBefore = selectPendingApprovals(useDemoStore.getState()).length
     useDemoStore.getState().registerVisitor({ name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' })
     const s = useDemoStore.getState()
-    expect(selectPendingApprovals(s)).toHaveLength(apBefore + 1)
-    expect(selectCurrentlyInside(s)).toBe(insideBefore)
-    expect(s.activity[0].title).toBe('Visitor registered')
+    expect(selectPendingApprovals(s)).toHaveLength(apBefore)          // no new approval
+    expect(selectCurrentlyInside(s)).toBe(insideBefore + 1)          // straight inside
+    expect(selectInsideVisitors(s).some(v => v.name === 'Brian Ochieng')).toBe(true)
+    expect(s.activity[0].title).toBe('Brian Ochieng checked in')
   })
 
-  it('approveVisitor moves the visitor inside and removes the approval', () => {
-    useDemoStore.getState().registerVisitor({ name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' })
-    const ap = selectPendingApprovals(useDemoStore.getState()).find(a => a.visitorName === 'Brian Ochieng')!
+  it('approveVisitor admits a pending (resident/seeded) request and removes the approval', () => {
+    const ap = selectPendingApprovals(useDemoStore.getState())[0]     // seeded request
     const insideBefore = selectCurrentlyInside(useDemoStore.getState())
     useDemoStore.getState().approveVisitor(ap.id)
     const s = useDemoStore.getState()
     expect(selectPendingApprovals(s).some(a => a.id === ap.id)).toBe(false)
     expect(selectCurrentlyInside(s)).toBe(insideBefore + 1)
-    expect(selectInsideVisitors(s).some(v => v.name === 'Brian Ochieng')).toBe(true)
-    expect(s.activity[0].title).toBe('Brian Ochieng checked in')
+    expect(selectInsideVisitors(s).some(v => v.name === ap.visitorName)).toBe(true)
+    expect(s.activity[0].title).toBe(`${ap.visitorName} checked in`)
   })
 
   it('declineVisitor removes the approval without adding an inside visitor', () => {
