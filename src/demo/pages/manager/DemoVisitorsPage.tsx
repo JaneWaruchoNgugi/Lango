@@ -1,61 +1,20 @@
 import { useState } from 'react'
-import { Users, UserPlus, Check, X, Sparkles } from 'lucide-react'
+import { Users, UserPlus, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useDemoStore, selectPendingApprovals } from '../../store/demoStore'
+import { useDemoStore } from '../../store/demoStore'
 import { DemoCurrentlyInside } from '../../components/DemoCurrentlyInside'
-import { Modal } from '../../../components/ui/Modal'
+import { DemoRegisterVisitorForm } from '../../components/DemoRegisterVisitorForm'
+import { DemoPendingApprovals } from '../../components/DemoPendingApprovals'
 import type { DemoVisitType } from '../../data/types'
 
 const SAMPLE = { name: 'Brian Ochieng', unitNumber: 'A-204', type: 'FRIENDLY_VISIT' as DemoVisitType }
-const TYPE_OPTIONS: { value: DemoVisitType; label: string }[] = [
-  { value: 'FRIENDLY_VISIT', label: 'Personal visit' },
-  { value: 'WORK', label: 'Work' },
-  { value: 'SERVICE_PROVIDER', label: 'Service provider' },
-  { value: 'DELIVERY', label: 'Delivery' },
-]
-
-function RegisterOwnForm({ onClose }: { onClose: () => void }) {
-  const registerVisitor = useDemoStore(s => s.registerVisitor)
-  const units = useDemoStore(s => s.units)
-  const [name, setName] = useState('')
-  const [unitNumber, setUnitNumber] = useState(units[0]?.unitNumber ?? '')
-  const [type, setType] = useState<DemoVisitType>('FRIENDLY_VISIT')
-  const submit = () => {
-    if (name.trim().length < 2) { toast.error('Enter a name'); return }
-    registerVisitor({ name, unitNumber, type }); toast.success('Visitor registered'); onClose()
-  }
-  return (
-    <Modal isOpen onClose={onClose} title="Register a visitor"
-      footer={<><button className="btn-secondary" onClick={onClose}>Cancel</button><button className="btn-primary" onClick={submit}>Register</button></>}>
-      <div className="space-y-3">
-        <div><label className="label">Visitor name</label><input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Alice Wanjiru" /></div>
-        <div><label className="label">Visiting unit</label>
-          <select className="input" value={unitNumber} onChange={e => setUnitNumber(e.target.value)}>
-            {units.map(u => <option key={u.id} value={u.unitNumber}>{u.unitNumber}</option>)}
-          </select>
-        </div>
-        <div><label className="label">Visit type</label>
-          <select className="input" value={type} onChange={e => setType(e.target.value as DemoVisitType)}>
-            {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-      </div>
-    </Modal>
-  )
-}
 
 export default function DemoVisitorsPage() {
-  const approvals = useDemoStore(selectPendingApprovals)
   const recent = useDemoStore(s => s.visitors.filter(v => v.status === 'CHECKED_OUT'))
   const registerVisitor = useDemoStore(s => s.registerVisitor)
-  const approveVisitor = useDemoStore(s => s.approveVisitor)
-  const declineVisitor = useDemoStore(s => s.declineVisitor)
   const [formOpen, setFormOpen] = useState(false)
-  const [justApproved, setJustApproved] = useState<string | null>(null)
 
   const registerSample = () => { registerVisitor(SAMPLE); toast.success(`${SAMPLE.name} registered`) }
-  const approve = (id: string, name: string) => { approveVisitor(id); setJustApproved(name); toast.success(`${name} approved`) }
-  const decline = (id: string, name: string) => { declineVisitor(id); toast(`${name} declined`) }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -73,29 +32,9 @@ export default function DemoVisitorsPage() {
         </div>
       </div>
 
-      {justApproved && (
-        <div className="flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
-          <Check className="w-4 h-4" /> {justApproved} approved — they may enter.
-        </div>
-      )}
-
       <div>
         <h2 className="section-title">Pending approvals</h2>
-        {approvals.length === 0 ? (
-          <div className="card px-4 py-8 text-center text-sm text-gray-500">No pending approvals.</div>
-        ) : (
-          <div className="space-y-2">
-            {approvals.map(a => (
-              <div key={a.id} className="card p-4 flex items-center justify-between gap-4">
-                <div className="min-w-0"><p className="font-medium text-gray-900 truncate">{a.visitorName}</p><p className="text-xs text-gray-500 truncate">{a.unitNumber} · {a.purpose}</p></div>
-                <div className="flex gap-2 shrink-0">
-                  <button className="btn-primary text-xs" onClick={() => approve(a.id, a.visitorName)}><Check className="w-3.5 h-3.5" /> Approve</button>
-                  <button className="btn-secondary text-xs" onClick={() => decline(a.id, a.visitorName)}><X className="w-3.5 h-3.5" /> Decline</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <DemoPendingApprovals />
       </div>
 
       <div>
@@ -117,7 +56,7 @@ export default function DemoVisitorsPage() {
         </div>
       )}
 
-      {formOpen && <RegisterOwnForm onClose={() => setFormOpen(false)} />}
+      {formOpen && <DemoRegisterVisitorForm onClose={() => setFormOpen(false)} />}
     </div>
   )
 }

@@ -9,6 +9,13 @@ import DemoStaffPage from './pages/manager/DemoStaffPage'
 import DemoVisitorsPage from './pages/manager/DemoVisitorsPage'
 import DemoDeliveriesPage from './pages/manager/DemoDeliveriesPage'
 import DemoIncidentsPage from './pages/manager/DemoIncidentsPage'
+import DemoGuardDashboard from './pages/guard/DemoGuardDashboard'
+import DemoCaretakerDashboard from './pages/caretaker/DemoCaretakerDashboard'
+import DemoResidentDashboard from './pages/resident/DemoResidentDashboard'
+import DemoRegisterVisitorPage from './components/DemoRegisterVisitorPage'
+import DemoInsidePage from './components/DemoInsidePage'
+import DemoShiftPage from './components/DemoShiftPage'
+import { GUARD_STAFF_ID } from './data/personas'
 
 export default function DemoApp() {
   return (
@@ -28,18 +35,23 @@ export default function DemoApp() {
         </Route>
 
         <Route path="guard" element={<DemoShell role="GUARD" />}>
-          <Route index element={<DemoPlaceholder title="Security Guard demo — coming up" />} />
-          <Route path="*" element={<DemoPlaceholder title="Security Guard demo — coming up" />} />
+          <Route index element={<DemoGuardDashboard />} />
+          <Route path="register" element={<DemoRegisterVisitorPage />} />
+          <Route path="inside" element={<DemoInsidePage />} />
+          <Route path="shift" element={<DemoShiftPage staffId={GUARD_STAFF_ID} />} />
+          <Route path="*" element={<DemoPlaceholder />} />
         </Route>
 
         <Route path="caretaker" element={<DemoShell role="CARETAKER" />}>
-          <Route index element={<DemoPlaceholder title="Caretaker demo — coming up" />} />
-          <Route path="*" element={<DemoPlaceholder title="Caretaker demo — coming up" />} />
+          <Route index element={<DemoCaretakerDashboard />} />
+          <Route path="register" element={<DemoRegisterVisitorPage />} />
+          <Route path="inside" element={<DemoInsidePage />} />
+          <Route path="*" element={<DemoPlaceholder />} />
         </Route>
 
         <Route path="resident" element={<DemoShell role="RESIDENT" />}>
-          <Route index element={<DemoPlaceholder title="Resident demo — coming up" />} />
-          <Route path="*" element={<DemoPlaceholder title="Resident demo — coming up" />} />
+          <Route index element={<DemoResidentDashboard />} />
+          <Route path="*" element={<DemoPlaceholder />} />
         </Route>
       </Routes>
     </div>
