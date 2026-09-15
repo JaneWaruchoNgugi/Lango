@@ -37,3 +37,51 @@ export function generateUnitNumbers(prefix: string, count: number): string[] {
   const padding = Math.max(2, String(Math.max(count, 1)).length)
   return generateUnitCodes({ prefix: clean, start: 1, count, padding })
 }
+
+export interface FloorUnitConfig {
+  /** Optional prefix, kept verbatim. '' = no prefix. */
+  prefix?: string
+  /** Number of floors to generate (>= 1). */
+  floors: number
+  /** Units on each floor (>= 1). */
+  unitsPerFloor: number
+  /** First floor number. Default 1. */
+  floorStart?: number
+  /** Min width of the unit part. Default max(2, digits(unitsPerFloor)). */
+  unitPadding?: number
+}
+
+export interface FloorUnit {
+  unitNumber: string
+  floor: string
+}
+
+/**
+ * Generate floor-based unit codes: `${prefix}${floor}${paddedUnit}`.
+ * Floor-major order. The unit part has fixed width so the floor stays
+ * recoverable from a code (strip prefix, drop the last `unitPadding` chars).
+ */
+export function generateFloorUnitCodes({
+  prefix = '',
+  floors,
+  unitsPerFloor,
+  floorStart = 1,
+  unitPadding,
+}: FloorUnitConfig): FloorUnit[] {
+  if (!Number.isFinite(floors) || floors < 1) return []
+  if (!Number.isFinite(unitsPerFloor) || unitsPerFloor < 1) return []
+  const pad = unitPadding && unitPadding > 0
+    ? unitPadding
+    : Math.max(2, String(unitsPerFloor).length)
+  const out: FloorUnit[] = []
+  for (let f = 0; f < floors; f++) {
+    const floorNum = floorStart + f
+    for (let u = 1; u <= unitsPerFloor; u++) {
+      out.push({
+        unitNumber: `${prefix}${floorNum}${String(u).padStart(pad, '0')}`,
+        floor: String(floorNum),
+      })
+    }
+  }
+  return out
+}
