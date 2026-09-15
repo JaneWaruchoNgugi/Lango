@@ -16,10 +16,13 @@ import DemoRegisterVisitorPage from './components/DemoRegisterVisitorPage'
 import DemoInsidePage from './components/DemoInsidePage'
 import DemoShiftPage from './components/DemoShiftPage'
 import { GUARD_STAFF_ID } from './data/personas'
+import { DemoTourProvider } from './tour/DemoTourContext'
+import { DemoTourCard } from './tour/DemoTourCard'
 
 export default function DemoApp() {
   return (
     <div className="h-screen overflow-y-auto">
+      <DemoTourProvider>
       <Routes>
         <Route index element={<DemoEntry />} />
 
@@ -54,6 +57,8 @@ export default function DemoApp() {
           <Route path="*" element={<DemoPlaceholder />} />
         </Route>
       </Routes>
+      <DemoTourCard />
+      </DemoTourProvider>
     </div>
   )
 }

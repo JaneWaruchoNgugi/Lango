@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShieldCheck, Home, Wrench, ArrowRight, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, ShieldCheck, Home, Wrench, ArrowRight, PlayCircle, type LucideIcon } from 'lucide-react'
 import { useDemoStore } from '../store/demoStore'
+import { useDemoTour } from '../tour/DemoTourContext'
 import type { DemoRole } from '../data/types'
 
 const OPTIONS: { role: DemoRole; label: string; hint: string; icon: LucideIcon; path: string }[] = [
@@ -13,6 +14,7 @@ const OPTIONS: { role: DemoRole; label: string; hint: string; icon: LucideIcon; 
 export default function DemoEntry() {
   const navigate = useNavigate()
   const setRole = useDemoStore(s => s.setRole)
+  const { start } = useDemoTour()
   const choose = (role: DemoRole, path: string) => { setRole(role); navigate(path) }
 
   return (
@@ -21,6 +23,9 @@ export default function DemoEntry() {
         <span className="inline-block text-xs font-semibold tracking-wide uppercase text-amber-300 mb-3">Interactive Demo</span>
         <h1 className="text-3xl sm:text-4xl font-bold">Experience Lango</h1>
         <p className="mt-3 text-white/70 max-w-xl mx-auto">See how Lango manages your property from the gate to the dashboard. Pick a role to step inside.</p>
+        <button onClick={start} className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-lango-primary text-white hover:bg-lango-primary/90">
+          <PlayCircle className="w-4 h-4" /> Take the 60-second tour
+        </button>
       </div>
       <div className="max-w-3xl mx-auto px-4 -mt-12 pb-16 grid sm:grid-cols-2 gap-4">
         {OPTIONS.map(o => (
