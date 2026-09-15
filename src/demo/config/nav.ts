@@ -50,13 +50,4 @@ export const DEMO_NAV: Record<DemoRole, DemoNav> = {
       { to: '/demo/caretaker/inside', label: 'Inside', icon: icon(DoorOpen) },
     ],
   },
-  RESIDENT: {
-    roleLabel: 'Resident',
-    navItems: [
-      { to: '/demo/resident', label: 'Home', icon: icon(Home), end: true },
-    ],
-    bottomNav: [
-      { to: '/demo/resident', label: 'Home', icon: icon(Home), end: true },
-    ],
-  },
 }

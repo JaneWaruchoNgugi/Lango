@@ -11,7 +11,6 @@ import DemoDeliveriesPage from './pages/manager/DemoDeliveriesPage'
 import DemoIncidentsPage from './pages/manager/DemoIncidentsPage'
 import DemoGuardDashboard from './pages/guard/DemoGuardDashboard'
 import DemoCaretakerDashboard from './pages/caretaker/DemoCaretakerDashboard'
-import DemoResidentDashboard from './pages/resident/DemoResidentDashboard'
 import DemoRegisterVisitorPage from './components/DemoRegisterVisitorPage'
 import DemoInsidePage from './components/DemoInsidePage'
 import DemoShiftPage from './components/DemoShiftPage'
@@ -49,11 +48,6 @@ export default function DemoApp() {
           <Route index element={<DemoCaretakerDashboard />} />
           <Route path="register" element={<DemoRegisterVisitorPage />} />
           <Route path="inside" element={<DemoInsidePage />} />
-          <Route path="*" element={<DemoPlaceholder />} />
-        </Route>
-
-        <Route path="resident" element={<DemoShell role="RESIDENT" />}>
-          <Route index element={<DemoResidentDashboard />} />
           <Route path="*" element={<DemoPlaceholder />} />
         </Route>
       </Routes>

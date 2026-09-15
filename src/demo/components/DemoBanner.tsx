@@ -5,11 +5,11 @@ import { useDemoStore } from '../store/demoStore'
 import type { DemoRole } from '../data/types'
 
 const ROLE_PATH: Record<DemoRole, string> = {
-  MANAGER: '/demo/manager', GUARD: '/demo/guard', CARETAKER: '/demo/caretaker', RESIDENT: '/demo/resident',
+  MANAGER: '/demo/manager', GUARD: '/demo/guard', CARETAKER: '/demo/caretaker',
 }
 const ROLES: { key: DemoRole; label: string }[] = [
   { key: 'MANAGER', label: 'Manager' }, { key: 'GUARD', label: 'Guard' },
-  { key: 'CARETAKER', label: 'Caretaker' }, { key: 'RESIDENT', label: 'Resident' },
+  { key: 'CARETAKER', label: 'Caretaker' },
 ]
 
 export function DemoBanner({ role }: { role: DemoRole }) {

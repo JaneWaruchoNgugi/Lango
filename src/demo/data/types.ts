@@ -1,4 +1,4 @@
-export type DemoRole = 'MANAGER' | 'GUARD' | 'CARETAKER' | 'RESIDENT'
+export type DemoRole = 'MANAGER' | 'GUARD' | 'CARETAKER'
 
 export type DemoVisitorStatus = 'PENDING' | 'INSIDE' | 'CHECKED_OUT'
 export type DemoVisitType = 'FRIENDLY_VISIT' | 'WORK' | 'DELIVERY' | 'SERVICE_PROVIDER'

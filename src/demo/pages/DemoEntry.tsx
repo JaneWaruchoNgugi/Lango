@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShieldCheck, Home, Wrench, ArrowRight, PlayCircle, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, ShieldCheck, Wrench, ArrowRight, PlayCircle, type LucideIcon } from 'lucide-react'
 import { useDemoStore } from '../store/demoStore'
 import { useDemoTour } from '../tour/DemoTourContext'
 import type { DemoRole } from '../data/types'
@@ -7,7 +7,6 @@ import type { DemoRole } from '../data/types'
 const OPTIONS: { role: DemoRole; label: string; hint: string; icon: LucideIcon; path: string }[] = [
   { role: 'MANAGER', label: 'Property Manager', hint: 'Real-time visibility across the whole property', icon: LayoutDashboard, path: '/demo/manager' },
   { role: 'GUARD', label: 'Security Guard', hint: 'Run the gate: register, approve, check in and out', icon: ShieldCheck, path: '/demo/guard' },
-  { role: 'RESIDENT', label: 'Resident', hint: 'Approve your visitors and track deliveries', icon: Home, path: '/demo/resident' },
   { role: 'CARETAKER', label: 'Caretaker', hint: 'Day-to-day gate and property operations', icon: Wrench, path: '/demo/caretaker' },
 ]
 
