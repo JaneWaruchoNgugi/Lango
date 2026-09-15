@@ -67,10 +67,10 @@ export function seed(): DemoState {
       { id: 'v-2', name: 'Grace Njeri', unitNumber: 'B-103', type: 'SERVICE_PROVIDER', status: 'INSIDE', checkInLabel: '12:18 PM' },
     ],
     deliveries: [
-      { id: 'd-1', company: 'Uber Eats', unitNumber: 'A-204', expectedLabel: '12:45 PM', status: 'RECEIVED' },
-      { id: 'd-2', company: 'Courier', unitNumber: 'B-102', expectedLabel: '1:15 PM', status: 'RECEIVED' },
-      { id: 'd-3', company: 'FedEx', unitNumber: 'C-301', expectedLabel: '2:30 PM', status: 'RECEIVED' },
-      { id: 'd-4', company: 'Amazon', unitNumber: 'A-103', expectedLabel: '3:00 PM', status: 'RECEIVED' },
+      { id: 'd-1', company: 'Uber Eats', unitNumber: 'A-204', expectedLabel: '12:45 PM', status: 'EXPECTED' },
+      { id: 'd-2', company: 'Courier', unitNumber: 'B-102', expectedLabel: '1:15 PM', status: 'EXPECTED' },
+      { id: 'd-3', company: 'FedEx', unitNumber: 'C-301', expectedLabel: '2:30 PM', status: 'EXPECTED' },
+      { id: 'd-4', company: 'Amazon', unitNumber: 'A-103', expectedLabel: '3:00 PM', status: 'EXPECTED' },
     ],
     incidents: [
       { id: 'i-1', type: 'Suspicious Person', location: 'Block B', reportedBy: 'John Kamau', timeLabel: '12:51 PM', status: 'OPEN' },

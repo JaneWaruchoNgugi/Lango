@@ -2,7 +2,7 @@ export type DemoRole = 'MANAGER' | 'GUARD' | 'CARETAKER' | 'RESIDENT'
 
 export type DemoVisitorStatus = 'PENDING' | 'INSIDE' | 'CHECKED_OUT'
 export type DemoVisitType = 'FRIENDLY_VISIT' | 'WORK' | 'DELIVERY' | 'SERVICE_PROVIDER'
-export type DemoDeliveryStatus = 'RECEIVED' | 'COLLECTED' | 'HELD'
+export type DemoDeliveryStatus = 'EXPECTED' | 'RECEIVED' | 'COLLECTED' | 'HELD'
 export type DemoIncidentStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED'
 export type DemoUnitStatus = 'OCCUPIED' | 'VACANT'
 export type DemoStaffStatus = 'ACTIVE' | 'INACTIVE'
@@ -18,7 +18,7 @@ export interface DemoVisitor {
   status: DemoVisitorStatus; checkInLabel: string | null
 }
 export interface DemoDelivery { id: string; company: string; unitNumber: string; expectedLabel: string; status: DemoDeliveryStatus }
-export interface DemoIncident { id: string; type: string; location: string; reportedBy: string; timeLabel: string; status: DemoIncidentStatus }
+export interface DemoIncident { id: string; type: string; location: string; reportedBy: string; timeLabel: string; status: DemoIncidentStatus; assignedTo?: string }
 export interface DemoStaff { id: string; name: string; role: string; status: DemoStaffStatus }
 export interface DemoActivity { id: string; kind: DemoActivityKind; title: string; subtitle: string; timeLabel: string }
 export interface DemoShift { staffId: string; status: DemoShiftStatus; startedLabel: string | null }

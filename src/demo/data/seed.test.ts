@@ -51,6 +51,12 @@ describe('demo seed', () => {
     expect(s.incidents.filter(i => i.status === 'OPEN')).toHaveLength(1)
   })
 
+  it('seeds all four deliveries as EXPECTED', () => {
+    const s = seed()
+    expect(s.deliveries).toHaveLength(4)
+    expect(s.deliveries.every(d => d.status === 'EXPECTED')).toBe(true)
+  })
+
   it('is deterministic (two seeds are deeply equal)', () => {
     expect(seed()).toEqual(seed())
   })
