@@ -44,11 +44,23 @@ describe('demo seed', () => {
     expect(s.staff.some(x => x.name === 'Mercy Njeri' && x.role === 'Property Manager')).toBe(true)
   })
 
-  it('has 2 visitors inside, 1 pending approval, 1 open incident', () => {
+  it('has 2 visitors inside, 2 pending approvals, 1 open incident', () => {
     const s = seed()
     expect(s.visitors.filter(v => v.status === 'INSIDE')).toHaveLength(2)
-    expect(s.approvals).toHaveLength(1)
+    expect(s.approvals).toHaveLength(2)
     expect(s.incidents.filter(i => i.status === 'OPEN')).toHaveLength(1)
+  })
+
+  it('seeds shifts for both the guard (s-2) and the caretaker (s-5)', () => {
+    const s = seed()
+    expect(s.shifts.find(x => x.staffId === 's-2')).toBeTruthy()
+    expect(s.shifts.find(x => x.staffId === 's-5')).toBeTruthy()
+  })
+
+  it('assigns Michael Otieno to A-204 and renames guard s-2 to Anthony Kimani', () => {
+    const s = seed()
+    expect(s.units.find(u => u.unitNumber === 'A-204')!.tenantName).toBe('Michael Otieno')
+    expect(s.staff.find(m => m.id === 's-2')!.name).toBe('Anthony Kimani')
   })
 
   it('seeds all four deliveries as EXPECTED', () => {

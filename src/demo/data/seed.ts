@@ -43,6 +43,7 @@ function buildUnits(): { units: DemoUnit[]; tenants: DemoTenant[] } {
             unitNumber === 'A-101' ? 'John Kamau' :
             unitNumber === 'A-102' ? 'Mary Wanjiku' :
             unitNumber === 'A-103' ? 'Jane Njeri' :
+            unitNumber === 'A-204' ? 'Michael Otieno' :
             NAMES[nameIdx % NAMES.length]
           nameIdx++
           tenants.push({ id: `t-${unitNumber}`, name: tenantName, unitNumber, phone: PHONES[tenants.length % PHONES.length] })
@@ -77,7 +78,7 @@ export function seed(): DemoState {
     ],
     staff: [
       { id: 's-1', name: 'Mercy Njeri', role: 'Property Manager', status: 'ACTIVE' },
-      { id: 's-2', name: 'James Mwangi', role: 'Security Guard', status: 'ACTIVE' },
+      { id: 's-2', name: 'Anthony Kimani', role: 'Security Guard', status: 'ACTIVE' },
       { id: 's-3', name: 'David Mwangi', role: 'Security Guard', status: 'INACTIVE' },
       { id: 's-4', name: 'Samuel Kiptoo', role: 'Security Guard', status: 'INACTIVE' },
       { id: 's-5', name: 'Peter Otieno', role: 'Caretaker', status: 'ACTIVE' },
@@ -91,9 +92,11 @@ export function seed(): DemoState {
     ],
     shifts: [
       { staffId: 's-2', status: 'OFF', startedLabel: null },
+      { staffId: 's-5', status: 'OFF', startedLabel: null },
     ],
     approvals: [
       { id: 'ap-1', visitorId: 'v-pending-1', visitorName: 'Cynthia Wairimu', unitNumber: 'D-102', purpose: 'Personal visit', type: 'FRIENDLY_VISIT' },
+      { id: 'ap-2', visitorId: 'v-pending-2', visitorName: 'Samuel Kariuki', unitNumber: 'A-204', purpose: 'Personal visit', type: 'FRIENDLY_VISIT' },
     ],
   }
 }

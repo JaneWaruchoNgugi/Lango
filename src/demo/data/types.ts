@@ -7,7 +7,7 @@ export type DemoIncidentStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED'
 export type DemoUnitStatus = 'OCCUPIED' | 'VACANT'
 export type DemoStaffStatus = 'ACTIVE' | 'INACTIVE'
 export type DemoShiftStatus = 'ON' | 'OFF'
-export type DemoActivityKind = 'CHECK_IN' | 'CHECK_OUT' | 'DELIVERY' | 'INCIDENT' | 'APPROVAL'
+export type DemoActivityKind = 'CHECK_IN' | 'CHECK_OUT' | 'DELIVERY' | 'INCIDENT' | 'APPROVAL' | 'SHIFT'
 
 export interface DemoProperty { name: string; location: string; residentCount: number }
 export interface DemoBlock { id: string; name: string }
