@@ -18,6 +18,7 @@ export const selectExpectedToday = (_s: DemoState): number => EXPECTED_TODAY
 export const selectVacantUnits = (s: DemoState) => s.units.filter(u => u.status === 'VACANT')
 export const selectPendingApprovals = (s: DemoState) => s.approvals
 export const selectInsideVisitors = (s: DemoState) => s.visitors.filter(v => v.status === 'INSIDE')
+export const selectShiftFor = (staffId: string) => (s: DemoState) => s.shifts.find(x => x.staffId === staffId)
 
 interface DemoActions {
   setRole: (role: DemoRole) => void
@@ -35,6 +36,8 @@ interface DemoActions {
   createIncident: (input: { type: string; location: string; reportedBy: string }) => void
   setIncidentStatus: (id: string, status: DemoIncidentStatus) => void
   assignIncident: (id: string, staffName: string) => void
+  startShift: (staffId: string) => void
+  endShift: (staffId: string) => void
 }
 
 export type DemoStore = DemoState & DemoActions
@@ -139,6 +142,24 @@ export const useDemoStore = create<DemoStore>()(
         return {
           incidents: s.incidents.map(x => x.id === id ? { ...x, assignedTo: staffName } : x),
           activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'INCIDENT' as const, title: 'Incident assigned', subtitle: `${staffName} · ${inc.location}`, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      startShift: (staffId) => set((s) => {
+        const shift = s.shifts.find(x => x.staffId === staffId)
+        const member = s.staff.find(x => x.id === staffId)
+        if (!shift || !member) return {}
+        return {
+          shifts: s.shifts.map(x => x.staffId === staffId ? { ...x, status: 'ON' as const, startedLabel: 'Started 8:02 AM' } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'SHIFT' as const, title: `${member.name} started their shift`, subtitle: member.role, timeLabel: 'Just now' }, ...s.activity],
+        }
+      }),
+      endShift: (staffId) => set((s) => {
+        const shift = s.shifts.find(x => x.staffId === staffId)
+        const member = s.staff.find(x => x.id === staffId)
+        if (!shift || !member) return {}
+        return {
+          shifts: s.shifts.map(x => x.staffId === staffId ? { ...x, status: 'OFF' as const, startedLabel: null } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'SHIFT' as const, title: `${member.name} ended their shift`, subtitle: member.role, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
       resetDemo: () => set({ ...seed(), role: get().role }),

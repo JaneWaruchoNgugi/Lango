@@ -205,3 +205,41 @@ describe('demo store incident lifecycle', () => {
     expect(s.activity[0].title).toBe('Incident assigned')
   })
 })
+
+import { selectShiftFor } from './demoStore'
+
+describe('demo store shift lifecycle', () => {
+  beforeEach(() => { useDemoStore.getState().resetDemo() })
+
+  it('selectShiftFor returns the seeded shift and undefined for unknown ids', () => {
+    expect(selectShiftFor('s-2')(useDemoStore.getState())!.status).toBe('OFF')
+    expect(selectShiftFor('nope')(useDemoStore.getState())).toBeUndefined()
+  })
+
+  it('startShift flips OFF->ON, sets startedLabel, logs a SHIFT activity', () => {
+    useDemoStore.getState().startShift('s-2')
+    const s = useDemoStore.getState()
+    const shift = selectShiftFor('s-2')(s)!
+    expect(shift.status).toBe('ON')
+    expect(shift.startedLabel).toBeTruthy()
+    expect(s.activity[0].kind).toBe('SHIFT')
+    expect(s.activity[0].title).toContain('started their shift')
+  })
+
+  it('endShift flips ON->OFF, clears startedLabel, logs a SHIFT activity', () => {
+    useDemoStore.getState().startShift('s-2')
+    useDemoStore.getState().endShift('s-2')
+    const s = useDemoStore.getState()
+    const shift = selectShiftFor('s-2')(s)!
+    expect(shift.status).toBe('OFF')
+    expect(shift.startedLabel).toBeNull()
+    expect(s.activity[0].title).toContain('ended their shift')
+  })
+
+  it('startShift/endShift are no-ops for an unknown staff id', () => {
+    const before = useDemoStore.getState().activity.length
+    useDemoStore.getState().startShift('nope')
+    useDemoStore.getState().endShift('nope')
+    expect(useDemoStore.getState().activity).toHaveLength(before)
+  })
+})
