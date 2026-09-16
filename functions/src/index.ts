@@ -325,10 +325,37 @@ function mapDocType(raw: string): OcrDocType {
   return 'unknown'
 }
 
+// Realistic mock result returned when OCR_DEMO_MODE=true (no Python service needed).
+const OCR_MOCK_RESULT = {
+  docType: 'national_id' as OcrDocType,
+  confidence: 0.91,
+  name: 'Jane Warucho Ngugi',
+  idNumber: '12345678',
+  dateOfBirth: '1994-03-22',
+  nationality: 'KENYAN',
+  sex: 'F',
+  expiryDate: null,
+  issueDate: '2015-06-10',
+  address: null,
+  fieldConfidence: {
+    name: 0.96, idNumber: 0.94, dateOfBirth: 0.88,
+    nationality: 1.0, sex: 0.93, expiryDate: 0.0,
+    issueDate: 0.79, address: 0.0,
+  },
+  warnings: ['Demo mode — no real OCR was performed.'],
+}
+
 export const analyzeIdDocument = onCall(
   { secrets: [OCR_SERVICE_URL, OCR_SERVICE_TOKEN] },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
+
+    // Demo mode: return mock data without calling the Python OCR service.
+    // Enable by setting OCR_DEMO_MODE=true in Firebase Function environment config.
+    if (process.env.OCR_DEMO_MODE === 'true') {
+      console.log('analyzeIdDocument: demo mode — returning mock result')
+      return OCR_MOCK_RESULT
+    }
 
     const { imageBase64, mediaType, docType: docTypeHint } = request.data as {
       imageBase64: string
