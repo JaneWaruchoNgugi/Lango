@@ -1,31 +1,77 @@
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../firebase/config'
 
-export type DocType = 'national_id' | 'passport' | 'unknown'
+export type DocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
+
+export interface FieldConfidence {
+  name: number
+  idNumber: number
+  dateOfBirth: number
+  nationality: number
+  sex: number
+  expiryDate: number
+  issueDate: number
+  address: number
+}
 
 export interface IdScanResult {
   docType: DocType
+  confidence?: number
   name?: string
   idNumber?: string
+  dateOfBirth?: string   // ISO date YYYY-MM-DD
+  nationality?: string
+  sex?: string           // "M" | "F"
+  expiryDate?: string    // ISO date YYYY-MM-DD
+  issueDate?: string     // ISO date YYYY-MM-DD
+  address?: string
+  fieldConfidence?: FieldConfidence
+  warnings?: string[]
 }
 
-interface RawResult { docType?: string; name?: string | null; idNumber?: string | null }
+interface RawResult {
+  docType?: string
+  confidence?: number
+  name?: string | null
+  idNumber?: string | null
+  dateOfBirth?: string | null
+  nationality?: string | null
+  sex?: string | null
+  expiryDate?: string | null
+  issueDate?: string | null
+  address?: string | null
+  fieldConfidence?: FieldConfidence
+  warnings?: string[]
+}
 
-const VALID_DOC_TYPES: DocType[] = ['national_id', 'passport', 'unknown']
+const VALID_DOC_TYPES: DocType[] = ['national_id', 'passport', 'driver_license', 'unknown']
+
+function str(v: string | null | undefined): string | undefined {
+  const t = v?.trim()
+  return t || undefined
+}
 
 /** Pure: normalize the Cloud Function payload into the client shape (null/empty → undefined). */
 export function normalizeIdResult(raw: RawResult): IdScanResult {
-  const docType = VALID_DOC_TYPES.includes(raw.docType as DocType) ? (raw.docType as DocType) : 'unknown'
-  const name = raw.name?.trim() ? raw.name.trim() : undefined
-  const idNumber = raw.idNumber?.trim() ? raw.idNumber.trim() : undefined
-  return { docType, name, idNumber }
+  const docType = VALID_DOC_TYPES.includes(raw.docType as DocType)
+    ? (raw.docType as DocType)
+    : 'unknown'
+  return {
+    docType,
+    confidence: raw.confidence,
+    name: str(raw.name),
+    idNumber: str(raw.idNumber),
+    dateOfBirth: str(raw.dateOfBirth),
+    nationality: str(raw.nationality),
+    sex: str(raw.sex),
+    expiryDate: str(raw.expiryDate),
+    issueDate: str(raw.issueDate),
+    address: str(raw.address),
+    fieldConfidence: raw.fieldConfidence,
+    warnings: raw.warnings?.filter(Boolean),
+  }
 }
 
-/**
- * Downscale a photo so its longest edge is at most `maxEdge` px and re-encode as
- * JPEG. Phone photos are ~12MP; a smaller image means a smaller upload and fewer
- * image tokens billed. Browser-only (canvas); guarded by `.catch(() => blob)`.
- */
 async function downscaleImage(blob: Blob, maxEdge = 1600): Promise<Blob> {
   const bitmap = await createImageBitmap(blob)
   const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
@@ -45,21 +91,22 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error)
     reader.onload = () => {
       const result = reader.result as string
-      resolve(result.slice(result.indexOf(',') + 1)) // strip the "data:...;base64," prefix
+      resolve(result.slice(result.indexOf(',') + 1))
     }
     reader.readAsDataURL(blob)
   })
 }
 
-const analyzeIdDocument = httpsCallable<{ imageBase64: string; mediaType: string }, RawResult>(
-  functions,
-  'analyzeIdDocument',
-)
+const analyzeIdDocument = httpsCallable<
+  { imageBase64: string; mediaType: string; docType?: string },
+  RawResult
+>(functions, 'analyzeIdDocument')
 
 /**
- * Reads a Kenyan National ID or passport photo via the Claude-backed
- * `analyzeIdDocument` Cloud Function. Resolves to an empty (`unknown`) result on
- * any failure so the caller can fall back to manual entry.
+ * Reads a Kenyan National ID, passport, or driver's license photo via the
+ * Python-OCR-backed `analyzeIdDocument` Cloud Function. Resolves to a
+ * degraded (`unknown`) result on any failure so the caller can fall back to
+ * manual entry.
  */
 export async function recognizeIdCard(blob: Blob): Promise<IdScanResult> {
   try {

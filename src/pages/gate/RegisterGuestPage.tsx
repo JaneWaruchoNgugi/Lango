@@ -203,9 +203,10 @@ export default function RegisterGuestPage() {
       <IdScanConfirmDialog
         photo={scanPhoto}
         onClose={() => setScanPhoto(null)}
-        onConfirm={fields => {
-          if (fields.name) form.setValue('visitorName', fields.name)
-          if (fields.idNumber) form.setValue('idNumber', fields.idNumber)
+        onConfirm={result => {
+          if (result.name) form.setValue('visitorName', result.name)
+          if (result.idNumber) form.setValue('idNumber', result.idNumber)
+          if (result.nationality) form.setValue('nationality', result.nationality)
           setScanPhoto(null)
         }}
       />

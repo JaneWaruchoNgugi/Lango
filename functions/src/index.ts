@@ -2,7 +2,6 @@ import { randomInt, timingSafeEqual } from 'node:crypto'
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { defineSecret } from 'firebase-functions/params'
-import Anthropic from '@anthropic-ai/sdk'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -283,80 +282,133 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
 })
 
 // ---------------------------------------------------------------------------
-// analyzeIdDocument — reads a Kenyan National ID or passport photo with Claude
-// vision and returns the guest's full name + document number. The API key is a
-// Functions secret; the function deploys fine before the secret is set — it is
-// only needed at scan time.
+// analyzeIdDocument — forwards the document image to the Python OCR service
+// and maps the structured response to the shape the frontend expects.
+// The OCR service URL and bearer token are Firebase Function secrets.
 // ---------------------------------------------------------------------------
-const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
+const OCR_SERVICE_URL = defineSecret('OCR_SERVICE_URL')
+const OCR_SERVICE_TOKEN = defineSecret('OCR_SERVICE_TOKEN')
 
-const ID_PROMPT = `You are reading a photo of a Kenyan identity document — either a Kenyan National ID card or a passport data page. Extract exactly two things: the person's full name and their document number.
+const OCR_TIMEOUT_MS = 30_000
 
-Rules:
-- Kenyan National ID: "idNumber" is the value labelled "ID NUMBER" (7-8 digits). Do NOT return the "SERIAL NUMBER" (9 digits). Set docType to "national_id".
-- Passport: "idNumber" is the passport number (from the data page or the machine-readable zone). Set docType to "passport".
-- "name" is the full name in normal Title Case (e.g. "Jane Warucho Ngugi").
-- If the image is not a recognizable ID or passport, or a field is unreadable, set that field to null and docType to "unknown".
-Return only the structured fields.`
+type OcrDocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
 
-const ID_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    docType: { type: 'string', enum: ['national_id', 'passport', 'unknown'] },
-    name: { type: ['string', 'null'] },
-    idNumber: { type: ['string', 'null'] },
-  },
-  required: ['docType', 'name', 'idNumber'],
-} as const
+interface OcrField { value: string | null; confidence: number; raw: string | null }
 
-export const analyzeIdDocument = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
+interface OcrServiceFields {
+  name?: OcrField
+  id_number?: OcrField
+  date_of_birth?: OcrField
+  nationality?: OcrField
+  sex?: OcrField
+  expiry_date?: OcrField
+  issue_date?: OcrField
+  issuing_country?: OcrField
+  address?: OcrField
+}
 
-  const { imageBase64, mediaType } = request.data as { imageBase64: string; mediaType: string }
-  if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
-    throw new HttpsError('invalid-argument', 'A base64 image is required.')
-  }
-  if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
-    throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
-  }
+interface OcrServiceResponse {
+  schema_version: string
+  success: boolean
+  doc_type: string
+  fields: OcrServiceFields
+  overall_confidence: number
+  warnings?: string[]
+  error?: { code: string; message: string; recoverable: boolean }
+  processing_ms?: number
+}
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
-  let response
-  try {
-    response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      thinking: { type: 'disabled' },
-      output_config: {
-        effort: 'low',
-        format: { type: 'json_schema', schema: ID_SCHEMA },
-      },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-            { type: 'text', text: ID_PROMPT },
-          ],
-        },
-      ],
-    })
-  } catch (err) {
-    console.error('Anthropic vision call failed', err)
-    throw new HttpsError('internal', 'Could not read the document. Please try again.')
-  }
+function mapDocType(raw: string): OcrDocType {
+  if (raw === 'national_id') return 'national_id'
+  if (raw === 'passport') return 'passport'
+  if (raw === 'driver_license') return 'driver_license'
+  return 'unknown'
+}
 
-  const block = response.content.find((b) => b.type === 'text')
-  const text = block && block.type === 'text' ? block.text : ''
-  try {
-    const parsed = JSON.parse(text) as { docType?: string; name?: string | null; idNumber?: string | null }
-    return {
-      docType: parsed.docType ?? 'unknown',
-      name: parsed.name ?? null,
-      idNumber: parsed.idNumber ?? null,
+export const analyzeIdDocument = onCall(
+  { secrets: [OCR_SERVICE_URL, OCR_SERVICE_TOKEN] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
+
+    const { imageBase64, mediaType, docType: docTypeHint } = request.data as {
+      imageBase64: string
+      mediaType: string
+      docType?: string
     }
-  } catch {
-    return { docType: 'unknown', name: null, idNumber: null }
-  }
-})
+
+    if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
+      throw new HttpsError('invalid-argument', 'A base64 image is required.')
+    }
+    if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
+      throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
+    }
+
+    const validDocTypes = ['auto', 'national_id', 'passport', 'driver_license']
+    const docType = validDocTypes.includes(docTypeHint ?? '') ? docTypeHint : 'auto'
+
+    let ocrJson: OcrServiceResponse
+    try {
+      const res = await fetch(`${OCR_SERVICE_URL.value()}/ocr/document`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(OCR_TIMEOUT_MS),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OCR_SERVICE_TOKEN.value()}`,
+        },
+        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, doc_type: docType }),
+      })
+
+      if (res.status === 401) throw new HttpsError('internal', 'OCR service authentication failed.')
+      if (res.status === 503 || res.status === 504) {
+        throw new HttpsError('unavailable', 'OCR service is temporarily unavailable.')
+      }
+      if (!res.ok) {
+        console.error('OCR service error', res.status)
+        throw new HttpsError('internal', 'OCR service returned an unexpected error.')
+      }
+
+      ocrJson = (await res.json()) as OcrServiceResponse
+    } catch (err) {
+      const e = err as { code?: string; name?: string }
+      if (e.code === 'unauthenticated' || e.code === 'unavailable' || e.code === 'internal') throw err
+      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+        console.error('OCR service timeout')
+        throw new HttpsError('deadline-exceeded', 'OCR service did not respond in time.')
+      }
+      console.error('OCR service fetch failed', err)
+      throw new HttpsError('internal', 'Could not reach the OCR service.')
+    }
+
+    // success:false means OCR ran but couldn't extract fields — return a
+    // graceful degraded result so the Guard can enter details manually.
+    if (!ocrJson.success) {
+      console.warn('OCR returned success:false', ocrJson.error?.code, ocrJson.warnings)
+      return { docType: 'unknown', name: null, idNumber: null }
+    }
+
+    const f = ocrJson.fields
+    return {
+      docType: mapDocType(ocrJson.doc_type),
+      confidence: ocrJson.overall_confidence,
+      name: f.name?.value ?? null,
+      idNumber: f.id_number?.value ?? null,
+      dateOfBirth: f.date_of_birth?.value ?? null,
+      nationality: f.nationality?.value ?? null,
+      sex: f.sex?.value ?? null,
+      expiryDate: f.expiry_date?.value ?? null,
+      issueDate: f.issue_date?.value ?? null,
+      address: f.address?.value ?? null,
+      fieldConfidence: {
+        name: f.name?.confidence ?? 0,
+        idNumber: f.id_number?.confidence ?? 0,
+        dateOfBirth: f.date_of_birth?.confidence ?? 0,
+        nationality: f.nationality?.confidence ?? 0,
+        sex: f.sex?.confidence ?? 0,
+        expiryDate: f.expiry_date?.confidence ?? 0,
+        issueDate: f.issue_date?.confidence ?? 0,
+        address: f.address?.confidence ?? 0,
+      },
+      warnings: ocrJson.warnings ?? [],
+    }
+  },
+)
