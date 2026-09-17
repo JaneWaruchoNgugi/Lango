@@ -19,6 +19,7 @@ import { bumpShiftCounter } from '../../services/shiftService'
 import { sendVisitorNotification } from '../../services/NotificationService'
 import { uploadPhoto } from '../../services/photoService'
 import { TenantSearchField } from '../../components/gate/TenantSearchField'
+import { UnitSearchField, type SelectedUnit } from '../../components/gate/UnitSearchField'
 import { PhotoCapture } from '../../components/ui/PhotoCapture'
 import { IdScanConfirmDialog } from '../../components/gate/IdScanConfirmDialog'
 import { Stepper } from '../../components/gate/Stepper'
@@ -72,7 +73,7 @@ export default function RegisterGuestPage() {
   const navigate = useNavigate()
   const propertyId = user?.propertyId ?? ''
   const homePath = user?.role === 'CARETAKER' ? '/caretaker' : user?.role === 'PROPERTY_MANAGER' ? '/property' : '/gate'
-  const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Guard', role: 'SECURITY_GUARD' as const }
+  const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Guard', role: user?.role ?? 'SECURITY_GUARD' as const }
   const { shift } = useShift(user?.uid)
 
   const [step, setStep] = useState(1)
@@ -99,8 +100,13 @@ export default function RegisterGuestPage() {
     form.setValue('blockId', t.blockId ?? ''); form.setValue('unitId', t.unitId)
   }
   const applyPreApproved = (p: PreApprovedVisitor) => {
-    setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: p.tenantId, tenantName: p.tenantName })
+    const caretaker = user?.role === 'CARETAKER'
+    setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: caretaker ? undefined : p.tenantId, tenantName: caretaker ? undefined : p.tenantName })
     form.setValue('unitId', p.unitId); form.setValue('blockId', p.blockId || 'preapproved'); form.setValue('visitorName', p.name)
+  }
+  const applyUnit = (u: SelectedUnit) => {
+    setVisiting({ blockId: u.blockId, blockName: u.blockName, unitId: u.unitId, unitNumber: u.unitNumber })
+    form.setValue('blockId', u.blockId ?? ''); form.setValue('unitId', u.unitId)
   }
 
   const goToReview = async () => {
@@ -241,8 +247,13 @@ export default function RegisterGuestPage() {
 
   const visitingField = (label: string) => (
     <Field icon={Home} label={label}>
-      <TenantSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
-        onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      {user?.role === 'CARETAKER' ? (
+        <UnitSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
+          onSelectUnit={applyUnit} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      ) : (
+        <TenantSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
+          onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      )}
       {errors.unitId && <p className="form-error">{errors.unitId.message}</p>}
     </Field>
   )

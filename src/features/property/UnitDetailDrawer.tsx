@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { UnitStatusBadge } from '../../components/ui/StatusBadge'
 import { useOccupancyHistory } from '../../hooks/useOccupancyHistory'
 import { updateUnitStatus } from '../../services/unitService'
-import { canManageUnits } from '../../domain/permissions'
+import { canManageUnits, canViewTenantAssignment } from '../../domain/permissions'
 import { Building2, X, User, RefreshCw, Layers, History, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -18,6 +18,7 @@ export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<UnitStatus>('VACANT')
   const canManage = canManageUnits(actor.role)
+  const showTenant = canViewTenantAssignment(actor.role)
 
   useEffect(() => { if (unit) setPending(unit.status) }, [unit?.unitId, unit?.status]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -51,7 +52,7 @@ export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
             {/* Left */}
             <div className="space-y-4">
               <InfoRow icon={ShieldCheck} label="Status"><UnitStatusBadge status={pending} /></InfoRow>
-              <InfoRow icon={User} label="Current tenant"><span className="font-medium text-gray-900">{unit.currentTenantName ?? '—'}</span></InfoRow>
+              {showTenant && <InfoRow icon={User} label="Current tenant"><span className="font-medium text-gray-900">{unit.currentTenantName ?? '—'}</span></InfoRow>}
               {canManage && (
                 <div>
                   <div className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-700"><RefreshCw className="w-4 h-4 text-lango-primary" /> Change status</div>
@@ -76,23 +77,25 @@ export function UnitDetailDrawer({ unit, onClose, onChanged, actor }: {
             </div>
           </div>
 
-          {/* Previous tenants */}
-          <div>
-            <div className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-700"><History className="w-4 h-4 text-lango-primary" /> Previous tenants</div>
-            {loading ? <p className="text-xs text-gray-400">Loading…</p> : records.length === 0 ? <p className="text-xs text-gray-400">No history yet.</p> : (
-              <div className="divide-y divide-gray-50">
-                {records.map(r => (
-                  <div key={r.recordId} className="flex items-center justify-between py-2.5">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-800 text-sm truncate">{r.tenantName}</p>
-                      <p className="text-xs text-gray-500">{format(r.moveInDate.toDate(), 'MMM yyyy')} – {r.moveOutDate ? format(r.moveOutDate.toDate(), 'MMM yyyy') : 'present'}</p>
+          {/* Previous tenants — property manager only */}
+          {showTenant && (
+            <div>
+              <div className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-700"><History className="w-4 h-4 text-lango-primary" /> Previous tenants</div>
+              {loading ? <p className="text-xs text-gray-400">Loading…</p> : records.length === 0 ? <p className="text-xs text-gray-400">No history yet.</p> : (
+                <div className="divide-y divide-gray-50">
+                  {records.map(r => (
+                    <div key={r.recordId} className="flex items-center justify-between py-2.5">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800 text-sm truncate">{r.tenantName}</p>
+                        <p className="text-xs text-gray-500">{format(r.moveInDate.toDate(), 'MMM yyyy')} – {r.moveOutDate ? format(r.moveOutDate.toDate(), 'MMM yyyy') : 'present'}</p>
+                      </div>
+                      <span className={`badge text-xs shrink-0 ${r.moveOutDate ? 'badge-gray' : 'badge-green'}`}>{r.moveOutDate ? 'Moved out' : 'Current'}</span>
                     </div>
-                    <span className={`badge text-xs shrink-0 ${r.moveOutDate ? 'badge-gray' : 'badge-green'}`}>{r.moveOutDate ? 'Moved out' : 'Current'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

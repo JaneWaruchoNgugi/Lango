@@ -4,6 +4,7 @@ import { useUnitsWithTenants } from '../../hooks/useUnitsWithTenants'
 import { UnitStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import { UnitDetailDrawer } from './UnitDetailDrawer'
+import { canViewTenantAssignment } from '../../domain/permissions'
 import { Boxes, Building2, Plus, Search, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Unit } from '../../types'
@@ -18,6 +19,7 @@ const BLOCK_BADGE: Record<BlockStatus, [string, string]> = {
 export default function BlocksUnitsPage() {
   const { user } = useAuth()
   const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Caretaker', role: user?.role ?? 'CARETAKER' as const }
+  const showTenant = canViewTenantAssignment(user?.role)
   const { units, blocks, loading, reload } = useUnitsWithTenants(user?.propertyId)
   const [selected, setSelected] = useState<Unit | null>(null)
   const [tab, setTab] = useState<'blocks' | 'units'>('blocks')
@@ -47,7 +49,7 @@ export default function BlocksUnitsPage() {
   const shownUnits = units.filter(u =>
     (!blockFilter || u.blockId === blockFilter) &&
     (!statusFilter || u.status === statusFilter) &&
-    (!q || u.unitNumber.toLowerCase().includes(q) || (u.currentTenantName?.toLowerCase().includes(q) ?? false)))
+    (!q || u.unitNumber.toLowerCase().includes(q) || (showTenant && (u.currentTenantName?.toLowerCase().includes(q) ?? false))))
 
   if (loading) return <PageLoader />
 
@@ -74,7 +76,7 @@ export default function BlocksUnitsPage() {
       <div className="flex gap-2 flex-col sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className="input pl-9" placeholder={tab === 'blocks' ? 'Search by block name or code…' : 'Search unit or tenant…'} value={term} onChange={e => setTerm(e.target.value)} />
+          <input className="input pl-9" placeholder={tab === 'blocks' ? 'Search by block name or code…' : showTenant ? 'Search unit or tenant…' : 'Search by unit number…'} value={term} onChange={e => setTerm(e.target.value)} />
         </div>
         <div className="flex gap-2">
           <select className="input sm:w-40" value={blockFilter} onChange={e => setBlockFilter(e.target.value)}>
@@ -118,7 +120,7 @@ export default function BlocksUnitsPage() {
             {shownUnits.map(u => (
               <button key={u.unitId} onClick={() => setSelected(u)} className="card p-4 text-left hover:shadow-card-hover transition-shadow">
                 <div className="flex items-center justify-between gap-2"><span className="font-semibold text-gray-900 truncate">{u.unitNumber}</span><UnitStatusBadge status={u.status} /></div>
-                <p className="text-xs text-gray-500 mt-1 truncate">{u.currentTenantName ?? 'Vacant'}</p>
+                {showTenant && <p className="text-xs text-gray-500 mt-1 truncate">{u.currentTenantName ?? 'Vacant'}</p>}
               </button>
             ))}
           </div>
