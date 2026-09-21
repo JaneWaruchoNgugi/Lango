@@ -1,29 +1,78 @@
-import { UserCheck, MessageCircle, LayoutDashboard, Check, type LucideIcon } from 'lucide-react'
+import { UserCheck, MessageCircle, LayoutDashboard, Package, Clock, BarChart3, type LucideIcon } from 'lucide-react'
+import { Reveal } from '../components/Reveal'
 
-const FEATURES: { icon: LucideIcon; title: string; points: string[] }[] = [
-  { icon: UserCheck, title: 'Visitor check-in / out', points: ['Fast photo + ID registration', 'Real-time host approvals'] },
-  { icon: MessageCircle, title: 'Instant WhatsApp alerts', points: ['Visitor, delivery & incident alerts', 'No app for residents to install'] },
-  { icon: LayoutDashboard, title: 'Live dashboard', points: ['Everyone on your property, live', 'Reports & exportable records'] },
+const FEATURES: { icon: LucideIcon; title: string; desc: string; tag?: string }[] = [
+  {
+    icon: UserCheck,
+    title: 'Visitor check-in & check-out',
+    desc: 'Photo + ID capture in under 60 seconds. Full audit trail for every person who enters your property.',
+    tag: 'Core',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Instant WhatsApp alerts',
+    desc: 'Tenants are notified the moment a visitor or delivery arrives — no app to download.',
+    tag: 'Notifications',
+  },
+  {
+    icon: Package,
+    title: 'Delivery management',
+    desc: 'Log rider details, notify recipients and track collection. Parcels no longer go missing.',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'Live dashboard',
+    desc: 'See everyone on your property in real time. Filter by block, unit, or visitor type.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Reports & exports',
+    desc: 'Monthly summaries, incident logs and visitor history in one click. PDF or CSV.',
+  },
+  {
+    icon: Clock,
+    title: 'Incident tracking',
+    desc: 'Log and escalate incidents with timestamps and descriptions. Full accountability, always.',
+  },
 ]
 
 export function Features() {
   return (
-    <section id="features" className="max-w-6xl mx-auto px-4 py-4 lg:py-20">
-      <span className="text-xs font-semibold tracking-wide uppercase text-lango-primary">Powerful features</span>
-      <h2 className="mt-3 text-3xl font-bold text-lango-dark">Everything you need at the gate</h2>
-      <p className="mt-3 text-gray-500 max-w-2xl">Visitors, deliveries and incidents — recorded and visible in real time.</p>
-      <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {FEATURES.map(f => (
-          <div key={f.title} className="card p-6 h-full hover:shadow-card-hover transition-shadow">
-            <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center"><f.icon className="w-5 h-5 text-lango-primary" /></div>
-            <h3 className="mt-4 font-semibold text-gray-900">{f.title}</h3>
-            <ul className="mt-3 space-y-2">
-              {f.points.map(p => (
-                <li key={p} className="flex items-start gap-2 text-sm text-gray-600"><Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" /> {p}</li>
-              ))}
-            </ul>
+    <section id="features" className="bg-gray-50/70 py-20 lg:py-28">
+      <div className="max-w-6xl mx-auto px-4">
+
+        <Reveal>
+          <div className="mb-14">
+            <span className="l-overline">Everything you need</span>
+            <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight max-w-lg">
+              Every tool to run a tighter, safer gate
+            </h2>
+            <p className="mt-4 text-gray-500 font-dm max-w-lg leading-relaxed">
+              From visitor registration to incident management — one platform that replaces every paper logbook, phone call, and WhatsApp chain.
+            </p>
           </div>
-        ))}
+        </Reveal>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={i * 60}>
+              <div className="l-feature-card p-7 h-full flex flex-col">
+                <div className="flex items-start justify-between mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-lango-primary/8 border border-lango-primary/10 flex items-center justify-center">
+                    <f.icon className="w-5 h-5 text-lango-primary" />
+                  </div>
+                  {f.tag && (
+                    <span className="text-[11px] font-semibold text-lango-primary bg-lango-primary/8 px-2.5 py-0.5 rounded-full font-dm">
+                      {f.tag}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-display font-bold text-gray-900">{f.title}</h3>
+                <p className="mt-2 text-sm text-gray-500 font-dm leading-relaxed flex-1">{f.desc}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   )
