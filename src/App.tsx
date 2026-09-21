@@ -41,6 +41,7 @@ import DeliveriesPage from './pages/gate/DeliveriesPage'
 import IncidentsPage from './pages/gate/IncidentsPage'
 import ReportIncidentPage from './pages/gate/ReportIncidentPage'
 import MyShiftPage from './pages/gate/MyShiftPage'
+import DemoApp from './demo/DemoApp'
 
 import type { UserRole } from './types'
 
@@ -69,6 +70,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/demo/*" element={<DemoApp />} />
 
       <Route
         path="/admin"
@@ -95,7 +97,6 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['PROPERTY_MANAGER']}><PropertyManagerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
-        <Route path="register" element={<RegisterGuestPage />} />
         <Route path="visitors" element={<VisitorsPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="units" element={<BlocksUnitsPage />} />

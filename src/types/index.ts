@@ -15,6 +15,8 @@ export type PropertyType =
   | 'SERVICED_APARTMENTS'
   | 'OTHER'
 
+export type StructureType = 'BLOCKS' | 'SINGLE_BUILDING' | 'VILLAS' | 'CUSTOM'
+
 export type SubscriptionPlan = 'SMALL' | 'MEDIUM' | 'LARGE' | 'ESTATE'
 
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED'
@@ -54,7 +56,11 @@ export type AuditAction =
   | 'PROPERTY_CREATED'
   | 'PROPERTY_SUSPENDED'
   | 'BLOCK_CREATED'
+  | 'BLOCK_DELETED'
   | 'UNIT_CREATED'
+  | 'UNITS_BULK_CREATED'
+  | 'UNIT_RENAMED'
+  | 'UNIT_DELETED'
   | 'TENANT_ASSIGNED'
   | 'TENANT_MOVED_OUT'
   | 'TENANT_CREATED'
@@ -106,8 +112,9 @@ export interface Property {
   address: string
   county: string
   city: string
-  numberOfBlocks: number
-  totalUnits: number
+  numberOfBlocks?: number
+  totalUnits?: number
+  structureType?: StructureType   // absent ⇒ treated as 'BLOCKS'
   primaryContact: string
   phone: string
   email: string
@@ -145,10 +152,12 @@ export interface Block {
 export interface Unit {
   unitId: string
   propertyId: string
-  blockId: string
-  blockName: string      // denormalized for display
-  unitNumber: string     // e.g. "A01", "B14"
-  floor?: number
+  blockId?: string | null
+  blockName?: string | null   // denormalized for display; null when block-less
+  unitNumber: string          // e.g. "A01", "B14"
+  floor?: string              // label, e.g. 'Ground', '1st Floor', 'PH'
+  displayName?: string        // defaults to unitNumber for display
+  unitType?: string           // free-form in P1; managed catalog in P3
   status: UnitStatus
   currentTenantId: string | null
   currentTenantName?: string | null
@@ -164,10 +173,10 @@ export interface Unit {
 export interface Tenant {
   tenantId: string
   propertyId: string
-  blockId: string
+  blockId?: string | null
   unitId: string
   unitNumber: string      // denormalized
-  blockName: string       // denormalized
+  blockName?: string | null   // denormalized
   fullName: string
   phoneNumber: string
   whatsappNumber: string
@@ -196,8 +205,8 @@ export interface OccupancyRecord {
   propertyId: string
   unitId: string
   unitNumber: string
-  blockId: string
-  blockName: string
+  blockId?: string | null
+  blockName?: string | null
   tenantId: string
   tenantName: string
   tenantPhone: string
@@ -210,13 +219,15 @@ export interface OccupancyRecord {
 // VISITOR
 // ============================================================
 
+export type VehicleType = 'CAR' | 'MOTORBIKE' | 'VAN' | 'TRUCK' | 'OTHER'
+
 export interface Visitor {
   visitorId: string
   propertyId: string
-  blockId: string
+  blockId?: string | null
   unitId: string
   unitNumber: string       // denormalized
-  blockName: string        // denormalized
+  blockName?: string | null   // denormalized
   tenantId: string
   tenantName: string       // denormalized
   guardId: string
@@ -244,6 +255,10 @@ export interface Visitor {
   expectedDurationMins?: number // WORK / SERVICE_PROVIDER
   appointment?: 'SCHEDULED' | 'UNSCHEDULED' // SERVICE_PROVIDER
   vehicleRegistration?: string  // any type — vehicle plate
+  vehicleType?: VehicleType | null   // complements the plate
+  vehicleDescription?: string        // make / colour, e.g. "white Toyota"
+  gatePassNumber?: string            // physical badge/pass handed over at entry
+  itemsBroughtIn?: string            // notable tools/equipment, checked on exit
   numberOfVisitors?: number     // FRIENDLY_VISIT — party size
   registeredBy: string          // authed guard uid — asserted by rules
   registeredByRole: 'SECURITY_GUARD'
@@ -260,8 +275,8 @@ export interface PreApprovedVisitor {
   propertyId: string
   unitId: string
   unitNumber: string
-  blockId?: string
-  blockName?: string
+  blockId?: string | null
+  blockName?: string | null
   tenantId: string
   tenantName: string
   name: string
@@ -282,10 +297,10 @@ export interface PreApprovedVisitor {
 export interface Delivery {
   deliveryId: string
   propertyId: string
-  blockId: string
+  blockId?: string | null
   unitId: string
   unitNumber: string
-  blockName: string
+  blockName?: string | null
   tenantId: string
   tenantName: string
   guardId: string
@@ -299,6 +314,9 @@ export interface Delivery {
   deliveryType?: string     // Food, Parcel, Groceries, etc.
   trackingNumber?: string   // courier tracking / order number
   vehicleRegistration?: string
+  vehicleType?: VehicleType | null
+  vehicleDescription?: string
+  gatePassNumber?: string
   packageDescription?: string
   photoUrl?: string
   status: DeliveryStatus

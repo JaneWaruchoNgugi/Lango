@@ -11,6 +11,12 @@ const guest = {
   idNumber: z.string().optional(),
   nationality: z.string().optional(),
   vehicleRegistration: z.string().optional(),
+  vehicleType: z.preprocess(
+    v => (v === '' || v === null || v === undefined ? undefined : v),
+    z.enum(['CAR', 'MOTORBIKE', 'VAN', 'TRUCK', 'OTHER']).optional(),
+  ),
+  vehicleDescription: z.string().optional(),
+  gatePassNumber: z.string().optional(),
   blockId: z.string().min(1, 'Select a block'),
   unitId: z.string().min(1, 'Select a unit'),
   notes: z.string().optional(),
@@ -23,6 +29,7 @@ const friendly = z.object({
     v => (v === '' || v === null || v === undefined ? undefined : Number(v)),
     z.number().int().min(1).optional(),
   ),
+  itemsBroughtIn: z.string().optional(),
 })
 
 const work = z.object({
@@ -31,6 +38,7 @@ const work = z.object({
   workType: z.string().min(2, 'Type of work is required'),
   workDescription: z.string().optional(),
   expectedDurationMins: durationField,
+  itemsBroughtIn: z.string().optional(),
 })
 
 const delivery = z.object({
@@ -49,6 +57,7 @@ const service = z.object({
   company: z.string().optional(),
   appointment: z.enum(['SCHEDULED', 'UNSCHEDULED']).optional(),
   expectedDurationMins: durationField,
+  itemsBroughtIn: z.string().optional(),
 })
 
 export const registerGuestSchema = z.discriminatedUnion('visitType', [friendly, work, delivery, service])

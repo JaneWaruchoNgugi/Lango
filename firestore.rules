@@ -97,9 +97,9 @@ service cloud.firestore {
     // ============================================================
     match /units/{unitId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyManager() && getPropertyId() == request.resource.data.propertyId);
       allow update: if isSuperAdmin()
-                    || (isPropertyStaff() && getPropertyId() == resource.data.propertyId)
+                    || (isPropertyManager() && getPropertyId() == resource.data.propertyId)
                     || (isGuard() && getPropertyId() == resource.data.propertyId && onlyStatusChanged());
       allow delete: if isSuperAdmin();
     }
@@ -107,22 +107,23 @@ service cloud.firestore {
     // ============================================================
     // TENANTS
     // ============================================================
-    // Guards can read tenants to look up who lives in a unit
-    // Guards cannot create/edit/delete tenant records
+    // Caretakers and guards may read tenants for their property (read-only view).
+    // Only property managers may create or modify tenant records.
     match /tenants/{tenantId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
-      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyManager() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyManager() && getPropertyId() == resource.data.propertyId);
       allow delete: if isSuperAdmin();
     }
 
     // ============================================================
     // OCCUPANCY HISTORY
     // ============================================================
+    // Occupancy records link tenants to units; restrict to property managers and super admins.
     match /occupancies/{recordId} {
-      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
-      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow read:   if isSuperAdmin() || (isPropertyManager() && getPropertyId() == resource.data.propertyId);
+      allow create: if isSuperAdmin() || (isPropertyManager() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyManager() && getPropertyId() == resource.data.propertyId);
       allow delete: if isSuperAdmin();
     }
 

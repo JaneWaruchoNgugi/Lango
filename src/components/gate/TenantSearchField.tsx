@@ -30,11 +30,11 @@ export function TenantSearchField({ propertyId, selectedUnitId, onSelectTenant, 
     [tenants, selectedUnitId])
 
   // If a unit is pre-selected (e.g. returning to this step), reflect its block.
-  useEffect(() => { if (selectedTenant) setBlockId(selectedTenant.blockId) }, [selectedTenant])
+  useEffect(() => { if (selectedTenant) setBlockId(selectedTenant.blockId ?? null) }, [selectedTenant])
 
   const blockOptions = useMemo<SelectOption[]>(() => {
     const byId = new Map<string, string>()
-    tenants.forEach(t => byId.set(t.blockId, t.blockName))
+    tenants.forEach(t => byId.set(t.blockId ?? '', t.blockName ?? ''))
     return [...byId].map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
   }, [tenants])

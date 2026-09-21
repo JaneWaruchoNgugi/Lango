@@ -47,3 +47,40 @@ describe('registerGuestSchema', () => {
     expect(r.success).toBe(true)
   })
 })
+
+const baseFriendly = { visitType: 'FRIENDLY_VISIT', visitorName: 'Jane', phone: '0712345678', blockId: 'b1', unitId: 'u1' }
+
+describe('visitor detail fields', () => {
+  it('accepts gatePassNumber, vehicleType, vehicleDescription, itemsBroughtIn on friendly', () => {
+    const r = registerGuestSchema.safeParse({ ...baseFriendly, gatePassNumber: 'P12', vehicleType: 'CAR', vehicleDescription: 'white Toyota', itemsBroughtIn: 'laptop' })
+    expect(r.success).toBe(true)
+  })
+
+  it('accepts omitting all new fields', () => {
+    expect(registerGuestSchema.safeParse(baseFriendly).success).toBe(true)
+  })
+
+  it('rejects an invalid vehicleType', () => {
+    expect(registerGuestSchema.safeParse({ ...baseFriendly, vehicleType: 'PLANE' }).success).toBe(false)
+  })
+
+  it('treats an empty vehicleType string as omitted (blank select)', () => {
+    const r = registerGuestSchema.safeParse({ ...baseFriendly, vehicleType: '' })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.vehicleType).toBeUndefined()
+  })
+
+  it('accepts itemsBroughtIn on work and service', () => {
+    expect(registerGuestSchema.safeParse({ visitType: 'WORK', visitorName: 'Bob', phone: '0712345678', blockId: 'b1', unitId: 'u1', workType: 'Plumbing', itemsBroughtIn: 'wrench' }).success).toBe(true)
+    expect(registerGuestSchema.safeParse({ visitType: 'SERVICE_PROVIDER', visitorName: 'Sue', phone: '0712345678', blockId: 'b1', unitId: 'u1', serviceType: 'Internet', itemsBroughtIn: 'router' }).success).toBe(true)
+  })
+
+  it('strips itemsBroughtIn from a delivery (not part of its schema)', () => {
+    const r = registerGuestSchema.safeParse({ visitType: 'DELIVERY', visitorName: 'Rider', phone: '0712345678', blockId: 'b1', unitId: 'u1', company: 'Glovo', itemsBroughtIn: 'x', gatePassNumber: 'P9' })
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect('itemsBroughtIn' in r.data).toBe(false)
+      expect('gatePassNumber' in r.data).toBe(true)
+    }
+  })
+})
