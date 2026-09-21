@@ -97,7 +97,6 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['PROPERTY_MANAGER']}><PropertyManagerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
-        <Route path="register" element={<RegisterGuestPage />} />
         <Route path="visitors" element={<VisitorsPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="units" element={<BlocksUnitsPage />} />

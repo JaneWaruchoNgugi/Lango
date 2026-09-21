@@ -8,7 +8,7 @@ const FEATURES: { icon: LucideIcon; title: string; points: string[] }[] = [
 
 export function Features() {
   return (
-    <section id="features" className="max-w-6xl mx-auto px-4 py-16 lg:py-20">
+    <section id="features" className="max-w-6xl mx-auto px-4 py-4 lg:py-20">
       <span className="text-xs font-semibold tracking-wide uppercase text-lango-primary">Powerful features</span>
       <h2 className="mt-3 text-3xl font-bold text-lango-dark">Everything you need at the gate</h2>
       <p className="mt-3 text-gray-500 max-w-2xl">Visitors, deliveries and incidents — recorded and visible in real time.</p>

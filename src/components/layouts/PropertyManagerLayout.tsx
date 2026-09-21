@@ -16,6 +16,12 @@ const BOTTOM: NavItem[] = [
   { to: '/property', label: 'Home', icon: LayoutDashboard, end: true },
   { to: '/property/visitors', label: 'Visitors', icon: DoorOpen },
   { to: '/property/deliveries', label: 'Deliveries', icon: Package },
+  { to: '/property/tenants', label: 'Tenants', icon: UserCheck },
+  { to: '/property/units', label: 'Blocks & Units', icon: Building },
+  { to: '/property/staff', label: 'Staff', icon: Users },
+
+
+
 ]
 
 export function PropertyManagerLayout() {

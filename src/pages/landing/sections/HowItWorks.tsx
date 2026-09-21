@@ -8,7 +8,7 @@ const STEPS: { icon: LucideIcon; title: string; blurb: string }[] = [
 
 export function HowItWorks() {
   return (
-    <section id="how" className="max-w-6xl mx-auto px-4 py-16 lg:py-20">
+    <section id="how" className="max-w-6xl mx-auto px-4 py-4 lg:py-20">
       <div className="text-center">
         <span className="text-xs font-semibold tracking-wide uppercase text-lango-primary">Simple &amp; effective</span>
         <h2 className="mt-3 text-3xl font-bold text-lango-dark">How it works</h2>

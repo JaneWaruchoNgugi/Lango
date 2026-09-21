@@ -30,7 +30,7 @@ export function LandingNav() {
           <div className="hidden md:flex items-center gap-3">
             <span className="text-sm text-gray-500">EN</span>
             <Link to="/login" className="text-sm font-medium text-gray-700 hover:text-lango-primary">Sign In</Link>
-            <a href="#demo" className="btn-primary">Book a Demo</a>
+            <a href="/demo" className="btn-primary">Explore Demo</a>
           </div>
           <button className="md:hidden p-2 text-gray-600" onClick={() => setOpen(true)} aria-label="Open menu"><Menu className="w-5 h-5" /></button>
         </div>
@@ -52,7 +52,7 @@ export function LandingNav() {
             </nav>
             <div className="mt-6 flex flex-col gap-3">
               <Link to="/login" onClick={() => setOpen(false)} className="btn-secondary w-full justify-center">Sign In</Link>
-              <a href="#demo" onClick={() => setOpen(false)} className="btn-primary w-full justify-center">Book a Demo</a>
+              <a href="/demo" onClick={() => setOpen(false)} className="btn-primary w-full justify-center">Explore Demo</a>
             </div>
           </aside>
         </div>

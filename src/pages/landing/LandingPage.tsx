@@ -3,7 +3,7 @@ import { Hero } from './sections/Hero'
 import { HowItWorks } from './sections/HowItWorks'
 import { Features } from './sections/Features'
 import { Pricing } from './sections/Pricing'
-import { CtaDemo } from './sections/CtaDemo'
+import { CtaConsultation } from './sections/CtaConsultation'
 import { LandingFooter } from './sections/LandingFooter'
 
 export default function LandingPage() {
@@ -15,7 +15,7 @@ export default function LandingPage() {
         <HowItWorks />
         <Features />
         <Pricing />
-        <CtaDemo />
+        <CtaConsultation />
       </main>
       <LandingFooter />
     </div>
