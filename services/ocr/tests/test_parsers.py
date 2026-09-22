@@ -26,6 +26,9 @@ parser = ConcreteParser()
     ("1994-03-22", "1994-03-22"),
     ("1994/03/22", "1994-03-22"),
     ("22031994",   "1994-03-22"),
+    # Kenyan ID prints DD. MM. YYYY with spaces — Tesseract preserves them.
+    ("25. 11. 1999", "1999-11-25"),
+    ("02. 03. 2018", "2018-03-02"),
 ])
 def test_normalize_date_valid(raw: str, expected: str) -> None:
     assert parser._normalize_date(raw) == expected

@@ -41,7 +41,7 @@ _ID_NUM_RE = re.compile(
 _SERIAL_RE = re.compile(r"SERIAL\s*(?:NUMBER|NO)[:\s]*\d{9}", re.IGNORECASE)
 
 _DOB_RE = re.compile(
-    r"(?:DATE\s*OF\s*BIRTH|TAREHE\s*YA\s*KUZALIWA)[:\s]*([\d/\-\.]+)",
+    r"(?:DATE\s*OF\s*BIRTH|TAREHE\s*YA\s*KUZALIWA)[:\s]*([\d][\d\s./\-]*\d)",
     re.IGNORECASE,
 )
 _SEX_RE = re.compile(
@@ -49,7 +49,7 @@ _SEX_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 _ISSUE_RE = re.compile(
-    r"(?:DATE\s*OF\s*ISSUE|TAREHE\s*YA\s*KUTOLEWA)[:\s]*([\d/\-\.]+)",
+    r"(?:DATE\s*OF\s*ISSUE|TAREHE\s*YA\s*KUTOLEWA)[:\s]*([\d][\d\s./\-]*\d)",
     re.IGNORECASE,
 )
 _NATIONALITY_RE = re.compile(

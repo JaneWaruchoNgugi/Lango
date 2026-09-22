@@ -289,7 +289,7 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
 const OCR_SERVICE_URL = defineSecret('OCR_SERVICE_URL')
 const OCR_SERVICE_TOKEN = defineSecret('OCR_SERVICE_TOKEN')
 
-const OCR_TIMEOUT_MS = 30_000
+const OCR_TIMEOUT_MS = 50_000
 
 type OcrDocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
 
@@ -346,7 +346,7 @@ const OCR_MOCK_RESULT = {
 }
 
 export const analyzeIdDocument = onCall(
-  { secrets: [OCR_SERVICE_URL, OCR_SERVICE_TOKEN] },
+  { secrets: [OCR_SERVICE_URL, OCR_SERVICE_TOKEN], timeoutSeconds: 60 },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
 
