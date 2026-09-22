@@ -32,8 +32,11 @@ import BlocksUnitsPage from './features/property/BlocksUnitsPage'
 import CaretakerDeliveriesPage from './features/property/DeliveriesPage'
 import CaretakerIncidentsPage from './features/property/IncidentsPage'
 import CaretakerStaffPage from './features/property/StaffPage'
-import SettingsPage from './features/property/SettingsPage'
+import PMSettingsPage from './features/property/PMSettingsPage'
+import SecurityTeamPage from './pages/property-manager/SecurityTeamPage'
 import ReportsPlaceholder from './features/property/ReportsPlaceholder'
+import CaretakerSettingsPage from './pages/caretaker/CaretakerSettingsPage'
+import GuardSettingsPage from './pages/gate/GuardSettingsPage'
 import GateDashboard from './pages/gate/GateDashboard'
 import RegisterGuestPage from './pages/gate/RegisterGuestPage'
 import CurrentlyInsidePage from './pages/gate/CurrentlyInsidePage'
@@ -41,6 +44,7 @@ import DeliveriesPage from './pages/gate/DeliveriesPage'
 import IncidentsPage from './pages/gate/IncidentsPage'
 import ReportIncidentPage from './pages/gate/ReportIncidentPage'
 import MyShiftPage from './pages/gate/MyShiftPage'
+import DemoApp from './demo/DemoApp'
 
 import type { UserRole } from './types'
 
@@ -69,6 +73,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/demo/*" element={<DemoApp />} />
 
       <Route
         path="/admin"
@@ -95,7 +100,6 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['PROPERTY_MANAGER']}><PropertyManagerLayout /></ProtectedRoute>}
       >
         <Route index element={<CaretakerDashboard />} />
-        <Route path="register" element={<RegisterGuestPage />} />
         <Route path="visitors" element={<VisitorsPage />} />
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="units" element={<BlocksUnitsPage />} />
@@ -103,6 +107,8 @@ export default function App() {
         <Route path="incidents" element={<CaretakerIncidentsPage />} />
         <Route path="staff" element={<CaretakerStaffPage />} />
         <Route path="reports" element={<ReportsPlaceholder />} />
+        <Route path="settings" element={<PMSettingsPage />} />
+        <Route path="security-team" element={<SecurityTeamPage />} />
       </Route>
 
       <Route
@@ -118,7 +124,7 @@ export default function App() {
         <Route path="incidents" element={<CaretakerIncidentsPage />} />
         <Route path="staff" element={<CaretakerStaffPage />} />
         <Route path="reports" element={<ReportsPlaceholder />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={<CaretakerSettingsPage />} />
       </Route>
 
       <Route
@@ -132,6 +138,7 @@ export default function App() {
         <Route path="incidents" element={<IncidentsPage />} />
         <Route path="incidents/new" element={<ReportIncidentPage />} />
         <Route path="shift" element={<MyShiftPage />} />
+        <Route path="settings" element={<GuardSettingsPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />

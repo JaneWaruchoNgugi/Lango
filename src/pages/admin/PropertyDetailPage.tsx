@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   doc, getDoc, collection, query, where, getDocs, orderBy,
@@ -6,7 +6,7 @@ import {
 import { db } from '../../firebase/config'
 import {
   ArrowLeft, Building2, MapPin, Pencil,
-  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard,
+  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard, Trash2,
 } from 'lucide-react'
 import { PropertyStatusBadge } from '../../components/ui/StatusBadge'
 import { PageLoader } from '../../components/ui/LoadingScreen'
@@ -14,6 +14,14 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import type { Property, Block, Unit, Visitor, AppUser, Incident } from '../../types'
 import { format } from 'date-fns'
 import { SUBSCRIPTION_PLANS } from '../../types'
+import { useAuth } from '../../contexts/AuthContext'
+import { GenerateUnitsForm } from '../../components/units/GenerateUnitsForm'
+import { ManualUnitForm } from '../../components/units/ManualUnitForm'
+import { DeleteBlockDialog } from '../../components/units/DeleteBlockDialog'
+import { unitDisplayName, unitFloorLabel } from '../../domain/unitHelpers'
+import { ConfirmDialog } from '../../components/ui/Modal'
+import { deleteUnit } from '../../services/unitService'
+import toast from 'react-hot-toast'
 
 type TabId = 'overview' | 'blocks' | 'units' | 'staff' | 'visitors' | 'deliveries' | 'incidents' | 'subscription'
 
@@ -30,6 +38,8 @@ const tabs: { id: TabId; label: string; icon: typeof Home }[] = [
 export default function PropertyDetailPage() {
   const { id }    = useParams<{ id: string }>()
   const navigate  = useNavigate()
+  const { user }  = useAuth()
+  const actor     = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Admin', role: user?.role ?? 'SUPER_ADMIN' as const }
   const [tab, setTab]           = useState<TabId>('overview')
   const [property, setProperty] = useState<Property | null>(null)
   const [blocks, setBlocks]     = useState<Block[]>([])
@@ -38,33 +48,37 @@ export default function PropertyDetailPage() {
   const [visitors, setVisitors] = useState<Visitor[]>([])
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading]   = useState(true)
+  const [addMode, setAddMode]   = useState<'generate' | 'manual' | null>(null)
+  const [addBlockId, setAddBlockId] = useState<string>('')
+  const [blockToDelete, setBlockToDelete] = useState<Block | null>(null)
+  const [unitToDelete, setUnitToDelete]   = useState<Unit | null>(null)
+  const [deletingUnit, setDeletingUnit]   = useState(false)
 
-  useEffect(() => {
+  const reload = useCallback(async () => {
     if (!id) return
-    const load = async () => {
-      try {
-        const [propSnap, blockSnap, unitSnap, staffSnap, visSnap, incSnap] = await Promise.all([
-          getDoc(doc(db, 'properties', id)),
-          getDocs(query(collection(db, 'blocks'),   where('propertyId', '==', id), orderBy('name'))),
-          getDocs(query(collection(db, 'units'),    where('propertyId', '==', id), orderBy('unitNumber'))),
-          getDocs(query(collection(db, 'users'),    where('propertyId', '==', id))),
-          getDocs(query(collection(db, 'visitors'), where('propertyId', '==', id), orderBy('checkInTime', 'desc'), )),
-          getDocs(query(collection(db, 'incidents'),where('propertyId', '==', id), orderBy('createdAt', 'desc'))),
-        ])
-        setProperty(propSnap.exists() ? propSnap.data() as Property : null)
-        setBlocks(blockSnap.docs.map(d => d.data() as Block))
-        setUnits(unitSnap.docs.map(d => d.data() as Unit))
-        setStaff(staffSnap.docs.map(d => d.data() as AppUser))
-        setVisitors(visSnap.docs.map(d => d.data() as Visitor))
-        setIncidents(incSnap.docs.map(d => d.data() as Incident))
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+    try {
+      const [propSnap, blockSnap, unitSnap, staffSnap, visSnap, incSnap] = await Promise.all([
+        getDoc(doc(db, 'properties', id)),
+        getDocs(query(collection(db, 'blocks'),   where('propertyId', '==', id), orderBy('name'))),
+        getDocs(query(collection(db, 'units'),    where('propertyId', '==', id), orderBy('unitNumber'))),
+        getDocs(query(collection(db, 'users'),    where('propertyId', '==', id))),
+        getDocs(query(collection(db, 'visitors'), where('propertyId', '==', id), orderBy('checkInTime', 'desc'), )),
+        getDocs(query(collection(db, 'incidents'),where('propertyId', '==', id), orderBy('createdAt', 'desc'))),
+      ])
+      setProperty(propSnap.exists() ? propSnap.data() as Property : null)
+      setBlocks(blockSnap.docs.map(d => d.data() as Block))
+      setUnits(unitSnap.docs.map(d => d.data() as Unit))
+      setStaff(staffSnap.docs.map(d => d.data() as AppUser))
+      setVisitors(visSnap.docs.map(d => d.data() as Visitor))
+      setIncidents(incSnap.docs.map(d => d.data() as Incident))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-    load()
   }, [id])
+
+  useEffect(() => { reload() }, [reload])
 
   if (loading) return <PageLoader />
   if (!property) return (
@@ -201,7 +215,16 @@ export default function PropertyDetailPage() {
                       <p className="font-medium text-gray-900 text-sm">{b.name}</p>
                       <p className="text-xs text-gray-500">{blockUnits.length} units · {occ} occupied</p>
                     </div>
-                    <span className={`badge ${b.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{b.status}</span>
+                    <div className="flex items-center gap-3">
+                      <span className={`badge ${b.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{b.status}</span>
+                      <button
+                        onClick={() => setBlockToDelete(b)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete block"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -211,40 +234,89 @@ export default function PropertyDetailPage() {
       )}
 
       {tab === 'units' && (
-        <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-            <h3 className="section-title mb-0">Units ({units.length})</h3>
-          </div>
-          {units.length === 0 ? (
-            <EmptyState icon={Home} title="No units yet" description="Units are created when you add blocks." />
-          ) : (
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Unit</th><th>Block</th><th>Status</th><th>Tenant</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {units.map(u => (
-                    <tr key={u.unitId}>
-                      <td className="font-medium">{u.unitNumber}</td>
-                      <td>{u.blockName}</td>
-                      <td>
-                        <span className={`badge ${
-                          u.status === 'OCCUPIED'    ? 'badge-green' :
-                          u.status === 'RESERVED'    ? 'badge-blue'  :
-                          u.status === 'MAINTENANCE' ? 'badge-yellow': 'badge-gray'
-                        }`}>{u.status}</span>
-                      </td>
-                      <td className="text-gray-500">{u.currentTenantName ?? '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <>
+          <div className="card p-5 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="section-title mb-0">Add Units</h3>
+              <div className="flex gap-2">
+                <button className={`btn-primary text-xs ${addMode === 'generate' ? '' : 'opacity-70'}`} onClick={() => setAddMode(addMode === 'generate' ? null : 'generate')}>Generate</button>
+                <button className={`btn-primary text-xs ${addMode === 'manual' ? '' : 'opacity-70'}`} onClick={() => setAddMode(addMode === 'manual' ? null : 'manual')}>Enter Manually</button>
+              </div>
             </div>
-          )}
-        </div>
+            {blocks.length > 0 && addMode && (
+              <div className="mb-3">
+                <label className="label">Block (optional)</label>
+                <select className="input" value={addBlockId} onChange={(e) => setAddBlockId(e.target.value)}>
+                  <option value="">No block</option>
+                  {blocks.map(b => <option key={b.blockId} value={b.blockId}>{b.name}</option>)}
+                </select>
+              </div>
+            )}
+            {addMode === 'generate' && (
+              <GenerateUnitsForm propertyId={id!} actor={actor}
+                blockId={addBlockId || null}
+                blockName={blocks.find(b => b.blockId === addBlockId)?.name ?? null}
+                onCreated={() => { reload(); setAddMode(null) }} />
+            )}
+            {addMode === 'manual' && (
+              <ManualUnitForm propertyId={id!} actor={actor}
+                blockId={addBlockId || null}
+                blockName={blocks.find(b => b.blockId === addBlockId)?.name ?? null}
+                onCreated={() => { reload() }} />
+            )}
+          </div>
+          <div className="card">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+              <h3 className="section-title mb-0">Units ({units.length})</h3>
+            </div>
+            {units.length === 0 ? (
+              <EmptyState icon={Home} title="No units yet" description="Use Add Units above to generate or enter units." />
+            ) : (
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Unit</th><th>Floor</th><th>Type</th><th>Block</th><th>Status</th><th>Tenant</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {units.map(u => (
+                      <tr key={u.unitId}>
+                        <td className="font-medium">{unitDisplayName(u)}</td>
+                        <td>{unitFloorLabel(u) || '—'}</td>
+                        <td>{u.unitType ?? '—'}</td>
+                        <td>{u.blockName ?? '—'}</td>
+                        <td>
+                          <span className={`badge ${
+                            u.status === 'OCCUPIED'    ? 'badge-green' :
+                            u.status === 'RESERVED'    ? 'badge-blue'  :
+                            u.status === 'MAINTENANCE' ? 'badge-yellow': 'badge-gray'
+                          }`}>{u.status}</span>
+                        </td>
+                        <td className="text-gray-500">{u.currentTenantName ?? '—'}</td>
+                        <td>
+                          {u.status === 'OCCUPIED' ? (
+                            <button className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed" title="Move the tenant out first" disabled>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setUnitToDelete(u)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete unit"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {tab === 'staff' && (
@@ -329,6 +401,37 @@ export default function PropertyDetailPage() {
           )}
         </div>
       )}
+
+      <DeleteBlockDialog
+        block={blockToDelete}
+        units={units}
+        actor={actor}
+        onClose={() => setBlockToDelete(null)}
+        onDeleted={() => { setBlockToDelete(null); reload() }}
+      />
+      <ConfirmDialog
+        isOpen={!!unitToDelete}
+        onClose={() => setUnitToDelete(null)}
+        onConfirm={async () => {
+          if (!unitToDelete) return
+          setDeletingUnit(true)
+          try {
+            await deleteUnit(unitToDelete, actor)
+            toast.success('Unit deleted')
+            setUnitToDelete(null)
+            reload()
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Failed to delete unit')
+          } finally {
+            setDeletingUnit(false)
+          }
+        }}
+        title="Delete unit"
+        message={unitToDelete ? `Delete unit ${unitDisplayName(unitToDelete)}? This cannot be undone.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deletingUnit}
+      />
 
       {tab === 'subscription' && (
         <div className="card p-6">

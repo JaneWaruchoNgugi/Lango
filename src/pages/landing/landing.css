@@ -1,0 +1,193 @@
+/* ── Landing page — scoped styles & animations ─────────────────────────────── */
+
+/* Dot-grid hero background */
+.l-hero-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+}
+
+/* ── Hero entrance animations ─────────────────────────── */
+@keyframes l-fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.l-anim-1 { animation: l-fade-up 0.6s cubic-bezier(.22,1,.36,1) 0.05s both; }
+.l-anim-2 { animation: l-fade-up 0.6s cubic-bezier(.22,1,.36,1) 0.15s both; }
+.l-anim-3 { animation: l-fade-up 0.6s cubic-bezier(.22,1,.36,1) 0.25s both; }
+.l-anim-4 { animation: l-fade-up 0.6s cubic-bezier(.22,1,.36,1) 0.35s both; }
+.l-anim-5 { animation: l-fade-up 0.6s cubic-bezier(.22,1,.36,1) 0.46s both; }
+.l-anim-6 { animation: l-fade-up 0.65s cubic-bezier(.22,1,.36,1) 0.6s both; }
+
+/* ── Floating badge animation ─────────────────────────── */
+@keyframes l-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+.l-float   { animation: l-float 3.2s ease-in-out infinite; }
+.l-float-2 { animation: l-float 3.8s ease-in-out 1.2s infinite; }
+
+/* ── Pulse dot ─────────────────────────── */
+@keyframes l-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.l-pulse { animation: l-pulse 1.8s ease-in-out infinite; }
+
+/* ── Nav states ─────────────────────────── */
+.l-nav-transition {
+  transition: background 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+.l-nav-scrolled {
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+/* ── Amber CTA button (dark backgrounds) ─────────────────────────── */
+.l-btn-amber {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 26px;
+  background: #f59e0b;
+  color: #0f2a43;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 12px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  font-family: 'DM Sans', sans-serif;
+}
+.l-btn-amber:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px -4px rgba(245, 158, 11, 0.5);
+}
+.l-btn-amber:active { transform: translateY(0); }
+
+/* ── Ghost button (dark backgrounds) ─────────────────────────── */
+.l-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  text-decoration: none;
+  transition: all 0.18s;
+  font-family: 'DM Sans', sans-serif;
+}
+.l-btn-ghost:hover {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* ── Primary blue button (light backgrounds) ─────────────────────────── */
+.l-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 12px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  font-family: 'DM Sans', sans-serif;
+}
+.l-btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px -4px rgba(37, 99, 235, 0.42);
+}
+
+/* ── Outline button (light backgrounds) ─────────────────────────── */
+.l-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1.5px solid #2563eb;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: all 0.18s;
+  font-family: 'DM Sans', sans-serif;
+}
+.l-btn-outline:hover {
+  background: #2563eb;
+  color: white;
+}
+
+/* ── Section overline ─────────────────────────── */
+.l-overline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2563eb;
+  font-family: 'DM Sans', sans-serif;
+}
+.l-overline::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #2563eb;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Floating card badges (hero) ─────────────────────────── */
+.l-float-card {
+  background: white;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Feature card hover ─────────────────────────── */
+.l-feature-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #f0f1f3;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+}
+.l-feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.07);
+  border-color: rgba(37, 99, 235, 0.1);
+}
+
+/* ── Popular pricing card ─────────────────────────── */
+.l-plan-popular {
+  background: #0f2a43;
+  color: #ffffff;
+  border: none !important;
+  box-shadow: 0 20px 60px rgba(15, 42, 67, 0.28);
+}
+
+/* ── Stats bar ─────────────────────────── */
+.l-stat-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}

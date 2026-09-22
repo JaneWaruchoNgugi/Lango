@@ -1,6 +1,11 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
+import {
+  initializeFirestore,
+  getFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getFunctions } from 'firebase/functions'
 
@@ -14,27 +19,22 @@ const firebaseConfig = {
 }
 
 // Initialize Firebase only once (important for hot reload in dev)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+const isNewApp = getApps().length === 0
+const app      = isNewApp ? initializeApp(firebaseConfig) : getApp()
 
 // This project's Firestore database is named `default` (not the canonical
 // `(default)`), so the database id must be passed explicitly. Configurable via
 // VITE_FIREBASE_DATABASE_ID; when unset, the SDK targets the real `(default)`.
 const databaseId = import.meta.env.FIREBASE_DATABASE_ID as string | undefined
 
+const persistenceCache = { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }
+
 export const auth      = getAuth(app)
-export const db        = databaseId ? getFirestore(app, databaseId) : getFirestore(app)
+// initializeFirestore must only be called once per app; on HMR re-runs fall back to getFirestore
+export const db        = isNewApp
+  ? (databaseId ? initializeFirestore(app, persistenceCache, databaseId) : initializeFirestore(app, persistenceCache))
+  : (databaseId ? getFirestore(app, databaseId) : getFirestore(app))
 export const storage   = getStorage(app)
 export const functions = getFunctions(app, 'us-central1')
-
-// Enable Firestore offline persistence (offline-first for guards)
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    // Multiple tabs open — persistence only works in one tab at a time
-    console.warn('Firestore persistence failed: multiple tabs open')
-  } else if (err.code === 'unimplemented') {
-    // Browser doesn't support persistence
-    console.warn('Firestore persistence not supported in this browser')
-  }
-})
 
 export default app

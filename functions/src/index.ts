@@ -2,7 +2,6 @@ import { randomInt, timingSafeEqual } from 'node:crypto'
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { defineSecret } from 'firebase-functions/params'
-import Anthropic from '@anthropic-ai/sdk'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue } from 'firebase-admin/firestore'
@@ -49,9 +48,10 @@ export const createStaffUser = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'Only a Property Manager or administrator may create staff.')
   }
 
-  const { name, email, phone, role, propertyId: requestedPropertyId, status, password } = request.data as {
+  const { name, email, phone, role, propertyId: requestedPropertyId, status, password, idNumber, guardNumber } = request.data as {
     name: string; email: string; phone: string
     role: Exclude<Role, 'SUPER_ADMIN'>; propertyId: string; status: string; password?: string
+    idNumber?: string; guardNumber?: string
   }
 
   if (!name || !email || !phone || !role) {
@@ -118,6 +118,8 @@ export const createStaffUser = onCall(async (request) => {
     createdBy: request.auth!.uid,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
+    ...(idNumber?.trim() ? { idNumber: idNumber.trim() } : {}),
+    ...(guardNumber?.trim() ? { guardNumber: guardNumber.trim() } : {}),
   })
 
   await writeAuditLog({
@@ -283,80 +285,147 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
 })
 
 // ---------------------------------------------------------------------------
-// analyzeIdDocument — reads a Kenyan National ID or passport photo with Claude
-// vision and returns the guest's full name + document number. The API key is a
-// Functions secret; the function deploys fine before the secret is set — it is
-// only needed at scan time.
+// analyzeIdDocument — uses Claude vision to extract structured data from a
+// government ID photo. Haiku is used for cost efficiency; the Anthropic API
+// key is stored as a Firebase Function secret.
 // ---------------------------------------------------------------------------
+import Anthropic from '@anthropic-ai/sdk'
+
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
 
-const ID_PROMPT = `You are reading a photo of a Kenyan identity document — either a Kenyan National ID card or a passport data page. Extract exactly two things: the person's full name and their document number.
+type OcrDocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
+
+interface ClaudeIdResult {
+  docType: OcrDocType
+  name: string | null
+  idNumber: string | null
+  dateOfBirth: string | null
+  nationality: string | null
+  sex: string | null
+  expiryDate: string | null
+  issueDate: string | null
+  address: string | null
+}
+
+const ID_EXTRACTION_PROMPT = `You are a government ID document reader. Extract text fields from the document image.
+
+Return ONLY a valid JSON object — no markdown, no explanation — with exactly these fields:
+{
+  "docType": "national_id" | "passport" | "driver_license" | "unknown",
+  "name": string | null,
+  "idNumber": string | null,
+  "dateOfBirth": "YYYY-MM-DD" | null,
+  "nationality": string | null,
+  "sex": "M" | "F" | null,
+  "expiryDate": "YYYY-MM-DD" | null,
+  "issueDate": "YYYY-MM-DD" | null,
+  "address": string | null
+}
 
 Rules:
-- Kenyan National ID: "idNumber" is the value labelled "ID NUMBER" (7-8 digits). Do NOT return the "SERIAL NUMBER" (9 digits). Set docType to "national_id".
-- Passport: "idNumber" is the passport number (from the data page or the machine-readable zone). Set docType to "passport".
-- "name" is the full name in normal Title Case (e.g. "Jane Warucho Ngugi").
-- If the image is not a recognizable ID or passport, or a field is unreadable, set that field to null and docType to "unknown".
-Return only the structured fields.`
+- Kenyan National ID: idNumber is the 7–8 digit number (NOT the 9-digit serial printed separately)
+- Dates must use ISO format YYYY-MM-DD; convert DD/MM/YYYY accordingly
+- Name in UPPERCASE as printed on the document
+- Use null for any field that is not clearly visible or readable
+- If this is not a government ID document, set docType to "unknown" and all other fields to null`
 
-const ID_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    docType: { type: 'string', enum: ['national_id', 'passport', 'unknown'] },
-    name: { type: ['string', 'null'] },
-    idNumber: { type: ['string', 'null'] },
+// Realistic mock returned when OCR_DEMO_MODE=true
+const OCR_MOCK_RESULT = {
+  docType: 'national_id' as OcrDocType,
+  confidence: 0.91,
+  name: 'Jane Warucho Ngugi',
+  idNumber: '12345678',
+  dateOfBirth: '1994-03-22',
+  nationality: 'KENYAN',
+  sex: 'F',
+  expiryDate: null,
+  issueDate: '2015-06-10',
+  address: null,
+  fieldConfidence: {
+    name: 0.96, idNumber: 0.94, dateOfBirth: 0.88,
+    nationality: 1.0, sex: 0.93, expiryDate: 0.0,
+    issueDate: 0.79, address: 0.0,
   },
-  required: ['docType', 'name', 'idNumber'],
-} as const
+  warnings: ['Demo mode — no real OCR was performed.'],
+}
 
-export const analyzeIdDocument = onCall({ secrets: [ANTHROPIC_API_KEY] }, async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
+export const analyzeIdDocument = onCall(
+  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60 },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
 
-  const { imageBase64, mediaType } = request.data as { imageBase64: string; mediaType: string }
-  if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
-    throw new HttpsError('invalid-argument', 'A base64 image is required.')
-  }
-  if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
-    throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
-  }
+    if (process.env.OCR_DEMO_MODE === 'true') {
+      console.log('analyzeIdDocument: demo mode — returning mock result')
+      return OCR_MOCK_RESULT
+    }
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
-  let response
-  try {
-    response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      thinking: { type: 'disabled' },
-      output_config: {
-        effort: 'low',
-        format: { type: 'json_schema', schema: ID_SCHEMA },
-      },
-      messages: [
-        {
+    const { imageBase64, mediaType } = request.data as {
+      imageBase64: string
+      mediaType: string
+      docType?: string
+    }
+
+    if (typeof imageBase64 !== 'string' || imageBase64.length < 100) {
+      throw new HttpsError('invalid-argument', 'A base64 image is required.')
+    }
+    if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
+      throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
+    }
+
+    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
+
+    let raw: ClaudeIdResult
+    try {
+      const msg = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [{
           role: 'user',
           content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-            { type: 'text', text: ID_PROMPT },
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType as 'image/jpeg' | 'image/png', data: imageBase64 },
+            },
+            { type: 'text', text: ID_EXTRACTION_PROMPT },
           ],
-        },
-      ],
-    })
-  } catch (err) {
-    console.error('Anthropic vision call failed', err)
-    throw new HttpsError('internal', 'Could not read the document. Please try again.')
-  }
+        }],
+      })
 
-  const block = response.content.find((b) => b.type === 'text')
-  const text = block && block.type === 'text' ? block.text : ''
-  try {
-    const parsed = JSON.parse(text) as { docType?: string; name?: string | null; idNumber?: string | null }
-    return {
-      docType: parsed.docType ?? 'unknown',
-      name: parsed.name ?? null,
-      idNumber: parsed.idNumber ?? null,
+      const text = msg.content.find(b => b.type === 'text')?.text ?? ''
+      // Strip any accidental markdown fences Claude might add
+      const jsonText = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+      raw = JSON.parse(jsonText) as ClaudeIdResult
+    } catch (err) {
+      console.error('Claude vision OCR failed', err)
+      return { docType: 'unknown', name: null, idNumber: null }
     }
-  } catch {
-    return { docType: 'unknown', name: null, idNumber: null }
-  }
-})
+
+    const validDocTypes: OcrDocType[] = ['national_id', 'passport', 'driver_license', 'unknown']
+    const docType: OcrDocType = validDocTypes.includes(raw.docType) ? raw.docType : 'unknown'
+    const hasData = Boolean(raw.name || raw.idNumber)
+
+    return {
+      docType,
+      confidence: hasData ? 0.9 : 0,
+      name: raw.name ?? null,
+      idNumber: raw.idNumber ?? null,
+      dateOfBirth: raw.dateOfBirth ?? null,
+      nationality: raw.nationality ?? null,
+      sex: raw.sex ?? null,
+      expiryDate: raw.expiryDate ?? null,
+      issueDate: raw.issueDate ?? null,
+      address: raw.address ?? null,
+      fieldConfidence: {
+        name: raw.name ? 0.9 : 0,
+        idNumber: raw.idNumber ? 0.9 : 0,
+        dateOfBirth: raw.dateOfBirth ? 0.85 : 0,
+        nationality: raw.nationality ? 0.95 : 0,
+        sex: raw.sex ? 0.9 : 0,
+        expiryDate: raw.expiryDate ? 0.85 : 0,
+        issueDate: raw.issueDate ? 0.85 : 0,
+        address: raw.address ? 0.8 : 0,
+      },
+      warnings: [],
+    }
+  },
+)

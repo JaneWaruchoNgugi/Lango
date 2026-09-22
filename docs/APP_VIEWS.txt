@@ -22,22 +22,7 @@ bottom tabs on mobile.
  PUBLIC (no login)
 ------------------------------------------------------------------------
 
-Landing page  ( / )
-  The public marketing site aimed at property owners. Sections:
-    - Hero: the pitch + "Book a Free Demo" / "See How It Works".
-    - "One system for every property": Residential, Commercial,
-      Institutional, Industrial.
-    - "How it works": register visitor → resident gets a WhatsApp alert
-      → everything is recorded.
-    - Features: visitor check-in/out, WhatsApp alerts, delivery
-      management, incident reporting, shift accountability, live
-      dashboard.
-    - Pricing: Small / Medium / Large / Estate plans.
-    - FAQ: setup time, hardware, data ownership, multi-property.
-    - "Book a free demo": a form that saves a lead (name, email, phone,
-      property type) for the admin to follow up.
-  Logged-out visitors who hit a deep link are sent here or to login.
-
+c
 Login  ( /login )
   Sign in by email/phone + password. Routes each user to their role's
   home after authenticating.

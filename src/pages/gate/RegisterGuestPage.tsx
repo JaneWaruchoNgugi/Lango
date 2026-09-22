@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, ArrowRight, ChevronRight, CheckCircle, ShieldCheck, Building2,
   User, Phone, CreditCard, Car, Users, Home, Wrench, Clock, Package, Hash,
-  Briefcase, Minus, Plus, CalendarClock, type LucideIcon,
+  Briefcase, Minus, Plus, CalendarClock, Ticket, Boxes, type LucideIcon,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -19,6 +19,7 @@ import { bumpShiftCounter } from '../../services/shiftService'
 import { sendVisitorNotification } from '../../services/NotificationService'
 import { uploadPhoto } from '../../services/photoService'
 import { TenantSearchField } from '../../components/gate/TenantSearchField'
+import { UnitSearchField, type SelectedUnit } from '../../components/gate/UnitSearchField'
 import { PhotoCapture } from '../../components/ui/PhotoCapture'
 import { IdScanConfirmDialog } from '../../components/gate/IdScanConfirmDialog'
 import { Stepper } from '../../components/gate/Stepper'
@@ -26,12 +27,13 @@ import { VisitorPass } from '../../components/gate/VisitorPass'
 import { Spinner } from '../../components/ui/LoadingScreen'
 import type { VisitType, Tenant, PreApprovedVisitor } from '../../types'
 
-type Visiting = { blockId: string; blockName: string; unitId: string; unitNumber: string; tenantId?: string; tenantName?: string; tenantPhone?: string }
+type Visiting = { blockId: string | null; blockName: string | null; unitId: string; unitNumber: string; tenantId?: string; tenantName?: string; tenantPhone?: string }
 
 type DoneResult = {
   id: string; name: string; type: VisitType; subtitle: string
   visiting: string; vehicle?: string; validUntil: string; arrival: string
   phone: string; idNumber?: string; duration?: string; qrValue: string; passId: string
+  gatePass?: string
 }
 
 const PURPOSES: { value: VisitType; icon: LucideIcon; label: string; hint: string }[] = [
@@ -71,8 +73,8 @@ export default function RegisterGuestPage() {
   const navigate = useNavigate()
   const propertyId = user?.propertyId ?? ''
   const homePath = user?.role === 'CARETAKER' ? '/caretaker' : user?.role === 'PROPERTY_MANAGER' ? '/property' : '/gate'
-  const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Guard', role: 'SECURITY_GUARD' as const }
-  const { shift } = useShift(user?.uid)
+  const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Guard', role: user?.role ?? 'SECURITY_GUARD' as const }
+  const { shift } = useShift(user?.uid, user?.propertyId)
 
   const [step, setStep] = useState(1)
   const [visitType, setVisitType] = useState<VisitType | null>(null)
@@ -94,12 +96,17 @@ export default function RegisterGuestPage() {
   }
 
   const applyTenant = (t: Tenant) => {
-    setVisiting({ blockId: t.blockId, blockName: t.blockName, unitId: t.unitId, unitNumber: t.unitNumber, tenantId: t.tenantId, tenantName: t.fullName, tenantPhone: t.whatsappNumber || t.phoneNumber })
-    form.setValue('blockId', t.blockId); form.setValue('unitId', t.unitId)
+    setVisiting({ blockId: t.blockId ?? null, blockName: t.blockName ?? null, unitId: t.unitId, unitNumber: t.unitNumber, tenantId: t.tenantId, tenantName: t.fullName, tenantPhone: t.whatsappNumber || t.phoneNumber })
+    form.setValue('blockId', t.blockId ?? ''); form.setValue('unitId', t.unitId)
   }
   const applyPreApproved = (p: PreApprovedVisitor) => {
-    setVisiting({ blockId: p.blockId ?? '', blockName: p.blockName ?? '', unitId: p.unitId, unitNumber: p.unitNumber, tenantId: p.tenantId, tenantName: p.tenantName })
+    const caretaker = user?.role === 'CARETAKER'
+    setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: caretaker ? undefined : p.tenantId, tenantName: caretaker ? undefined : p.tenantName })
     form.setValue('unitId', p.unitId); form.setValue('blockId', p.blockId || 'preapproved'); form.setValue('visitorName', p.name)
+  }
+  const applyUnit = (u: SelectedUnit) => {
+    setVisiting({ blockId: u.blockId, blockName: u.blockName, unitId: u.unitId, unitNumber: u.unitNumber })
+    form.setValue('blockId', u.blockId ?? ''); form.setValue('unitId', u.unitId)
   }
 
   const goToReview = async () => {
@@ -109,7 +116,7 @@ export default function RegisterGuestPage() {
     setStep(3)
   }
 
-  const visitingLabel = visiting ? `${visiting.blockName} ${visiting.unitNumber}${visiting.tenantName ? ` — ${visiting.tenantName}` : ''}` : ''
+  const visitingLabel = visiting ? `${visiting.blockName ?? ''} ${visiting.unitNumber}${visiting.tenantName ? ` — ${visiting.tenantName}` : ''}`.trim() : ''
 
   const onSubmit = async (raw: FieldValues) => {
     const data = raw as RegisterGuestInput
@@ -128,6 +135,9 @@ export default function RegisterGuestPage() {
           tenantId: visiting.tenantId, tenantName: visiting.tenantName,
           deliveryType: data.deliveryType || undefined, trackingNumber: data.trackingNumber || undefined,
           vehicleRegistration: data.vehicleRegistration || undefined,
+          vehicleType: data.vehicleType || undefined,
+          vehicleDescription: data.vehicleDescription || undefined,
+          gatePassNumber: data.gatePassNumber || undefined,
           packageDescription: data.packageDescription, photoUrl, notes: data.notes,
         })
         await bumpShiftCounter(shift?.shiftId ?? '', 'deliveriesRegistered')
@@ -137,6 +147,10 @@ export default function RegisterGuestPage() {
           propertyId, guard: actor, shiftId: shift?.shiftId, visitType: data.visitType,
           visitorName: data.visitorName, phone: data.phone, idNumber: data.idNumber || undefined, nationality: data.nationality || undefined, photoUrl,
           vehicleRegistration: data.vehicleRegistration || undefined,
+          vehicleType: data.vehicleType || undefined,
+          vehicleDescription: data.vehicleDescription || undefined,
+          gatePassNumber: data.gatePassNumber || undefined,
+          itemsBroughtIn: data.itemsBroughtIn || undefined,
           blockId: visiting.blockId, blockName: visiting.blockName, unitId: visiting.unitId, unitNumber: visiting.unitNumber,
           tenantId: visiting.tenantId, tenantName: visiting.tenantName,
           reason: data.visitType === 'FRIENDLY_VISIT' ? data.reason : undefined,
@@ -166,6 +180,7 @@ export default function RegisterGuestPage() {
       setDone({
         id, name: data.visitorName, type: data.visitType, subtitle,
         visiting: visitingLabel, vehicle: data.vehicleRegistration || undefined,
+        gatePass: data.gatePassNumber || undefined,
         phone: data.phone, idNumber: data.idNumber || undefined,
         arrival: format(now, 'h:mm a'),
         duration: 'expectedDurationMins' in data && data.expectedDurationMins ? `${Math.round(data.expectedDurationMins / 60)} hour${data.expectedDurationMins >= 120 ? 's' : ''}` : undefined,
@@ -194,9 +209,10 @@ export default function RegisterGuestPage() {
       <IdScanConfirmDialog
         photo={scanPhoto}
         onClose={() => setScanPhoto(null)}
-        onConfirm={fields => {
-          if (fields.name) form.setValue('visitorName', fields.name)
-          if (fields.idNumber) form.setValue('idNumber', fields.idNumber)
+        onConfirm={result => {
+          if (result.name) form.setValue('visitorName', result.name)
+          if (result.idNumber) form.setValue('idNumber', result.idNumber)
+          if (result.nationality) form.setValue('nationality', result.nationality)
           setScanPhoto(null)
         }}
       />
@@ -231,8 +247,13 @@ export default function RegisterGuestPage() {
 
   const visitingField = (label: string) => (
     <Field icon={Home} label={label}>
-      <TenantSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
-        onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      {user?.role === 'CARETAKER' ? (
+        <UnitSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
+          onSelectUnit={applyUnit} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      ) : (
+        <TenantSearchField key={visitType} propertyId={propertyId} selectedUnitId={visiting?.unitId ?? null}
+          onSelectTenant={applyTenant} onSelectPreApproved={applyPreApproved} onClear={clearVisiting} />
+      )}
       {errors.unitId && <p className="form-error">{errors.unitId.message}</p>}
     </Field>
   )
@@ -274,6 +295,7 @@ export default function RegisterGuestPage() {
             <SummaryRow icon={Head} label="Visit Type" value={done.subtitle} />
             <SummaryRow icon={Home} label="Visiting" value={done.visiting} />
             {done.vehicle && <SummaryRow icon={Car} label="Vehicle" value={done.vehicle} />}
+            {done.gatePass && <SummaryRow icon={Ticket} label="Gate Pass" value={done.gatePass} />}
             <SummaryRow icon={Clock} label="Expected Arrival" value={done.arrival} />
             {done.duration && <SummaryRow icon={Clock} label="Expected Duration" value={done.duration} />}
           </div>
@@ -411,10 +433,35 @@ export default function RegisterGuestPage() {
               )}
             </div>
 
-            {(visitType === 'DELIVERY' || visitType === 'SERVICE_PROVIDER' || visitType === 'FRIENDLY_VISIT') && (
+            <Field icon={Ticket} label="Gate Pass / Badge No.">
+              <input className="input" placeholder="Optional" {...form.register('gatePassNumber')} />
+            </Field>
+
+            <div className="md:col-span-2 grid md:grid-cols-3 gap-x-5 gap-y-4">
               <Field icon={Car} label="Vehicle Registration">
                 <input className="input" placeholder="Optional" {...form.register('vehicleRegistration')} />
               </Field>
+              <Field icon={Car} label="Vehicle Type">
+                <select className="input" {...form.register('vehicleType')}>
+                  <option value="">—</option>
+                  <option value="CAR">Car</option>
+                  <option value="MOTORBIKE">Motorbike</option>
+                  <option value="VAN">Van</option>
+                  <option value="TRUCK">Truck</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </Field>
+              <Field icon={Car} label="Make & Colour">
+                <input className="input" placeholder="e.g. white Toyota" {...form.register('vehicleDescription')} />
+              </Field>
+            </div>
+
+            {visitType !== 'DELIVERY' && (
+              <div className="md:col-span-2">
+                <Field icon={Boxes} label={visitType === 'WORK' ? 'Tools / equipment brought in (checked on exit)' : 'Items brought in (checked on exit)'}>
+                  <textarea rows={2} className="input resize-none" placeholder="Optional" {...form.register('itemsBroughtIn')} />
+                </Field>
+              </div>
             )}
 
             {(visitType === 'WORK' || visitType === 'SERVICE_PROVIDER') && <div className="md:col-span-2">{durationField}</div>}
@@ -456,6 +503,10 @@ export default function RegisterGuestPage() {
             <ReviewRow icon={STEP_HEADER[visitType].icon} title="Visit Type" lines={[VISIT_TYPE_LABEL[visitType], visitType === 'WORK' ? form.watch('workType') : visitType === 'SERVICE_PROVIDER' ? form.watch('serviceType') : visitType === 'DELIVERY' ? form.watch('company') : (form.watch('reason') || '')]} />
             <ReviewRow icon={Home} title="Visiting" lines={[visitingLabel]} />
             {form.watch('vehicleRegistration') && <ReviewRow icon={Car} title="Vehicle" lines={[form.watch('vehicleRegistration')]} />}
+            {form.watch('vehicleType') && <ReviewRow icon={Car} title="Vehicle Type" lines={[String(form.watch('vehicleType'))]} />}
+            {form.watch('vehicleDescription') && <ReviewRow icon={Car} title="Vehicle Description" lines={[form.watch('vehicleDescription')]} />}
+            {form.watch('gatePassNumber') && <ReviewRow icon={Ticket} title="Gate Pass" lines={[form.watch('gatePassNumber')]} />}
+            {form.watch('itemsBroughtIn') && <ReviewRow icon={Boxes} title="Items Brought In" lines={[form.watch('itemsBroughtIn')]} />}
             {form.watch('expectedDurationMins') && <ReviewRow icon={Clock} title="Expected Duration" lines={[`${Math.round(Number(form.watch('expectedDurationMins')) / 60)} hour(s)`]} />}
           </div>
           <button type="submit" disabled={submitting} className="btn-primary w-full py-3">

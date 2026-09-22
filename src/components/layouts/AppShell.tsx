@@ -12,6 +12,8 @@ interface Props {
   bottomNav: NavItem[]
   roleLabel: string
   settingsTo?: string
+  onSignOut?: () => void
+  signOutLabel?: string
 }
 
 /**
@@ -20,7 +22,7 @@ interface Props {
  *  - Tablet (md–lg): icon-only navy rail.
  *  - Mobile (<md): light top bar + slide-over drawer + bottom tab bar.
  */
-export function AppShell({ navItems, bottomNav, roleLabel, settingsTo }: Props) {
+export function AppShell({ navItems, bottomNav, roleLabel, settingsTo, onSignOut, signOutLabel }: Props) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -28,6 +30,8 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo }: Props) 
   const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 
   const handleSignOut = async () => { await signOut(); toast.success('Signed out'); navigate('/login') }
+  const exit = onSignOut ?? handleSignOut
+  const exitLabel = signOutLabel ?? 'Logout'
 
   const Sidebar = ({ full }: { full?: boolean }) => (
     <div className="flex flex-col h-full">
@@ -52,8 +56,8 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo }: Props) 
           <div className={`flex-1 min-w-0 ${full ? '' : 'hidden lg:block'}`}><p className="text-sm font-medium truncate">{name}</p><p className="text-white/50 text-xs">{roleLabel}</p></div>
           {settingsTo && <button onClick={() => { setMobileOpen(false); navigate(settingsTo) }} className={`text-white/60 hover:text-white ${full ? '' : 'hidden lg:block'}`}><Settings className="w-4 h-4" /></button>}
         </div>
-        <button onClick={handleSignOut} title="Logout" className={`flex items-center gap-3 px-2 py-2 mt-1 w-full text-sm text-white/70 hover:text-white ${full ? '' : 'md:justify-center lg:justify-start'}`}>
-          <LogOut className="w-4 h-4 shrink-0" /> <span className={full ? '' : 'hidden lg:inline'}>Logout</span>
+        <button onClick={exit} title={exitLabel} className={`flex items-center gap-3 px-2 py-2 mt-1 w-full text-sm text-white/70 hover:text-white ${full ? '' : 'md:justify-center lg:justify-start'}`}>
+          <LogOut className="w-4 h-4 shrink-0" /> <span className={full ? '' : 'hidden lg:inline'}>{exitLabel}</span>
         </button>
       </div>
     </div>
@@ -80,13 +84,13 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo }: Props) 
             <div className="w-6 h-6 bg-lango-dark rounded-md flex items-center justify-center"><span className="text-white font-bold text-xs">L</span></div>
             <span className="font-bold text-lango-dark text-sm">LANGO</span>
           </div>
-          <button onClick={handleSignOut} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
+          <button onClick={exit} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
         </header>
 
         {/* Desktop/tablet top bar */}
         <div className="hidden md:flex items-center justify-end gap-3 px-6 py-3">
           <OnlinePill />
-          <button onClick={handleSignOut} className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
+          <button onClick={exit} className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
         </div>
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 md:pb-6"><Outlet /></main>

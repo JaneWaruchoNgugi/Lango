@@ -17,6 +17,9 @@ const BOTTOM: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/properties', label: 'Properties', icon: Building2 },
   { to: '/admin/staff', label: 'Staff', icon: Users },
+  { to: '/admin/leads', label: 'Leads', icon: Inbox },
+  { to: '/admin/notifications', label: 'Notifications', icon: Bell },
+
 ]
 
 export function AdminLayout() {

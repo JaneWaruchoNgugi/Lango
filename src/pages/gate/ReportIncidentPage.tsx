@@ -37,7 +37,7 @@ export default function ReportIncidentPage() {
       let photoUrl: string | undefined
       if (photo) { try { photoUrl = await uploadPhoto(user.propertyId, 'incidents', photo) } catch { /* optional */ } }
       await reportIncident({ propertyId: user.propertyId, guard: actor, type: data.type, severity: data.severity, description: data.description, photoUrl })
-      const shift = await getActiveShift(user.uid); if (shift) await bumpShiftCounter(shift.shiftId, 'incidentsReported')
+      const shift = await getActiveShift(user.uid, user.propertyId); if (shift) await bumpShiftCounter(shift.shiftId, 'incidentsReported')
       toast.success('Incident reported'); navigate('/gate/incidents')
     } catch { toast.error('Failed to report incident') } finally { setBusy(false) }
   }
