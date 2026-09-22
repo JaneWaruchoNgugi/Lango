@@ -74,7 +74,7 @@ export default function RegisterGuestPage() {
   const propertyId = user?.propertyId ?? ''
   const homePath = user?.role === 'CARETAKER' ? '/caretaker' : user?.role === 'PROPERTY_MANAGER' ? '/property' : '/gate'
   const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'Guard', role: user?.role ?? 'SECURITY_GUARD' as const }
-  const { shift } = useShift(user?.uid)
+  const { shift } = useShift(user?.uid, user?.propertyId)
 
   const [step, setStep] = useState(1)
   const [visitType, setVisitType] = useState<VisitType | null>(null)

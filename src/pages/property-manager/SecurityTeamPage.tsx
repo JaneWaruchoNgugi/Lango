@@ -361,7 +361,7 @@ export default function SecurityTeamPage() {
         title={confirmDeactivate?.status === 'ACTIVE' ? 'Deactivate Guard' : 'Activate Guard'}
         message={`${confirmDeactivate?.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} ${confirmDeactivate?.name}? They ${confirmDeactivate?.status === 'ACTIVE' ? 'will no longer be able to start shifts' : 'will be able to start shifts again'}.`}
         confirmLabel={confirmDeactivate?.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-        variant={confirmDeactivate?.status === 'ACTIVE' ? 'danger' : 'default'}
+        variant={confirmDeactivate?.status === 'ACTIVE' ? 'danger' : 'primary'}
         loading={deactivateBusy}
       />
     </div>
