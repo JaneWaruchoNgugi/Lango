@@ -48,9 +48,10 @@ export const createStaffUser = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'Only a Property Manager or administrator may create staff.')
   }
 
-  const { name, email, phone, role, propertyId: requestedPropertyId, status, password } = request.data as {
+  const { name, email, phone, role, propertyId: requestedPropertyId, status, password, idNumber, guardNumber } = request.data as {
     name: string; email: string; phone: string
     role: Exclude<Role, 'SUPER_ADMIN'>; propertyId: string; status: string; password?: string
+    idNumber?: string; guardNumber?: string
   }
 
   if (!name || !email || !phone || !role) {
@@ -117,6 +118,8 @@ export const createStaffUser = onCall(async (request) => {
     createdBy: request.auth!.uid,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
+    ...(idNumber?.trim() ? { idNumber: idNumber.trim() } : {}),
+    ...(guardNumber?.trim() ? { guardNumber: guardNumber.trim() } : {}),
   })
 
   await writeAuditLog({
@@ -282,50 +285,51 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
 })
 
 // ---------------------------------------------------------------------------
-// analyzeIdDocument — forwards the document image to the Python OCR service
-// and maps the structured response to the shape the frontend expects.
-// The OCR service URL and bearer token are Firebase Function secrets.
+// analyzeIdDocument — uses Claude vision to extract structured data from a
+// government ID photo. Haiku is used for cost efficiency; the Anthropic API
+// key is stored as a Firebase Function secret.
 // ---------------------------------------------------------------------------
-const OCR_SERVICE_URL = defineSecret('OCR_SERVICE_URL')
-const OCR_SERVICE_TOKEN = defineSecret('OCR_SERVICE_TOKEN')
+import Anthropic from '@anthropic-ai/sdk'
 
-const OCR_TIMEOUT_MS = 50_000
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
 
 type OcrDocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
 
-interface OcrField { value: string | null; confidence: number; raw: string | null }
-
-interface OcrServiceFields {
-  name?: OcrField
-  id_number?: OcrField
-  date_of_birth?: OcrField
-  nationality?: OcrField
-  sex?: OcrField
-  expiry_date?: OcrField
-  issue_date?: OcrField
-  issuing_country?: OcrField
-  address?: OcrField
+interface ClaudeIdResult {
+  docType: OcrDocType
+  name: string | null
+  idNumber: string | null
+  dateOfBirth: string | null
+  nationality: string | null
+  sex: string | null
+  expiryDate: string | null
+  issueDate: string | null
+  address: string | null
 }
 
-interface OcrServiceResponse {
-  schema_version: string
-  success: boolean
-  doc_type: string
-  fields: OcrServiceFields
-  overall_confidence: number
-  warnings?: string[]
-  error?: { code: string; message: string; recoverable: boolean }
-  processing_ms?: number
+const ID_EXTRACTION_PROMPT = `You are a government ID document reader. Extract text fields from the document image.
+
+Return ONLY a valid JSON object — no markdown, no explanation — with exactly these fields:
+{
+  "docType": "national_id" | "passport" | "driver_license" | "unknown",
+  "name": string | null,
+  "idNumber": string | null,
+  "dateOfBirth": "YYYY-MM-DD" | null,
+  "nationality": string | null,
+  "sex": "M" | "F" | null,
+  "expiryDate": "YYYY-MM-DD" | null,
+  "issueDate": "YYYY-MM-DD" | null,
+  "address": string | null
 }
 
-function mapDocType(raw: string): OcrDocType {
-  if (raw === 'national_id') return 'national_id'
-  if (raw === 'passport') return 'passport'
-  if (raw === 'driver_license') return 'driver_license'
-  return 'unknown'
-}
+Rules:
+- Kenyan National ID: idNumber is the 7–8 digit number (NOT the 9-digit serial printed separately)
+- Dates must use ISO format YYYY-MM-DD; convert DD/MM/YYYY accordingly
+- Name in UPPERCASE as printed on the document
+- Use null for any field that is not clearly visible or readable
+- If this is not a government ID document, set docType to "unknown" and all other fields to null`
 
-// Realistic mock result returned when OCR_DEMO_MODE=true (no Python service needed).
+// Realistic mock returned when OCR_DEMO_MODE=true
 const OCR_MOCK_RESULT = {
   docType: 'national_id' as OcrDocType,
   confidence: 0.91,
@@ -346,18 +350,16 @@ const OCR_MOCK_RESULT = {
 }
 
 export const analyzeIdDocument = onCall(
-  { secrets: [OCR_SERVICE_URL, OCR_SERVICE_TOKEN], timeoutSeconds: 60 },
+  { secrets: [ANTHROPIC_API_KEY], timeoutSeconds: 60 },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to scan documents.')
 
-    // Demo mode: return mock data without calling the Python OCR service.
-    // Enable by setting OCR_DEMO_MODE=true in Firebase Function environment config.
     if (process.env.OCR_DEMO_MODE === 'true') {
       console.log('analyzeIdDocument: demo mode — returning mock result')
       return OCR_MOCK_RESULT
     }
 
-    const { imageBase64, mediaType, docType: docTypeHint } = request.data as {
+    const { imageBase64, mediaType } = request.data as {
       imageBase64: string
       mediaType: string
       docType?: string
@@ -370,72 +372,60 @@ export const analyzeIdDocument = onCall(
       throw new HttpsError('invalid-argument', 'mediaType must be image/jpeg or image/png.')
     }
 
-    const validDocTypes = ['auto', 'national_id', 'passport', 'driver_license']
-    const docType = validDocTypes.includes(docTypeHint ?? '') ? docTypeHint : 'auto'
+    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
 
-    let ocrJson: OcrServiceResponse
+    let raw: ClaudeIdResult
     try {
-      const res = await fetch(`${OCR_SERVICE_URL.value()}/ocr/document`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(OCR_TIMEOUT_MS),
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${OCR_SERVICE_TOKEN.value()}`,
-        },
-        body: JSON.stringify({ image_base64: imageBase64, media_type: mediaType, doc_type: docType }),
+      const msg = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType as 'image/jpeg' | 'image/png', data: imageBase64 },
+            },
+            { type: 'text', text: ID_EXTRACTION_PROMPT },
+          ],
+        }],
       })
 
-      if (res.status === 401) throw new HttpsError('internal', 'OCR service authentication failed.')
-      if (res.status === 503 || res.status === 504) {
-        throw new HttpsError('unavailable', 'OCR service is temporarily unavailable.')
-      }
-      if (!res.ok) {
-        console.error('OCR service error', res.status)
-        throw new HttpsError('internal', 'OCR service returned an unexpected error.')
-      }
-
-      ocrJson = (await res.json()) as OcrServiceResponse
+      const text = msg.content.find(b => b.type === 'text')?.text ?? ''
+      // Strip any accidental markdown fences Claude might add
+      const jsonText = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+      raw = JSON.parse(jsonText) as ClaudeIdResult
     } catch (err) {
-      const e = err as { code?: string; name?: string }
-      if (e.code === 'unauthenticated' || e.code === 'unavailable' || e.code === 'internal') throw err
-      if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-        console.error('OCR service timeout')
-        throw new HttpsError('deadline-exceeded', 'OCR service did not respond in time.')
-      }
-      console.error('OCR service fetch failed', err)
-      throw new HttpsError('internal', 'Could not reach the OCR service.')
-    }
-
-    // success:false means OCR ran but couldn't extract fields — return a
-    // graceful degraded result so the Guard can enter details manually.
-    if (!ocrJson.success) {
-      console.warn('OCR returned success:false', ocrJson.error?.code, ocrJson.warnings)
+      console.error('Claude vision OCR failed', err)
       return { docType: 'unknown', name: null, idNumber: null }
     }
 
-    const f = ocrJson.fields
+    const validDocTypes: OcrDocType[] = ['national_id', 'passport', 'driver_license', 'unknown']
+    const docType: OcrDocType = validDocTypes.includes(raw.docType) ? raw.docType : 'unknown'
+    const hasData = Boolean(raw.name || raw.idNumber)
+
     return {
-      docType: mapDocType(ocrJson.doc_type),
-      confidence: ocrJson.overall_confidence,
-      name: f.name?.value ?? null,
-      idNumber: f.id_number?.value ?? null,
-      dateOfBirth: f.date_of_birth?.value ?? null,
-      nationality: f.nationality?.value ?? null,
-      sex: f.sex?.value ?? null,
-      expiryDate: f.expiry_date?.value ?? null,
-      issueDate: f.issue_date?.value ?? null,
-      address: f.address?.value ?? null,
+      docType,
+      confidence: hasData ? 0.9 : 0,
+      name: raw.name ?? null,
+      idNumber: raw.idNumber ?? null,
+      dateOfBirth: raw.dateOfBirth ?? null,
+      nationality: raw.nationality ?? null,
+      sex: raw.sex ?? null,
+      expiryDate: raw.expiryDate ?? null,
+      issueDate: raw.issueDate ?? null,
+      address: raw.address ?? null,
       fieldConfidence: {
-        name: f.name?.confidence ?? 0,
-        idNumber: f.id_number?.confidence ?? 0,
-        dateOfBirth: f.date_of_birth?.confidence ?? 0,
-        nationality: f.nationality?.confidence ?? 0,
-        sex: f.sex?.confidence ?? 0,
-        expiryDate: f.expiry_date?.confidence ?? 0,
-        issueDate: f.issue_date?.confidence ?? 0,
-        address: f.address?.confidence ?? 0,
+        name: raw.name ? 0.9 : 0,
+        idNumber: raw.idNumber ? 0.9 : 0,
+        dateOfBirth: raw.dateOfBirth ? 0.85 : 0,
+        nationality: raw.nationality ? 0.95 : 0,
+        sex: raw.sex ? 0.9 : 0,
+        expiryDate: raw.expiryDate ? 0.85 : 0,
+        issueDate: raw.issueDate ? 0.85 : 0,
+        address: raw.address ? 0.8 : 0,
       },
-      warnings: ocrJson.warnings ?? [],
+      warnings: [],
     }
   },
 )

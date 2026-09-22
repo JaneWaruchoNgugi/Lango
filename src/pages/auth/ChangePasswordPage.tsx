@@ -9,6 +9,7 @@ import { KeyRound } from 'lucide-react'
 import { auth, db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { Spinner } from '../../components/ui/LoadingScreen'
+import { PasswordInput } from '../../components/ui/PasswordInput'
 import toast from 'react-hot-toast'
 import type { UserRole } from '../../types'
 
@@ -72,12 +73,12 @@ export default function ChangePasswordPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="px-8 py-7 space-y-4">
           <div>
             <label className="label">New password</label>
-            <input {...register('password')} type="password" autoComplete="new-password" className="input" placeholder="••••••••" />
+            <PasswordInput {...register('password')} autoComplete="new-password" placeholder="••••••••" />
             {errors.password && <p className="form-error">{errors.password.message}</p>}
           </div>
           <div>
             <label className="label">Confirm password</label>
-            <input {...register('confirm')} type="password" autoComplete="new-password" className="input" placeholder="••••••••" />
+            <PasswordInput {...register('confirm')} autoComplete="new-password" placeholder="••••••••" />
             {errors.confirm && <p className="form-error">{errors.confirm.message}</p>}
           </div>
           <button type="submit" disabled={saving} className="btn-primary w-full py-2.5">

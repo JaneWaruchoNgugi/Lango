@@ -36,7 +36,7 @@ interface DemoActions {
   createIncident: (input: { type: string; location: string; reportedBy: string }) => void
   setIncidentStatus: (id: string, status: DemoIncidentStatus) => void
   assignIncident: (id: string, staffName: string) => void
-  startShift: (staffId: string) => void
+  startShift: (staffId: string, opts?: { shiftType?: 'DAY' | 'NIGHT'; securityPost?: string }) => void
   endShift: (staffId: string) => void
 }
 
@@ -145,13 +145,14 @@ export const useDemoStore = create<DemoStore>()(
           activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'INCIDENT' as const, title: 'Incident assigned', subtitle: `${staffName} · ${inc.location}`, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
-      startShift: (staffId) => set((s) => {
+      startShift: (staffId, opts) => set((s) => {
         const shift = s.shifts.find(x => x.staffId === staffId)
         const member = s.staff.find(x => x.id === staffId)
         if (!shift || !member) return {}
+        const label = `${opts?.shiftType === 'NIGHT' ? 'Night' : 'Day'} Shift · ${opts?.securityPost ?? 'Main Gate'}`
         return {
-          shifts: s.shifts.map(x => x.staffId === staffId ? { ...x, status: 'ON' as const, startedLabel: 'Started 8:02 AM' } : x),
-          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'SHIFT' as const, title: `${member.name} started their shift`, subtitle: member.role, timeLabel: 'Just now' }, ...s.activity],
+          shifts: s.shifts.map(x => x.staffId === staffId ? { ...x, status: 'ON' as const, startedLabel: 'Just now', shiftType: opts?.shiftType ?? 'DAY', securityPost: opts?.securityPost ?? 'Main Gate' } : x),
+          activity: [{ id: `act-${crypto.randomUUID()}`, kind: 'SHIFT' as const, title: `${member.name} started shift`, subtitle: label, timeLabel: 'Just now' }, ...s.activity],
         }
       }),
       endShift: (staffId) => set((s) => {

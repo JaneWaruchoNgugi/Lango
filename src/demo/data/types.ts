@@ -19,9 +19,9 @@ export interface DemoVisitor {
 }
 export interface DemoDelivery { id: string; company: string; unitNumber: string; expectedLabel: string; status: DemoDeliveryStatus }
 export interface DemoIncident { id: string; type: string; location: string; reportedBy: string; timeLabel: string; status: DemoIncidentStatus; assignedTo?: string }
-export interface DemoStaff { id: string; name: string; role: string; status: DemoStaffStatus }
+export interface DemoStaff { id: string; name: string; role: string; status: DemoStaffStatus; idNumber?: string; guardNumber?: string; phone?: string }
 export interface DemoActivity { id: string; kind: DemoActivityKind; title: string; subtitle: string; timeLabel: string }
-export interface DemoShift { staffId: string; status: DemoShiftStatus; startedLabel: string | null }
+export interface DemoShift { staffId: string; status: DemoShiftStatus; startedLabel: string | null; shiftType?: 'DAY' | 'NIGHT'; securityPost?: string }
 export interface DemoApproval { id: string; visitorId: string; visitorName: string; unitNumber: string; purpose: string; type: DemoVisitType }
 
 export interface DemoState {

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { httpsCallable } from 'firebase/functions'
-import { useForm } from 'react-hook-form'
+import { getDocs, query, where } from 'firebase/firestore'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../../contexts/AuthContext'
 import { functions } from '../../firebase/config'
+import { usersCol } from '../../firebase/collections'
 import { useStaff } from '../../hooks/useStaff'
 import { canDeleteStaff, canCreateStaff } from '../../domain/permissions'
 import { StaffStatusBadge } from '../../components/ui/StatusBadge'
@@ -16,11 +18,13 @@ import type { AppUser } from '../../types'
 
 // PMs may only create operational staff; propertyId is forced server-side.
 const staffSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Valid email required'),
-  phone: z.string().min(9, 'Valid phone required'),
-  role: z.enum(['CARETAKER', 'SECURITY_GUARD']),
-  password: z.string().min(8, 'At least 8 characters'),
+  name:        z.string().min(2, 'Name is required'),
+  email:       z.string().email('Valid email required'),
+  phone:       z.string().min(9, 'Valid phone required'),
+  role:        z.enum(['CARETAKER', 'SECURITY_GUARD']),
+  password:    z.string().min(8, 'At least 8 characters'),
+  idNumber:    z.string().optional(),
+  guardNumber: z.string().optional(),
 })
 type StaffForm = z.infer<typeof staffSchema>
 
@@ -43,10 +47,11 @@ export default function StaffPage() {
   const [tempCred, setTempCred] = useState<{ name: string; email: string; password: string } | null>(null)
 
   const canCreate = canCreateStaff(user?.role)
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<StaffForm>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<StaffForm>({
     resolver: zodResolver(staffSchema),
     defaultValues: { role: 'SECURITY_GUARD' },
   })
+  const watchedRole = useWatch({ control, name: 'role' })
 
   const suggestPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
@@ -58,7 +63,11 @@ export default function StaffPage() {
   const onCreate = async (data: StaffForm) => {
     setCreating(true)
     try {
-      // propertyId is forced from the caller's claim server-side; sent only for clarity.
+      // Duplicate ID check for guards
+      if (data.role === 'SECURITY_GUARD' && data.idNumber) {
+        const dup = await getDocs(query(usersCol, where('propertyId', '==', user?.propertyId ?? ''), where('idNumber', '==', data.idNumber)))
+        if (!dup.empty) { toast.error('A guard with this ID number already exists'); setCreating(false); return }
+      }
       const call = httpsCallable<StaffForm & { propertyId?: string; status: string }, { uid: string; tempPassword: string }>(functions, 'createStaffUser')
       const res = await call({ ...data, propertyId: user?.propertyId ?? '', status: 'ACTIVE' })
       setTempCred({ name: data.name, email: data.email, password: res.data.tempPassword })
@@ -236,6 +245,17 @@ export default function StaffPage() {
                 <option value="CARETAKER">Caretaker</option>
               </select>
             </div>
+            {watchedRole === 'SECURITY_GUARD' && (<>
+              <div>
+                <label className="label">ID Number</label>
+                <input {...register('idNumber')} className="input" placeholder="National ID" />
+                {errors.idNumber && <p className="form-error">{errors.idNumber.message}</p>}
+              </div>
+              <div>
+                <label className="label">Guard / Badge Number</label>
+                <input {...register('guardNumber')} className="input" placeholder="Optional" />
+              </div>
+            </>)}
             <div>
               <div className="flex items-center justify-between">
                 <label className="label">Temporary Password *</label>

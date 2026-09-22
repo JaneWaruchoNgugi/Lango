@@ -175,7 +175,7 @@ service cloud.firestore {
     // SHIFTS
     // ============================================================
     match /shifts/{shiftId} {
-      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow read:   if isAuth() && (ownsProperty(resource.data.propertyId) || request.auth.uid == resource.data.guardId);
       allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
       allow update: if isAuth() && (request.auth.uid == resource.data.guardId || isSuperAdmin() || isPropertyStaff());
       allow delete: if isSuperAdmin();

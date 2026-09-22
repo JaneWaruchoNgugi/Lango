@@ -45,6 +45,15 @@ export type IncidentSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 
 export type ShiftStatus = 'ACTIVE' | 'ENDED'
 
+export type ShiftType = 'DAY' | 'NIGHT'
+
+export const SHIFT_CONFIG: Record<ShiftType, { label: string; start: string; end: string }> = {
+  DAY:   { label: 'Day Shift',   start: '06:00', end: '18:00' },
+  NIGHT: { label: 'Night Shift', start: '18:00', end: '06:00' },
+}
+
+export const DEFAULT_SECURITY_POSTS = ['Main Gate', 'Back Gate', 'Service Gate', 'Parking']
+
 export type StaffStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
 
 export type NotificationType = 'VISITOR_ALERT' | 'DELIVERY_ALERT' | 'INCIDENT_ALERT' | 'SYSTEM'
@@ -99,6 +108,8 @@ export interface AppUser {
   lastLoginAt?: Timestamp
   createdBy?: string           // uid of SUPER_ADMIN who created this user
   tempPasswordSet?: boolean    // true if user hasn't changed temp password
+  idNumber?: string            // guard national ID
+  guardNumber?: string         // guard employee/badge number
 }
 
 // ============================================================
@@ -361,6 +372,9 @@ export interface Shift {
   guardId: string
   guardName: string
   status: ShiftStatus
+  shiftType?: ShiftType
+  securityPost?: string
+  handoverNote?: string
   startTime: Timestamp
   endTime?: Timestamp | null
   visitorsRegistered: number
@@ -572,6 +586,48 @@ export interface PropertyDashboardStats {
   deliveriesToday: number
   openIncidents: number
   activeGuards: number
+}
+
+// ============================================================
+// SETTINGS TYPES
+// ============================================================
+
+export interface NotificationPreferences {
+  visitor: boolean
+  delivery: boolean
+  incident: boolean
+  emergency: boolean
+  channels: {
+    inApp: boolean
+    whatsapp: boolean
+  }
+}
+
+export interface PropertySettings {
+  emergencyContact: string
+  timezone: string
+  visitorApprovalRequired: boolean
+  allowWalkInVisitors: boolean
+  requireVisitorId: boolean
+  requireVisitorPhoto: boolean
+  visitorApprovalTimeoutMins: number
+  invitationExpiryHours: number
+  enableDeliveryTracking: boolean
+  deliveryNotifications: boolean
+  requireCollectorName: boolean
+  requireDeliveryPhoto: boolean
+  dayShiftStart: string
+  dayShiftEnd: string
+  nightShiftStart: string
+  nightShiftEnd: string
+  shiftGracePeriodMins: number
+}
+
+export interface UserPreferences {
+  soundEnabled: boolean
+  vibrationEnabled: boolean
+  use24HourTime: boolean
+  language: string
 }
 
 // ============================================================

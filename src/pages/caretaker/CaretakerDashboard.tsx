@@ -62,7 +62,7 @@ export default function RoleDashboard() {
   const [shiftLoading, setShiftLoading] = useState(false)
 
   const { visitors: currentVisitors } = useCurrentVisitors(propertyId)
-  const { shift } = useShift(user?.uid)
+  const { shift } = useShift(isGuard ? user?.uid : null, isGuard ? user?.propertyId : null)
   const actor = { uid: user?.uid ?? '', name: user?.profile?.name ?? 'User', role: role ?? 'SECURITY_GUARD' }
 
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30_000); return () => clearInterval(t) }, [])
@@ -127,7 +127,7 @@ export default function RoleDashboard() {
             <span className={`w-2.5 h-2.5 rounded-full ${shift ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
             <div>
               <p className="text-sm font-semibold text-gray-900">{shift ? 'On Shift' : 'Not on Shift'}</p>
-              {shift && <p className="text-xs text-gray-500">Started {format(shift.startTime.toDate(), 'h:mm a')}</p>}
+              {shift && shift.startTime && <p className="text-xs text-gray-500">Started {format(shift.startTime.toDate(), 'h:mm a')}</p>}
             </div>
           </div>
           <button onClick={handleShift} disabled={shiftLoading} className={shift ? 'btn-secondary text-sm' : 'btn-primary text-sm'}>
