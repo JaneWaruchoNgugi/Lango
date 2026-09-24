@@ -45,6 +45,17 @@ import IncidentsPage from './pages/gate/IncidentsPage'
 import ReportIncidentPage from './pages/gate/ReportIncidentPage'
 import MyShiftPage from './pages/gate/MyShiftPage'
 import DemoApp from './demo/DemoApp'
+// New feature pages
+import ExpectedVisitorsPage  from './pages/gate/ExpectedVisitorsPage'
+import VehicleLogPage        from './pages/gate/VehicleLogPage'
+import PreApprovedPage       from './features/property/PreApprovedPage'
+import MaintenancePage       from './features/property/MaintenancePage'
+import PaymentsPage          from './features/property/PaymentsPage'
+import BlacklistPage         from './features/property/BlacklistPage'
+import InspectionsPage       from './pages/caretaker/InspectionsPage'
+import LeasePage             from './pages/property-manager/LeasePage'
+import ComplaintsPage        from './pages/property-manager/ComplaintsPage'
+import TenantPortalPage      from './pages/property-manager/TenantPortalPage'
 
 import type { UserRole } from './types'
 
@@ -109,6 +120,13 @@ export default function App() {
         <Route path="reports" element={<ReportsPlaceholder />} />
         <Route path="settings" element={<PMSettingsPage />} />
         <Route path="security-team" element={<SecurityTeamPage />} />
+        <Route path="pre-approved" element={<PreApprovedPage />} />
+        <Route path="maintenance" element={<MaintenancePage />} />
+        <Route path="financials" element={<PaymentsPage />} />
+        <Route path="blacklist" element={<BlacklistPage />} />
+        <Route path="leases" element={<LeasePage />} />
+        <Route path="complaints" element={<ComplaintsPage />} />
+        <Route path="tenant-portal" element={<TenantPortalPage />} />
       </Route>
 
       <Route
@@ -125,6 +143,10 @@ export default function App() {
         <Route path="staff" element={<CaretakerStaffPage />} />
         <Route path="reports" element={<ReportsPlaceholder />} />
         <Route path="settings" element={<CaretakerSettingsPage />} />
+        <Route path="pre-approved" element={<PreApprovedPage />} />
+        <Route path="maintenance" element={<MaintenancePage />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="inspections" element={<InspectionsPage />} />
       </Route>
 
       <Route
@@ -139,6 +161,9 @@ export default function App() {
         <Route path="incidents/new" element={<ReportIncidentPage />} />
         <Route path="shift" element={<MyShiftPage />} />
         <Route path="settings" element={<GuardSettingsPage />} />
+        <Route path="expected" element={<ExpectedVisitorsPage />} />
+        <Route path="vehicles" element={<VehicleLogPage />} />
+        <Route path="pre-approved" element={<PreApprovedPage />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />

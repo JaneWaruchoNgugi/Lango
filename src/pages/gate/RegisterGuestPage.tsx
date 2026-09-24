@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, type FieldValues } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -19,6 +19,7 @@ import { bumpShiftCounter } from '../../services/shiftService'
 import { sendVisitorNotification } from '../../services/NotificationService'
 import { uploadPhoto } from '../../services/photoService'
 import { TenantSearchField } from '../../components/gate/TenantSearchField'
+import { loadPreApproved, isAccessAllowedNow } from '../../services/preApprovalService'
 import { UnitSearchField, type SelectedUnit } from '../../components/gate/UnitSearchField'
 import { PhotoCapture } from '../../components/ui/PhotoCapture'
 import { IdScanConfirmDialog } from '../../components/gate/IdScanConfirmDialog'
@@ -85,12 +86,40 @@ export default function RegisterGuestPage() {
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState<DoneResult | null>(null)
   const [view, setView] = useState<'success' | 'pass'>('success')
+  const [blacklistWarning, setBlacklistWarning] = useState<string | null>(null)
+  const [allPreApproved, setAllPreApproved] = useState<PreApprovedVisitor[]>([])
+  const [nameQuery, setNameQuery] = useState('')
+  const [showNameDrop, setShowNameDrop] = useState(false)
+  const [matchedPreApproved, setMatchedPreApproved] = useState<PreApprovedVisitor | null>(null)
+  const nameFieldRef = useRef<HTMLDivElement>(null)
 
   const form = useForm<FieldValues>({ resolver: zodResolver(registerGuestSchema) as never })
   const errors = form.formState.errors as Record<string, { message?: string } | undefined>
 
+  const nameMatches = nameQuery.trim().length >= 2
+    ? allPreApproved.filter(p =>
+        p.name.toLowerCase().includes(nameQuery.toLowerCase()) ||
+        (p.idNumber && p.idNumber.includes(nameQuery.trim())) ||
+        (p.phone && p.phone.includes(nameQuery.trim()))
+      )
+    : []
+
+  useEffect(() => {
+    if (!propertyId) return
+    loadPreApproved(propertyId).then(setAllPreApproved).catch(() => {})
+  }, [propertyId])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (nameFieldRef.current && !nameFieldRef.current.contains(e.target as Node)) setShowNameDrop(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   const chooseType = (t: VisitType) => {
     setVisitType(t); setVisiting(null); setPhoto(null); setScanPhoto(null); setCustomDuration(false)
+    setMatchedPreApproved(null); setNameQuery('')
     form.reset({ visitType: t, nationality: 'Kenyan', numberOfVisitors: 1 } as never)
     setStep(2)
   }
@@ -102,7 +131,14 @@ export default function RegisterGuestPage() {
   const applyPreApproved = (p: PreApprovedVisitor) => {
     const caretaker = user?.role === 'CARETAKER'
     setVisiting({ blockId: p.blockId ?? null, blockName: p.blockName ?? null, unitId: p.unitId, unitNumber: p.unitNumber, tenantId: caretaker ? undefined : p.tenantId, tenantName: caretaker ? undefined : p.tenantName })
-    form.setValue('unitId', p.unitId); form.setValue('blockId', p.blockId || 'preapproved'); form.setValue('visitorName', p.name)
+    form.setValue('visitorName', p.name)
+    form.setValue('unitId', p.unitId)
+    form.setValue('blockId', p.blockId || 'preapproved')
+    if (p.phone) form.setValue('phone', p.phone)
+    if (p.idNumber) form.setValue('idNumber', p.idNumber)
+    setMatchedPreApproved(p)
+    setNameQuery(p.name)
+    setShowNameDrop(false)
   }
   const applyUnit = (u: SelectedUnit) => {
     setVisiting({ blockId: u.blockId, blockName: u.blockName, unitId: u.unitId, unitNumber: u.unitNumber })
@@ -113,6 +149,30 @@ export default function RegisterGuestPage() {
     if (!visiting) { toast.error('Select who is being visited'); return }
     const ok = await form.trigger()
     if (!ok) { toast.error('Please complete the required fields'); return }
+
+    // Blacklist check
+    setBlacklistWarning(null)
+    if (propertyId) {
+      try {
+        const { getDocs: gd, query: q, collection: col, where: wh } = await import('firebase/firestore')
+        const { db: firestoreDb } = await import('../../firebase/config')
+        const values = form.getValues() as Record<string, string | undefined>
+        const idNumber = values['idNumber'] ?? ''
+        const phone    = values['phone'] ?? ''
+        if (idNumber || phone) {
+          const snap = await gd(q(col(firestoreDb, 'blacklist'), wh('propertyId', '==', propertyId), wh('isActive', '==', true)))
+          const match = snap.docs.find(d => {
+            const e = d.data() as { idNumber?: string; phone?: string }
+            return (idNumber && e.idNumber === idNumber) || (phone && e.phone === phone)
+          })
+          if (match) {
+            const e = match.data() as { reason: string }
+            setBlacklistWarning(`This visitor is on the property blacklist. Reason: ${e.reason}`)
+          }
+        }
+      } catch (err) { console.warn('[Blacklist check]', err) }
+    }
+
     setStep(3)
   }
 
@@ -165,6 +225,16 @@ export default function RegisterGuestPage() {
           notes: data.notes,
         })
         await bumpShiftCounter(shift?.shiftId ?? '', 'visitorsRegistered')
+        if (matchedPreApproved) {
+          const patches: Record<string, string> = {}
+          if (!matchedPreApproved.idNumber && data.idNumber) patches.idNumber = data.idNumber
+          if (!matchedPreApproved.phone && data.phone) patches.phone = data.phone
+          if (Object.keys(patches).length) {
+            const { updateDoc, doc: fd } = await import('firebase/firestore')
+            const { db: fdb } = await import('../../firebase/config')
+            updateDoc(fd(fdb, 'preApproved', matchedPreApproved.id), patches).catch(() => {})
+          }
+        }
         if (visiting.tenantPhone) await sendVisitorNotification({ propertyId, type: 'VISITOR_ALERT', recipientPhone: visiting.tenantPhone, recipientName: visiting.tenantName ?? '', relatedEntityId: id, data: { visitorName: data.visitorName, unitNumber: visiting.unitNumber, visitType: VISIT_TYPE_LABEL[data.visitType], reason: ('reason' in data ? data.reason : '') ?? '', idNumber: data.idNumber ?? '' } })
       }
 
@@ -195,7 +265,7 @@ export default function RegisterGuestPage() {
     } finally { setSubmitting(false) }
   }
 
-  const resetAll = () => { setDone(null); setStep(1); setVisitType(null); setVisiting(null); setPhoto(null); setScanPhoto(null); form.reset() }
+  const resetAll = () => { setDone(null); setStep(1); setVisitType(null); setVisiting(null); setPhoto(null); setScanPhoto(null); form.reset(); setMatchedPreApproved(null); setNameQuery('') }
 
   // ---- ID capture block shared by person-type steps ----
   const idBlock = (
@@ -377,7 +447,52 @@ export default function RegisterGuestPage() {
             )}
 
             <Field icon={User} label={visitType === 'DELIVERY' ? "Delivery Person's Name" : 'Full Name'} required error={errors.visitorName?.message}>
-              <input className="input" placeholder="e.g. John Kamau" {...form.register('visitorName')} />
+              <div className="relative" ref={nameFieldRef}>
+                <input
+                  className="input" placeholder="e.g. John Kamau" autoComplete="off"
+                  {...form.register('visitorName', {
+                    onChange: e => {
+                      setNameQuery(e.target.value)
+                      setShowNameDrop(true)
+                      if (matchedPreApproved) setMatchedPreApproved(null)
+                    },
+                  })}
+                  onFocus={() => { if (nameMatches.length > 0) setShowNameDrop(true) }}
+                />
+                {matchedPreApproved && (
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-green-700">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Pre-approved · Unit {matchedPreApproved.unitNumber}
+                    {matchedPreApproved.tenantName ? ` · ${matchedPreApproved.tenantName}` : ''}
+                  </div>
+                )}
+                {showNameDrop && nameMatches.length > 0 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-green-200 rounded-xl shadow-lg overflow-hidden">
+                    <p className="text-[11px] text-gray-400 px-3 pt-2 pb-1 border-b border-gray-100">Pre-approved matches</p>
+                    {nameMatches.map(p => {
+                      const allowed = isAccessAllowedNow(p)
+                      return (
+                        <button key={p.id} type="button" onClick={() => applyPreApproved(p)}
+                          className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-green-50 text-left transition-colors">
+                          <ShieldCheck className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-gray-900">{p.name}</p>
+                              <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">PRE-APPROVED</span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Unit {p.unitNumber}{p.relationship ? ` · ${p.relationship}` : ''}{p.tenantName ? ` · ${p.tenantName}` : ''}
+                            </p>
+                            <p className={`text-xs mt-0.5 ${allowed ? 'text-green-700' : 'text-orange-600'}`}>
+                              {allowed ? '🟢 Access allowed now' : '🟡 Outside access window'} · {p.accessStart}–{p.accessEnd}
+                            </p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </Field>
 
             <Field icon={Phone} label="Phone Number" required error={errors.phone?.message}>
@@ -509,6 +624,13 @@ export default function RegisterGuestPage() {
             {form.watch('itemsBroughtIn') && <ReviewRow icon={Boxes} title="Items Brought In" lines={[form.watch('itemsBroughtIn')]} />}
             {form.watch('expectedDurationMins') && <ReviewRow icon={Clock} title="Expected Duration" lines={[`${Math.round(Number(form.watch('expectedDurationMins')) / 60)} hour(s)`]} />}
           </div>
+          {blacklistWarning && (
+            <div className="p-3 rounded-xl border border-red-200 bg-red-50">
+              <p className="text-sm font-semibold text-red-700">⚠ Blacklist Warning</p>
+              <p className="text-xs text-red-600 mt-0.5">{blacklistWarning}</p>
+              <p className="text-xs text-gray-500 mt-1">You can still proceed, but do so with caution.</p>
+            </div>
+          )}
           <button type="submit" disabled={submitting} className="btn-primary w-full py-3">
             {submitting && <Spinner size="sm" className="text-white" />}{submitting ? 'Registering…' : 'Register Guest'}
           </button>

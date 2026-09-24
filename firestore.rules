@@ -145,8 +145,12 @@ service cloud.firestore {
     // ============================================================
     match /preApproved/{docId} {
       allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
-      allow create: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
-      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow create: if isSuperAdmin()
+                    || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId)
+                    || (isGuard() && getPropertyId() == request.resource.data.propertyId);
+      allow update: if isSuperAdmin()
+                    || (isPropertyStaff() && getPropertyId() == resource.data.propertyId)
+                    || (isGuard() && getPropertyId() == resource.data.propertyId);
       allow delete: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
     }
 
@@ -214,6 +218,91 @@ service cloud.firestore {
       allow create: if isAnyStaff() && ownsProperty(request.resource.data.propertyId);
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // PLATFORM SETTINGS (pricing, default security posts)
+    // ============================================================
+    match /platform_settings/{doc} {
+      allow read:  if isAuth();
+      allow write: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // MAINTENANCE REQUESTS
+    // ============================================================
+    match /maintenance/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId)
+                    || (isGuard() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+    }
+
+    // ============================================================
+    // UNIT PAYMENTS
+    // ============================================================
+    match /payments/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create, update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // BLACKLIST
+    // ============================================================
+    match /blacklist/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create, update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow delete: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+    }
+
+    // ============================================================
+    // VEHICLE LOG
+    // ============================================================
+    match /vehicleLog/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isAuth() && ownsProperty(resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // LEASES
+    // ============================================================
+    match /leases/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create, update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == request.resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // COMPLAINTS
+    // ============================================================
+    match /complaints/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isPropertyStaff() && getPropertyId() == resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // UNIT INSPECTIONS
+    // ============================================================
+    match /inspections/{id} {
+      allow read:   if isAuth() && ownsProperty(resource.data.propertyId);
+      allow create, update: if isAuth() && ownsProperty(request.resource.data.propertyId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // TENANT INVITES
+    // ============================================================
+    match /tenantInvites/{token} {
+      allow read:   if isSuperAdmin() || (isAuth() && ownsProperty(resource.data.propertyId));
+      allow create: if isAuth() && isPropertyManager() && ownsProperty(request.resource.data.propertyId);
+      allow update: if isSuperAdmin() || (isAuth() && ownsProperty(resource.data.propertyId));
+      allow delete: if isSuperAdmin() || (isAuth() && ownsProperty(resource.data.propertyId));
     }
 
     // ============================================================
