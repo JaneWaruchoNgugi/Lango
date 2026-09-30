@@ -306,6 +306,17 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // ADMIN ALERTS (written only by Cloud Functions; Super Admin reads/clears)
+    // ============================================================
+    match /adminAlerts/{alertId} {
+      allow read: if isSuperAdmin();
+      // Only allow marking as read — no other client field changes
+      allow update: if isSuperAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false; // Cloud Functions use Admin SDK, bypassing this
+    }
+
+    // ============================================================
     // LEADS (public demo requests from the landing page)
     // ============================================================
     match /leads/{leadId} {

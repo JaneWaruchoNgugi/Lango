@@ -134,6 +134,7 @@ export interface Property {
   createdAt: Timestamp
   updatedAt: Timestamp
   createdBy: string
+  trialEndDate?: Timestamp       // when status = TRIAL; auto-suspend when this passes
   // Computed / denormalized for dashboard
   occupiedUnits?: number
   vacantUnits?: number
@@ -399,6 +400,7 @@ export interface Subscription {
   price: number           // in KES
   billingCycle: 'MONTHLY' | 'ANNUAL'
   notes?: string
+  billingNotes?: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -500,6 +502,36 @@ export interface Lead {
   source: 'LANDING_FORM'
   status: LeadStatus
   createdAt: Timestamp
+}
+
+// ============================================================
+// ADMIN ALERTS (platform-level alerts for Super Admin, written by Cloud Fns)
+// ============================================================
+
+export interface AdminAlert {
+  alertId: string
+  type: 'NEW_LEAD'
+  leadId: string
+  name: string
+  phone: string
+  propertyType: string
+  read: boolean
+  createdAt: Timestamp
+}
+
+// ============================================================
+// PLATFORM SETTINGS (platform_settings/main in Firestore)
+// ============================================================
+
+export interface PlatformSettings {
+  subscriptionPricing: {
+    SMALL: number
+    MEDIUM: number
+    LARGE: number
+    ESTATE: number
+  }
+  defaultSecurityPosts: string[]
+  updatedAt: Timestamp
 }
 
 // ============================================================
@@ -628,6 +660,7 @@ export interface UserPreferences {
   vibrationEnabled: boolean
   use24HourTime: boolean
   language: string
+  darkMode?: boolean
 }
 
 // ============================================================
@@ -641,4 +674,176 @@ export interface AuthUser {
   role: UserRole | null
   propertyId: string | null
   profile: AppUser | null
+}
+
+// ============================================================
+// MAINTENANCE REQUEST
+// ============================================================
+
+export type MaintenanceStatus   = 'PENDING' | 'IN_PROGRESS' | 'DONE'
+export type MaintenanceCategory = 'PLUMBING' | 'ELECTRICAL' | 'STRUCTURAL' | 'CLEANING' | 'APPLIANCE' | 'OTHER'
+export type MaintenancePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
+export interface MaintenanceRequest {
+  id: string
+  propertyId: string
+  unitNumber: string
+  category: MaintenanceCategory
+  description: string
+  priority: MaintenancePriority
+  status: MaintenanceStatus
+  assignedTo?: string | null
+  resolvedDate?: Timestamp | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  createdBy: string
+}
+
+// ============================================================
+// UNIT PAYMENT
+// ============================================================
+
+export type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE'
+export type PaymentMethod = 'CASH' | 'MPESA' | 'BANK' | 'OTHER'
+
+export interface UnitPayment {
+  id: string
+  propertyId: string
+  unitNumber: string
+  tenantName?: string | null
+  month: string           // "2026-09"
+  status: PaymentStatus
+  amount?: number | null
+  paymentMethod?: PaymentMethod | null
+  mpesaCode?: string | null
+  notes?: string | null
+  paidAt?: Timestamp | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  recordedBy: string
+}
+
+// ============================================================
+// BLACKLIST
+// ============================================================
+
+export interface BlacklistEntry {
+  id: string
+  propertyId: string
+  name: string
+  idNumber?: string | null
+  phone?: string | null
+  reason: string
+  isActive: boolean
+  addedBy: string
+  addedByName: string
+  dateAdded: Timestamp
+  createdAt: Timestamp
+}
+
+// ============================================================
+// VEHICLE ENTRY LOG
+// ============================================================
+
+export interface VehicleEntry {
+  id: string
+  propertyId: string
+  plate: string
+  vehicleType: VehicleType
+  makeModel?: string | null
+  driverName: string
+  driverPhone?: string | null
+  unitVisiting?: string | null
+  purpose?: string | null
+  checkIn: Timestamp
+  checkOut?: Timestamp | null
+  registeredBy: string
+  registeredByName: string
+  createdAt: Timestamp
+}
+
+// ============================================================
+// LEASE RECORD
+// ============================================================
+
+export interface LeaseRecord {
+  id: string
+  propertyId: string
+  unitNumber: string
+  tenantId: string
+  tenantName: string
+  tenantPhone?: string | null
+  moveInDate: Timestamp
+  leaseDurationMonths: number
+  leaseEndDate: Timestamp
+  monthlyRent?: number | null
+  notes?: string | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ============================================================
+// COMPLAINT
+// ============================================================
+
+export type ComplaintCategory = 'NOISE' | 'CLEANLINESS' | 'SECURITY' | 'MAINTENANCE' | 'NEIGHBOUR' | 'MANAGEMENT' | 'OTHER'
+export type ComplaintStatus   = 'NEW' | 'ACKNOWLEDGED' | 'RESOLVED'
+
+export interface Complaint {
+  id: string
+  propertyId: string
+  unitNumber?: string | null
+  tenantName?: string | null
+  category: ComplaintCategory
+  description: string
+  status: ComplaintStatus
+  response?: string | null
+  resolvedAt?: Timestamp | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  createdBy: string
+}
+
+// ============================================================
+// UNIT INSPECTION
+// ============================================================
+
+export type InspectionType     = 'MOVE_IN' | 'MOVE_OUT' | 'ROUTINE'
+export type InspectionCondition = 'GOOD' | 'FAIR' | 'POOR' | 'NA'
+
+export interface InspectionItem {
+  label: string
+  condition: InspectionCondition
+  notes?: string
+}
+
+export interface UnitInspection {
+  id: string
+  propertyId: string
+  unitNumber: string
+  tenantName?: string | null
+  type: InspectionType
+  items: InspectionItem[]
+  overallNotes?: string | null
+  conductedBy: string
+  conductedByName: string
+  createdAt: Timestamp
+}
+
+// ============================================================
+// TENANT PORTAL INVITE
+// ============================================================
+
+export interface TenantInvite {
+  id: string
+  propertyId: string
+  tenantId: string
+  tenantName: string
+  unitNumber: string
+  token: string
+  expiresAt: Timestamp
+  used: boolean
+  usedAt?: Timestamp | null
+  createdAt: Timestamp
+  createdBy: string
 }

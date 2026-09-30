@@ -1,10 +1,12 @@
 import { randomInt, timingSafeEqual } from 'node:crypto'
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
+import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { setGlobalOptions } from 'firebase-functions/v2'
 import { defineSecret } from 'firebase-functions/params'
 import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { normalizeKenyanPhone } from './lib/phone'
 import { writeAuditLog } from './lib/audit'
 import { firestore } from './lib/db'
@@ -224,22 +226,93 @@ export const setUserClaims = onCall(async (request) => {
 // SECURITY NOTE (deferred per milestone spec §7): resolvePhoneToEmail is an
 // unauthenticated callable that maps phone -> login email to enable phone login.
 // This permits phone/email enumeration. The accepted mitigation — App Check
-// enforcement (enforceAppCheck) + per-phone/IP rate limiting — is scheduled for
-// the later "Notifications / App Check / hardening" phase. Do NOT enable
-// enforceAppCheck until the web client registers an App Check provider, or all
-// callable traffic (including login) will be rejected.
+// enforcement (enforceAppCheck) is scheduled for the later hardening phase.
+// Rate limiting is now enforced via a Firestore-backed token bucket (5 req/min per phone).
+// Do NOT enable enforceAppCheck until the web client registers an App Check provider.
 // resolvePhoneToEmail — public, lets the login page sign in by phone.
 export const resolvePhoneToEmail = onCall(async (request) => {
   const { phone } = request.data as { phone: string }
   const norm = normalizeKenyanPhone(phone ?? '')
   if (!norm) throw new HttpsError('invalid-argument', 'Invalid phone number.')
 
-  const snap = await firestore()
-    .collection('users').where('phone', '==', norm).limit(1).get()
+  // Rate limit: max 5 calls per phone per 60 seconds
+  const db = firestore()
+  const rateKey = norm.replace(/[^a-zA-Z0-9]/g, '_')
+  await db.runTransaction(async tx => {
+    const rateRef = db.collection('_rateLimits').doc(rateKey)
+    const snap = await tx.get(rateRef)
+    const now = Date.now()
+    const WINDOW_MS = 60_000
+    const MAX = 5
+    if (snap.exists) {
+      const { windowStart, count } = snap.data()!
+      if (now - (windowStart as number) < WINDOW_MS) {
+        if ((count as number) >= MAX) {
+          throw new HttpsError('resource-exhausted', 'Too many requests. Please try again later.')
+        }
+        tx.update(rateRef, { count: FieldValue.increment(1) })
+      } else {
+        tx.set(rateRef, { windowStart: now, count: 1 })
+      }
+    } else {
+      tx.set(rateRef, { windowStart: now, count: 1 })
+    }
+  })
+
+  const snap = await db.collection('users').where('phone', '==', norm).limit(1).get()
   if (snap.empty) throw new HttpsError('not-found', 'No account found for that phone number.')
 
   return { email: snap.docs[0].data().email as string }
 })
+
+// deleteProperty — Super Admin cascade-deletes a property and ALL related data.
+// Deletes: blocks, units, tenants, occupancies, visitors, deliveries, incidents,
+// shifts, preApproved, subscriptions, notifications, auditLogs, staff (Auth + Firestore).
+export const deleteProperty = onCall(
+  { timeoutSeconds: 300 },
+  async (request) => {
+    assertSuperAdmin(request.auth)
+    const { propertyId } = request.data as { propertyId: string }
+    if (typeof propertyId !== 'string' || propertyId.length === 0 || propertyId.length > 128) {
+      throw new HttpsError('invalid-argument', 'A valid propertyId is required.')
+    }
+
+    const db = firestore()
+    const BATCH_SIZE = 400
+
+    async function deleteByProperty(colName: string) {
+      const snap = await db.collection(colName).where('propertyId', '==', propertyId).get()
+      for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+        const batch = db.batch()
+        snap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref))
+        await batch.commit()
+      }
+    }
+
+    // Delete staff Auth accounts first, then their Firestore docs
+    const staffSnap = await db.collection('users').where('propertyId', '==', propertyId).get()
+    await Promise.all(staffSnap.docs.map(async d => {
+      try { await getAuth().deleteUser(d.id) } catch (e: any) {
+        if ((e as any)?.code !== 'auth/user-not-found') throw e
+      }
+    }))
+    for (let i = 0; i < staffSnap.docs.length; i += BATCH_SIZE) {
+      const batch = db.batch()
+      staffSnap.docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref))
+      await batch.commit()
+    }
+
+    // Cascade-delete all related collections in parallel
+    await Promise.all([
+      'blocks', 'units', 'tenants', 'occupancies', 'visitors',
+      'deliveries', 'incidents', 'shifts', 'preApproved',
+      'subscriptions', 'notifications', 'auditLogs',
+    ].map(col => deleteByProperty(col)))
+
+    await db.collection('properties').doc(propertyId).delete()
+    return { ok: true }
+  },
+)
 
 function secretsMatch(provided: string, expected: string): boolean {
   const a = Buffer.from(provided)
@@ -429,3 +502,45 @@ export const analyzeIdDocument = onCall(
     }
   },
 )
+
+// Notify Super Admin whenever a new consultation lead is submitted from the landing page.
+// Writes an adminAlert document that the admin UI listens to in real-time.
+// `database: 'default'` is required because this project uses a named DB, not `(default)`.
+export const onLeadCreated = onDocumentCreated({ document: 'leads/{leadId}', database: 'default' }, async (event) => {
+  const snap = event.data
+  if (!snap) return
+  const lead = snap.data() as {
+    name: string; phone: string; propertyType: string; propertyName?: string; email?: string
+  }
+  const db = firestore()
+  await db.collection('adminAlerts').add({
+    type: 'NEW_LEAD',
+    leadId: event.params.leadId,
+    name: lead.name,
+    phone: lead.phone,
+    propertyType: lead.propertyType,
+    read: false,
+    createdAt: FieldValue.serverTimestamp(),
+  })
+  console.log(`adminAlert created for lead ${event.params.leadId} — ${lead.name}`)
+})
+
+// B6 — Auto-suspend TRIAL properties whose trialEndDate has passed
+export const scheduledAutoSuspend = onSchedule('every 24 hours', async () => {
+  const db   = firestore()
+  const now  = Timestamp.now()
+  const snap = await db
+    .collection('properties')
+    .where('status', '==', 'TRIAL')
+    .where('trialEndDate', '<=', now)
+    .get()
+
+  if (snap.empty) return
+
+  const batch = db.batch()
+  snap.docs.forEach((d: FirebaseFirestore.QueryDocumentSnapshot) => {
+    batch.update(d.ref, { status: 'SUSPENDED', updatedAt: FieldValue.serverTimestamp() })
+  })
+  await batch.commit()
+  console.log(`Auto-suspended ${snap.size} trial properties.`)
+})

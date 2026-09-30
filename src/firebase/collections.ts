@@ -21,6 +21,16 @@ import type {
   AuditLog,
   Notification,
   Lead,
+  AdminAlert,
+  PlatformSettings,
+  MaintenanceRequest,
+  UnitPayment,
+  BlacklistEntry,
+  VehicleEntry,
+  LeaseRecord,
+  Complaint,
+  UnitInspection,
+  TenantInvite,
 } from '../types'
 
 // ============================================================
@@ -61,3 +71,17 @@ export const subscriptionDoc  = (id: string)       : DocumentReference<Subscript
 export const notificationDoc  = (id: string)       : DocumentReference<Notification>  => doc(notificationsCol, id)
 export const preApprovedDoc   = (id: string)       : DocumentReference<PreApprovedVisitor> => doc(preApprovedCol, id)
 export const leadDoc          = (id: string): DocumentReference<Lead> => doc(leadsCol, id)
+export const adminAlertsCol   = collection(db, 'adminAlerts')          as CollectionReference<AdminAlert>
+export const adminAlertDoc    = (id: string): DocumentReference<AdminAlert> => doc(adminAlertsCol, id)
+
+// Singleton platform settings document (Super Admin write, all staff read)
+export const platformSettingsDoc = doc(db, 'platform_settings', 'main') as DocumentReference<PlatformSettings>
+
+export const maintenanceCol  = collection(db, 'maintenance')  as CollectionReference<MaintenanceRequest>
+export const paymentsCol     = collection(db, 'payments')     as CollectionReference<UnitPayment>
+export const blacklistCol    = collection(db, 'blacklist')    as CollectionReference<BlacklistEntry>
+export const vehicleLogCol   = collection(db, 'vehicleLog')   as CollectionReference<VehicleEntry>
+export const leasesCol       = collection(db, 'leases')       as CollectionReference<LeaseRecord>
+export const complaintsCol   = collection(db, 'complaints')   as CollectionReference<Complaint>
+export const inspectionsCol    = collection(db, 'inspections')    as CollectionReference<UnitInspection>
+export const tenantInvitesCol  = collection(db, 'tenantInvites')  as CollectionReference<TenantInvite>
