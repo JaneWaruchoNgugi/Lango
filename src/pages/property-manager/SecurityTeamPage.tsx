@@ -33,7 +33,7 @@ type GuardForm = z.infer<typeof guardSchema>
 const AVATAR_TONES = ['bg-blue-500','bg-green-500','bg-purple-500','bg-orange-500','bg-sky-500','bg-pink-500','bg-teal-500','bg-amber-500']
 const toneFor = (key: string) => AVATAR_TONES[[...key].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TONES.length]
 
-type Tab = 'team' | 'active' | 'history'
+type Tab = 'team' | 'active' | 'history' | 'performance'
 
 export default function SecurityTeamPage() {
   const { user } = useAuth()
@@ -128,9 +128,9 @@ export default function SecurityTeamPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto sm:inline-flex">
-        {(['team', 'active', 'history'] as Tab[]).map(t => (
+        {(['team', 'active', 'history', 'performance'] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} className={`flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-medium capitalize transition-colors ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            {t === 'active' ? 'Active Shifts' : t === 'history' ? 'History' : 'Team'}
+            {t === 'active' ? 'Active Shifts' : t === 'history' ? 'History' : t === 'performance' ? 'Performance' : 'Team'}
             {t === 'active' && activeShifts.length > 0 && (
               <span className="ml-1.5 badge badge-green text-xs">{activeShifts.length}</span>
             )}
@@ -284,6 +284,73 @@ export default function SecurityTeamPage() {
           )}
         </div>
       )}
+
+      {/* Performance tab */}
+      {tab === 'performance' && (() => {
+        const DAYS = 30
+        const from = Date.now() - DAYS * 86400_000
+        const recent = history.filter(s => s.startTime.toMillis() >= from)
+
+        const perf = guards.map(g => {
+          const gs = recent.filter(s => s.guardId === g.uid)
+          const totalMins = gs.reduce((acc, s) => {
+            const end = s.endTime?.toMillis() ?? s.startTime.toMillis()
+            return acc + (end - s.startTime.toMillis()) / 60000
+          }, 0)
+          const visitors  = gs.reduce((a, s) => a + s.visitorsRegistered, 0)
+          const incidents = gs.reduce((a, s) => a + s.incidentsReported, 0)
+          const avgMins   = gs.length ? totalMins / gs.length : 0
+          return { guard: g, shifts: gs.length, totalHours: totalMins / 60, avgHours: avgMins / 60, visitors, incidents }
+        }).sort((a, b) => b.shifts - a.shifts)
+
+        return histLoading ? (
+          <div className="flex justify-center py-8"><Spinner size="lg" /></div>
+        ) : perf.length === 0 ? (
+          <div className="card p-10 text-center">
+            <CheckCircle className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">No shift data for the last 30 days.</p>
+          </div>
+        ) : (
+          <div className="card overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-xs text-gray-500">Last 30 days · {recent.length} completed shifts</p>
+            </div>
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Guard</th>
+                    <th>Shifts</th>
+                    <th>Total Hours</th>
+                    <th>Avg Duration</th>
+                    <th>Visitors</th>
+                    <th>Incidents</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {perf.map(p => (
+                    <tr key={p.guard.uid}>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${toneFor(p.guard.uid)}`}>
+                            {p.guard.name[0]?.toUpperCase()}
+                          </div>
+                          <span className="font-medium text-gray-900">{p.guard.name}</span>
+                        </div>
+                      </td>
+                      <td>{p.shifts}</td>
+                      <td>{p.totalHours.toFixed(1)}h</td>
+                      <td>{p.avgHours.toFixed(1)}h</td>
+                      <td>{p.visitors}</td>
+                      <td>{p.incidents}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Add Guard modal */}
       <Modal

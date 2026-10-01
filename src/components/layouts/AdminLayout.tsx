@@ -1,9 +1,10 @@
-import { LayoutDashboard, Building2, Users, CreditCard, Inbox, BarChart3, Bell, ScrollText, Settings } from 'lucide-react'
+import { LayoutDashboard, Building2, Users, CreditCard, Inbox, BarChart3, Bell, ScrollText, Settings, Scissors } from 'lucide-react'
 import { AppShell, type NavItem } from './AppShell'
 
 const NAV: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/properties', label: 'Properties', icon: Building2 },
+  { to: '/admin/salons', label: 'Salons', icon: Scissors },
   { to: '/admin/staff', label: 'Staff', icon: Users },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
   { to: '/admin/leads', label: 'Leads', icon: Inbox },
@@ -16,10 +17,9 @@ const NAV: NavItem[] = [
 const BOTTOM: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/properties', label: 'Properties', icon: Building2 },
+  { to: '/admin/salons', label: 'Salons', icon: Scissors },
   { to: '/admin/staff', label: 'Staff', icon: Users },
   { to: '/admin/leads', label: 'Leads', icon: Inbox },
-  { to: '/admin/notifications', label: 'Notifications', icon: Bell },
-
 ]
 
 export function AdminLayout() {

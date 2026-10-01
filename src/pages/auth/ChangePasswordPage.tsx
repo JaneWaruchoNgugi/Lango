@@ -19,13 +19,16 @@ const schema = z.object({
 }).refine(d => d.password === d.confirm, { path: ['confirm'], message: 'Passwords do not match' })
 type FormData = z.infer<typeof schema>
 
-function rolePath(role: UserRole | null): string {
+function rolePath(role: UserRole | null, salonId: string | null): string {
   switch (role) {
-    case 'SUPER_ADMIN':      return '/admin'
-    case 'PROPERTY_MANAGER': return '/property'
-    case 'CARETAKER':        return '/caretaker'
-    case 'SECURITY_GUARD':   return '/gate'
-    default:                 return '/login'
+    case 'SUPER_ADMIN':         return '/admin'
+    case 'PROPERTY_MANAGER':    return '/property'
+    case 'CARETAKER':           return '/caretaker'
+    case 'SECURITY_GUARD':      return '/gate'
+    case 'SALON_OWNER':         return salonId ? `/salon/${salonId}/owner` : '/login'
+    case 'SALON_RECEPTIONIST':  return salonId ? `/salon/${salonId}/receptionist` : '/login'
+    case 'SALON_PROVIDER':      return salonId ? `/salon/${salonId}/provider` : '/login'
+    default:                    return '/login'
   }
 }
 
@@ -48,7 +51,7 @@ export default function ChangePasswordPage() {
       // doesn't bounce us straight back here.
       await refreshProfile()
       toast.success('Password updated')
-      navigate(rolePath(user.role), { replace: true })
+      navigate(rolePath(user.role, user.salonId), { replace: true })
     } catch (err: any) {
       if (err?.code === 'auth/requires-recent-login') {
         toast.error('Please log out and log in again, then change your password.')

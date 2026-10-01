@@ -22,7 +22,7 @@ const STEPS: { icon: LucideIcon; title: string; blurb: string }[] = [
 export function HowItWorks() {
   return (
     <section id="how" className="bg-white py-20 lg:py-28">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="px-6 sm:px-10 lg:px-16 xl:px-24">
 
         <Reveal>
           <div className="text-center mb-16">

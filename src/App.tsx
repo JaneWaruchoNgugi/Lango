@@ -7,13 +7,28 @@ import { AdminLayout } from './components/layouts/AdminLayout'
 import { CaretakerLayout } from './components/layouts/CaretakerLayout'
 import { GuardLayout } from './components/layouts/GuardLayout'
 import { PropertyManagerLayout } from './components/layouts/PropertyManagerLayout'
+import { SalonOwnerLayout } from './components/layouts/SalonOwnerLayout'
+import { SalonReceptionistLayout } from './components/layouts/SalonReceptionistLayout'
+import { SalonProviderLayout } from './components/layouts/SalonProviderLayout'
 
 import LandingPage from './pages/landing/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import ChangePasswordPage from './pages/auth/ChangePasswordPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
+import SalonsPage from './pages/admin/SalonsPage'
+import SalonDetailPage from './pages/admin/SalonDetailPage'
 import LeadsPage from './pages/admin/LeadsPage'
+import OwnerDashboard from './pages/salon/owner/OwnerDashboard'
+import ProvidersPage from './pages/salon/owner/ProvidersPage'
+import ReceptionistsPage from './pages/salon/owner/ReceptionistsPage'
+import OwnerReportsPage from './pages/salon/owner/OwnerReportsPage'
+import OwnerSettingsPage from './pages/salon/owner/OwnerSettingsPage'
+import StaffPermissionsPage from './pages/salon/owner/StaffPermissionsPage'
+import ReceptionistDashboard from './pages/salon/receptionist/ReceptionistDashboard'
+import ClientRegistrationPage from './pages/salon/receptionist/ClientRegistrationPage'
+import CheckoutPage from './pages/salon/receptionist/CheckoutPage'
+import ProviderDashboard from './pages/salon/provider/ProviderDashboard'
 import PropertiesPage from './pages/admin/PropertiesPage'
 import PropertyFormPage from './pages/admin/PropertyFormPage'
 import PropertyDetailPage from './pages/admin/PropertyDetailPage'
@@ -59,13 +74,16 @@ import TenantPortalPage      from './pages/property-manager/TenantPortalPage'
 
 import type { UserRole } from './types'
 
-function roleHome(role: UserRole | null): string {
-  switch (role) {
-    case 'SUPER_ADMIN':      return '/admin'
-    case 'PROPERTY_MANAGER': return '/property'
-    case 'CARETAKER':        return '/caretaker'
-    case 'SECURITY_GUARD':   return '/gate'
-    default:                 return '/login'
+function roleHome(user: { role: UserRole | null; salonId: string | null }): string {
+  switch (user.role) {
+    case 'SUPER_ADMIN':         return '/admin'
+    case 'PROPERTY_MANAGER':    return '/property'
+    case 'CARETAKER':           return '/caretaker'
+    case 'SECURITY_GUARD':      return '/gate'
+    case 'SALON_OWNER':         return user.salonId ? `/salon/${user.salonId}/owner` : '/login'
+    case 'SALON_RECEPTIONIST':  return user.salonId ? `/salon/${user.salonId}/receptionist` : '/login'
+    case 'SALON_PROVIDER':      return user.salonId ? `/salon/${user.salonId}/provider` : '/login'
+    default:                    return '/login'
   }
 }
 
@@ -73,7 +91,7 @@ function RootRedirect() {
   const { user, loading } = useAuth()
   const location = useLocation()
   if (loading) return <LoadingScreen />
-  if (user) return <Navigate to={roleHome(user.role)} replace />
+  if (user) return <Navigate to={roleHome(user)} replace />
   // Only the marketing page lives at "/"; unknown deep paths go to login.
   if (location.pathname !== '/') return <Navigate to="/login" replace />
   return <LandingPage />
@@ -91,6 +109,8 @@ export default function App() {
         element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}
       >
         <Route index element={<AdminDashboard />} />
+        <Route path="salons" element={<SalonsPage />} />
+        <Route path="salons/:id" element={<SalonDetailPage />} />
         <Route path="properties" element={<PropertiesPage />} />
         <Route path="properties/new" element={<PropertyFormPage />} />
         <Route path="properties/:id" element={<PropertyDetailPage />} />
@@ -164,6 +184,40 @@ export default function App() {
         <Route path="expected" element={<ExpectedVisitorsPage />} />
         <Route path="vehicles" element={<VehicleLogPage />} />
         <Route path="pre-approved" element={<PreApprovedPage />} />
+      </Route>
+
+      {/* Salon landing merged into main page */}
+      <Route path="/salon" element={<Navigate to="/" replace />} />
+
+      {/* Salon Owner */}
+      <Route
+        path="/salon/:salonId/owner"
+        element={<ProtectedRoute allowedRoles={['SALON_OWNER', 'SUPER_ADMIN']}><SalonOwnerLayout /></ProtectedRoute>}
+      >
+        <Route index element={<OwnerDashboard />} />
+        <Route path="providers"          element={<ProvidersPage />} />
+        <Route path="receptionists"      element={<ReceptionistsPage />} />
+        <Route path="staff-permissions"  element={<StaffPermissionsPage />} />
+        <Route path="reports"            element={<OwnerReportsPage />} />
+        <Route path="settings"           element={<OwnerSettingsPage />} />
+      </Route>
+
+      {/* Salon Receptionist */}
+      <Route
+        path="/salon/:salonId/receptionist"
+        element={<ProtectedRoute allowedRoles={['SALON_RECEPTIONIST', 'SALON_OWNER', 'SUPER_ADMIN']}><SalonReceptionistLayout /></ProtectedRoute>}
+      >
+        <Route index element={<ReceptionistDashboard />} />
+        <Route path="clients"  element={<ClientRegistrationPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+      </Route>
+
+      {/* Salon Provider */}
+      <Route
+        path="/salon/:salonId/provider"
+        element={<ProtectedRoute allowedRoles={['SALON_PROVIDER', 'SUPER_ADMIN']}><SalonProviderLayout /></ProtectedRoute>}
+      >
+        <Route index element={<ProviderDashboard />} />
       </Route>
 
       <Route path="/" element={<RootRedirect />} />

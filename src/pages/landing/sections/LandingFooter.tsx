@@ -5,7 +5,7 @@ import { LANDING_CONTACT, telLink, mailtoLink } from '../config'
 export function LandingFooter() {
   return (
     <footer id="contact" className="bg-lango-dark">
-      <div className="max-w-6xl mx-auto px-4 pt-16 pb-10">
+      <div className="px-6 sm:px-10 lg:px-16 xl:px-24 pt-16 pb-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 mb-12">
 
           {/* Brand */}
@@ -57,6 +57,7 @@ export function LandingFooter() {
               <a href="#how"        className="block hover:text-white transition-colors">How it works</a>
               <Link to="/login"     className="block hover:text-white transition-colors">Sign In</Link>
               <a href="/demo"       className="block hover:text-white transition-colors">Explore Demo</a>
+              <Link to="/salon"     className="block text-lango-amber hover:text-amber-300 transition-colors">Lango Salon →</Link>
             </div>
           </div>
 

@@ -5,15 +5,15 @@ import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   UserPlus, Package, Users, AlertTriangle, CalendarDays, Clock, ChevronRight,
-  LogIn, LogOut, FileClock, type LucideIcon,
+  LogIn, LogOut, FileClock, Home, Wrench, type LucideIcon,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, startOfMonth, subMonths } from 'date-fns'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import { VISIT_TYPE_LABEL } from '../../domain/visitTypes'
 import { useCurrentVisitors } from '../../hooks/useCurrentVisitors'
 import { useShift } from '../../hooks/useShift'
 import { startShift as startShiftService, endShift as endShiftService } from '../../services/shiftService'
-import type { Delivery, Incident, PreApprovedVisitor, UserRole } from '../../types'
+import type { Delivery, Incident, PreApprovedVisitor, Unit, UserRole } from '../../types'
 
 function routesFor(role: UserRole | null | undefined) {
   if (role === 'SECURITY_GUARD') return { register: '/gate/register', deliveries: '/gate/deliveries', inside: '/gate/inside', incidents: '/gate/incidents', activity: '/gate/inside' }
@@ -31,6 +31,23 @@ function StatCard({ to, icon: Icon, value, label, tone }: { to: string; icon: Lu
       <p className="text-2xl font-bold text-gray-900 mt-3 leading-none">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{label}</p>
     </Link>
+  )
+}
+
+function KpiCard({ label, value, icon: Icon, tone, change }: { label: string; value: string | number; icon: LucideIcon; tone: string; change?: number | null }) {
+  return (
+    <div className="card p-4 flex items-start gap-3">
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${tone}`}><Icon className="w-5 h-5" /></div>
+      <div>
+        <p className="text-2xl font-bold text-gray-900">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+        {change !== null && change !== undefined && (
+          <p className={`text-xs font-medium mt-0.5 ${change >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+            {change >= 0 ? '+' : ''}{change}% vs last month
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -60,6 +77,12 @@ export default function RoleDashboard() {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [now, setNow] = useState(new Date())
   const [shiftLoading, setShiftLoading] = useState(false)
+  // PM KPIs
+  const [pmKpi, setPmKpi] = useState<{
+    visitorsThisMonth: number; visitorsPrevMonth: number;
+    occupancyRate: number; avgResolutionHours: number | null;
+    uncollectedDeliveries: number; pendingMaintenance: number;
+  } | null>(null)
 
   const { visitors: currentVisitors } = useCurrentVisitors(propertyId)
   const { shift } = useShift(isGuard ? user?.uid : null, isGuard ? user?.propertyId : null)
@@ -83,6 +106,42 @@ export default function RoleDashboard() {
       setExpectedToday(preSnap.docs.map(d => d.data() as PreApprovedVisitor).filter(p => p.isActive && (p.accessDays?.includes(dow) ?? false)).length)
     }).catch(console.error).finally(() => setLoading(false))
   }, [propertyId])
+
+  // PM-only KPI fetch
+  useEffect(() => {
+    if (role !== 'PROPERTY_MANAGER' || !propertyId) return
+    const now = new Date()
+    const thisMonthStart  = startOfMonth(now)
+    const prevMonthStart  = startOfMonth(subMonths(now, 1))
+
+    Promise.all([
+      getDocs(query(collection(db, 'visitors'), where('propertyId', '==', propertyId), where('checkInTime', '>=', Timestamp.fromDate(thisMonthStart)))),
+      getDocs(query(collection(db, 'visitors'), where('propertyId', '==', propertyId), where('checkInTime', '>=', Timestamp.fromDate(prevMonthStart)), where('checkInTime', '<', Timestamp.fromDate(thisMonthStart)))),
+      getDocs(query(collection(db, 'units'), where('propertyId', '==', propertyId))),
+      getDocs(query(collection(db, 'incidents'), where('propertyId', '==', propertyId), where('status', '==', 'RESOLVED'))),
+      getDocs(query(collection(db, 'deliveries'), where('propertyId', '==', propertyId), where('status', '==', 'RECEIVED'))),
+      getDocs(query(collection(db, 'maintenance'), where('propertyId', '==', propertyId), where('status', 'in', ['PENDING', 'IN_PROGRESS']))),
+    ]).then(([thisVisSnap, prevVisSnap, unitsSnap, resolvedSnap, uncollSnap, maintSnap]) => {
+      const units = unitsSnap.docs.map(d => d.data() as Unit)
+      const occupied = units.filter(u => u.status === 'OCCUPIED').length
+      const occupancyRate = units.length ? Math.round(occupied / units.length * 100) : 0
+
+      const resolvedIncs = resolvedSnap.docs.map(d => d.data() as Incident)
+      const withTime = resolvedIncs.filter(i => i.resolvedAt && i.createdAt)
+      const avgRes = withTime.length
+        ? Math.round(withTime.reduce((acc, i) => acc + (i.resolvedAt!.toMillis() - i.createdAt.toMillis()) / 3600000, 0) / withTime.length * 10) / 10
+        : null
+
+      setPmKpi({
+        visitorsThisMonth:    thisVisSnap.size,
+        visitorsPrevMonth:    prevVisSnap.size,
+        occupancyRate,
+        avgResolutionHours:   avgRes,
+        uncollectedDeliveries: uncollSnap.size,
+        pendingMaintenance:    maintSnap.size,
+      })
+    }).catch(console.error)
+  }, [propertyId, role])
 
   const handleShift = async () => {
     setShiftLoading(true)
@@ -143,6 +202,54 @@ export default function RoleDashboard() {
         <StatCard to={R.inside} icon={CalendarDays} value={expectedToday} label="Expected Today" tone="bg-indigo-50 text-indigo-600" />
         <StatCard to={R.incidents} icon={AlertTriangle} value={incidents.length} label="Open Incidents" tone="bg-orange-50 text-orange-500" />
       </div>
+
+      {/* PM KPI section */}
+      {role === 'PROPERTY_MANAGER' && pmKpi && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Monthly KPIs</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <KpiCard
+              label="Visitors This Month"
+              value={pmKpi.visitorsThisMonth}
+              icon={Users}
+              change={pmKpi.visitorsPrevMonth > 0
+                ? Math.round((pmKpi.visitorsThisMonth - pmKpi.visitorsPrevMonth) / pmKpi.visitorsPrevMonth * 100)
+                : null}
+              tone="bg-blue-50 text-blue-600"
+            />
+            <KpiCard
+              label="Occupancy Rate"
+              value={`${pmKpi.occupancyRate}%`}
+              icon={Home}
+              tone="bg-green-50 text-green-600"
+            />
+            {pmKpi.avgResolutionHours !== null && (
+              <KpiCard
+                label="Avg Resolution Time"
+                value={`${pmKpi.avgResolutionHours}h`}
+                icon={Clock}
+                tone="bg-yellow-50 text-yellow-600"
+              />
+            )}
+            <Link to="/property/deliveries" className="card p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow">
+              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-orange-500" /></div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{pmKpi.uncollectedDeliveries}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Uncollected Deliveries</p>
+                {pmKpi.uncollectedDeliveries > 0 && <span className="text-xs text-orange-500 font-medium">Needs attention</span>}
+              </div>
+            </Link>
+            <Link to="/property/maintenance" className="card p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow">
+              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0"><Wrench className="w-5 h-5 text-purple-600" /></div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{pmKpi.pendingMaintenance}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Pending Maintenance</p>
+                {pmKpi.pendingMaintenance > 0 && <span className="text-xs text-purple-500 font-medium">Action required</span>}
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="grid grid-cols-2 gap-3">

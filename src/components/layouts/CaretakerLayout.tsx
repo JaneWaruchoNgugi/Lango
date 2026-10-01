@@ -1,4 +1,4 @@
-import { LayoutDashboard, DoorOpen, UserCheck, Building, Package, AlertTriangle, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, DoorOpen, UserCheck, Building, Package, AlertTriangle, BarChart3, Settings, ShieldCheck, Wrench, CreditCard, ClipboardList } from 'lucide-react'
 import { AppShell, type NavItem } from './AppShell'
 
 const NAV: NavItem[] = [
@@ -8,6 +8,10 @@ const NAV: NavItem[] = [
   { to: '/caretaker/blocks', label: 'Blocks & Units', icon: Building },
   { to: '/caretaker/deliveries', label: 'Deliveries', icon: Package },
   { to: '/caretaker/incidents', label: 'Incidents', icon: AlertTriangle },
+  { to: '/caretaker/pre-approved', label: 'Pre-Approved', icon: ShieldCheck },
+  { to: '/caretaker/maintenance', label: 'Maintenance', icon: Wrench },
+  { to: '/caretaker/payments', label: 'Payments', icon: CreditCard },
+  { to: '/caretaker/inspections', label: 'Inspections', icon: ClipboardList },
   { to: '/caretaker/reports', label: 'Reports', icon: BarChart3 },
   { to: '/caretaker/settings', label: 'Settings', icon: Settings },
 ]

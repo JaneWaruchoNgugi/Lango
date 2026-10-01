@@ -39,7 +39,7 @@ const FEATURES: { icon: LucideIcon; title: string; desc: string; tag?: string }[
 export function Features() {
   return (
     <section id="features" className="bg-gray-50/70 py-20 lg:py-28">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="px-6 sm:px-10 lg:px-16 xl:px-24">
 
         <Reveal>
           <div className="mb-14">

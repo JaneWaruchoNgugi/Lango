@@ -35,10 +35,14 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
 function getRoleDashboard(role: UserRole | null): string {
   switch (role) {
-    case 'SUPER_ADMIN':      return '/admin'
-    case 'PROPERTY_MANAGER': return '/property'
-    case 'CARETAKER':        return '/caretaker'
-    case 'SECURITY_GUARD':   return '/gate'
-    default:                 return '/login'
+    case 'SUPER_ADMIN':         return '/admin'
+    case 'PROPERTY_MANAGER':    return '/property'
+    case 'CARETAKER':           return '/caretaker'
+    case 'SECURITY_GUARD':      return '/gate'
+    // Salon roles redirect to /login; App.tsx RootRedirect handles correct salonId path
+    case 'SALON_OWNER':
+    case 'SALON_RECEPTIONIST':
+    case 'SALON_PROVIDER':      return '/login'
+    default:                    return '/login'
   }
 }

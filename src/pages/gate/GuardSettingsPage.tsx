@@ -9,6 +9,7 @@ import {
   Settings, User, Clock, Bell, ShieldCheck, Sliders, HelpCircle,
   ChevronRight, ArrowLeft, KeyRound
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import type { NotificationPreferences, UserPreferences } from '../../types'
 
@@ -25,6 +26,7 @@ const DEFAULT_PREFS: UserPreferences = {
   vibrationEnabled: true,
   use24HourTime: false,
   language: 'en',
+  darkMode: false,
 }
 
 const SECTIONS = [
@@ -72,6 +74,7 @@ const HELP_TOPICS = [
 
 export default function GuardSettingsPage() {
   const { user, refreshProfile } = useAuth()
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [activeSection, setActiveSection] = useState('profile')
   const [mobileView, setMobileView] = useState<'list' | 'content'>('list')
@@ -86,8 +89,20 @@ export default function GuardSettingsPage() {
     setProfileForm({ name: user.profile.name ?? '', phone: user.profile.phone ?? '' })
     const stored = user.profile as unknown as { notificationPreferences?: NotificationPreferences; preferences?: UserPreferences }
     if (stored.notificationPreferences) setNotifPrefs({ ...DEFAULT_NOTIF_PREFS, ...stored.notificationPreferences })
-    if (stored.preferences) setPrefs({ ...DEFAULT_PREFS, ...stored.preferences })
+    if (stored.preferences) {
+      const merged = { ...DEFAULT_PREFS, ...stored.preferences }
+      setPrefs(merged)
+      document.documentElement.classList.toggle('dark', merged.darkMode ?? false)
+      if (merged.language && merged.language !== 'en') {
+        import('../../i18n').then(m => m.default.changeLanguage(merged.language))
+      }
+    }
   }, [user?.profile])
+
+  const applyDarkMode = (enabled: boolean) => {
+    document.documentElement.classList.toggle('dark', enabled)
+    setPrefs(p => ({ ...p, darkMode: enabled }))
+  }
 
   const saveProfile = async () => {
     if (!user?.uid) return
@@ -208,19 +223,33 @@ export default function GuardSettingsPage() {
 
       case 'preferences': return (
         <div className="card p-5 space-y-1">
-          <SectionHeader icon={Sliders} title="App Preferences" />
-          <ToggleRow label="Sound Effects" description="Play sounds for alerts and actions." checked={prefs.soundEnabled} onChange={v => setPrefs(p => ({ ...p, soundEnabled: v }))} />
-          <ToggleRow label="Vibration" description="Vibrate on alerts (mobile)." checked={prefs.vibrationEnabled} onChange={v => setPrefs(p => ({ ...p, vibrationEnabled: v }))} />
-          <ToggleRow label="24-Hour Time" description="Display time in 24-hour format." checked={prefs.use24HourTime} onChange={v => setPrefs(p => ({ ...p, use24HourTime: v }))} />
+          <SectionHeader icon={Sliders} title={t('settings.preferences')} />
+          <ToggleRow label={t('settings.soundEffects')} description="Play sounds for alerts and actions." checked={prefs.soundEnabled} onChange={v => setPrefs(p => ({ ...p, soundEnabled: v }))} />
+          <ToggleRow label={t('settings.vibration')} description="Vibrate on alerts (mobile)." checked={prefs.vibrationEnabled} onChange={v => setPrefs(p => ({ ...p, vibrationEnabled: v }))} />
+          <ToggleRow label={t('settings.use24Hour')} description="Display time in 24-hour format." checked={prefs.use24HourTime} onChange={v => setPrefs(p => ({ ...p, use24HourTime: v }))} />
+          <ToggleRow
+            label={t('settings.darkMode')}
+            description="Switch the app to a dark colour scheme."
+            checked={prefs.darkMode ?? false}
+            onChange={applyDarkMode}
+          />
           <div className="py-3">
-            <label className="label">Language</label>
-            <select className="input" value={prefs.language} onChange={e => setPrefs(p => ({ ...p, language: e.target.value }))}>
+            <label className="label">{t('settings.language')}</label>
+            <select
+              className="input"
+              value={prefs.language}
+              onChange={e => {
+                const lang = e.target.value
+                setPrefs(p => ({ ...p, language: lang }))
+                import('../../i18n').then(m => m.default.changeLanguage(lang))
+              }}
+            >
               <option value="en">English</option>
               <option value="sw">Kiswahili</option>
             </select>
           </div>
           <div className="flex justify-end pt-2">
-            <button className="btn-primary" disabled={busy} onClick={savePrefs}>{busy && <Spinner size="sm" className="text-white" />}Save</button>
+            <button className="btn-primary" disabled={busy} onClick={savePrefs}>{busy && <Spinner size="sm" className="text-white" />}{t('common.save')}</button>
           </div>
         </div>
       )
@@ -261,7 +290,7 @@ export default function GuardSettingsPage() {
           <Settings className="w-5 h-5 text-lango-primary" />
         </div>
         <div>
-          <h1 className="page-title">Settings</h1>
+          <h1 className="page-title">{t('settings.title')}</h1>
           <p className="page-subtitle">Your profile and app preferences.</p>
         </div>
       </div>

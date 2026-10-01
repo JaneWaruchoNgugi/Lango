@@ -18,7 +18,7 @@ export function Hero() {
         aria-hidden
       />
 
-      <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-24 lg:pt-16 lg:pb-32">
+      <div className="relative px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 lg:pt-16 lg:pb-32">
         <div className="grid lg:grid-cols-[1fr_1.08fr] gap-14 lg:gap-20 items-center">
 
           {/* ── Left: Copy ── */}
@@ -181,7 +181,7 @@ export function Hero() {
 
       {/* Stats bar */}
       <div className="relative l-stat-divider">
-        <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="px-6 sm:px-10 lg:px-16 xl:px-24 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
           {([
             { n: '500+',  label: 'Properties across Kenya' },
             { n: '10K+',  label: 'Visitors logged monthly' },

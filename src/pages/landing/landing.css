@@ -1,5 +1,11 @@
 /* ── Landing page — scoped styles & animations ─────────────────────────────── */
 
+/* Product picker modal slide-up (mobile sheet) */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Dot-grid hero background */
 .l-hero-grid {
   background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px);

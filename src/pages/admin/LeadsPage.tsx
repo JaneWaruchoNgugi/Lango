@@ -22,7 +22,11 @@ export default function LeadsPage() {
         setLeads(snap.docs.map(d => ({ ...d.data(), leadId: d.id })))
         setLoading(false)
       },
-      err => { console.error('Leads listener error:', err); setLoading(false) },
+      err => {
+        console.error('Leads listener error:', err)
+        toast.error(`Could not load leads: ${err.message}`)
+        setLoading(false)
+      },
     )
   }, [])
 

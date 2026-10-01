@@ -55,7 +55,71 @@
       { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "tenants", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "propertyId", "order": "ASCENDING" },
-      { "fieldPath": "fullName", "order": "ASCENDING" } ] }
+      { "fieldPath": "fullName", "order": "ASCENDING" } ] },
+    { "collectionGroup": "properties", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "trialEndDate", "order": "ASCENDING" } ] },
+    { "collectionGroup": "maintenance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "maintenance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "payments", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "month", "order": "DESCENDING" } ] },
+    { "collectionGroup": "blacklist", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "isActive", "order": "ASCENDING" } ] },
+    { "collectionGroup": "vehicleLog", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "checkIn", "order": "DESCENDING" } ] },
+    { "collectionGroup": "leases", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "leaseEndDate", "order": "ASCENDING" } ] },
+    { "collectionGroup": "complaints", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "inspections", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "tenantInvites", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "propertyId", "order": "ASCENDING" },
+      { "fieldPath": "tenantId", "order": "ASCENDING" } ] },
+    { "collectionGroup": "salonClients", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonClients", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "salonClients", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" },
+      { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonServices", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "salonServices", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "clientId", "order": "ASCENDING" } ] },
+    { "collectionGroup": "salonServices", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "serviceDate", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonServices", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "providerId", "order": "ASCENDING" },
+      { "fieldPath": "serviceDate", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonServices", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "providerUid", "order": "ASCENDING" },
+      { "fieldPath": "serviceDate", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonCheckouts", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "checkoutAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "salonProviders", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "salonId", "order": "ASCENDING" },
+      { "fieldPath": "status", "order": "ASCENDING" } ] }
   ],
   "fieldOverrides": []
 }

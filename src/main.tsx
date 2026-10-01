@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { OnlineProvider } from './contexts/OnlineContext'
 import App from './App.tsx'
 import './index.css'
+import './i18n'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },

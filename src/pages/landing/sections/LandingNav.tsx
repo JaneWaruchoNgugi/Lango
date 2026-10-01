@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Scissors } from 'lucide-react'
 
 const LINKS = [
   { href: '#how',      label: 'How it works' },
@@ -22,7 +22,7 @@ export function LandingNav() {
   return (
     <>
       <header className={`fixed top-0 inset-x-0 z-40 l-nav-transition ${scrolled ? 'l-nav-scrolled' : ''}`}>
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="px-6 sm:px-10 lg:px-16 xl:px-24 h-16 flex items-center justify-between">
           {/* Logo */}
           <a href="#home" className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${scrolled ? 'bg-lango-dark' : 'bg-white/12'}`}>
@@ -48,6 +48,16 @@ export function LandingNav() {
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/salon"
+              className={`flex items-center gap-1.5 text-sm font-medium font-dm transition-colors px-3 py-1.5 rounded-lg border ${
+                scrolled
+                  ? 'text-lango-amber border-lango-amber/30 hover:bg-amber-50'
+                  : 'text-lango-amber border-lango-amber/30 hover:bg-lango-amber/10'
+              }`}
+            >
+              <Scissors className="w-3.5 h-3.5" /> Salon
+            </Link>
             <Link
               to="/login"
               className={`text-sm font-medium font-dm transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}
@@ -106,6 +116,10 @@ export function LandingNav() {
               ))}
             </nav>
             <div className="mt-auto flex flex-col gap-3">
+              <Link to="/salon" onClick={() => setOpen(false)}
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-lango-amber/40 text-sm font-semibold text-lango-amber font-dm hover:bg-amber-50 transition-colors">
+                <Scissors className="w-4 h-4" /> Explore Salon product
+              </Link>
               <Link to="/login" onClick={() => setOpen(false)} className="btn-secondary w-full justify-center">Sign In</Link>
               <a href="/demo" onClick={() => setOpen(false)} className="btn-primary w-full justify-center">Explore Demo</a>
             </div>

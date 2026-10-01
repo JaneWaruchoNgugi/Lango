@@ -2,7 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { doc, collection, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, collection, setDoc, serverTimestamp, getDoc, updateDoc, Timestamp } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { ArrowLeft } from 'lucide-react'
@@ -23,6 +23,7 @@ const schema = z.object({
   email:          z.string().email('Valid email required'),
   plan:           z.enum(['SMALL','MEDIUM','LARGE','ESTATE']),
   status:         z.enum(['ACTIVE','TRIAL','SUSPENDED','ARCHIVED']),
+  trialEndDate:   z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -35,7 +36,7 @@ export default function PropertyFormPage() {
   const [loading, setLoading] = useState(isEdit)
 
   const {
-    register, handleSubmit, reset,
+    register, handleSubmit, reset, watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -53,6 +54,9 @@ export default function PropertyFormPage() {
           structureType: data.structureType ?? 'BLOCKS',
           primaryContact: data.primaryContact, phone: data.phone,
           email: data.email, plan: data.plan, status: data.status,
+          trialEndDate: data.trialEndDate
+            ? data.trialEndDate.toDate().toISOString().split('T')[0]
+            : '',
         })
       }
     }).finally(() => setLoading(false))
@@ -61,10 +65,14 @@ export default function PropertyFormPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const propertyId = isEdit ? id! : doc(collection(db, 'properties')).id
+      const { trialEndDate: trialDateStr, ...rest } = data
       const payload = {
-        ...data,
+        ...rest,
         propertyId,
         updatedAt: serverTimestamp(),
+        ...(trialDateStr
+          ? { trialEndDate: Timestamp.fromDate(new Date(trialDateStr)) }
+          : {}),
         ...(isEdit ? {} : {
           createdAt:  serverTimestamp(),
           createdBy:  user!.uid,
@@ -128,6 +136,13 @@ export default function PropertyFormPage() {
                 <option value="ARCHIVED">Archived</option>
               </select>
             </div>
+            {watch('status') === 'TRIAL' && (
+              <div>
+                <label className="label">Trial end date</label>
+                <input type="date" {...register('trialEndDate')} className="input" />
+                <p className="text-xs text-gray-500 mt-1">Property suspends automatically when this date passes.</p>
+              </div>
+            )}
             <div className="sm:col-span-2">
               <label className="label">How is this property organized? *</label>
               <select {...register('structureType')} className="input">

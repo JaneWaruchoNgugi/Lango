@@ -4,7 +4,14 @@ import { Timestamp } from 'firebase/firestore'
 // ENUMS
 // ============================================================
 
-export type UserRole = 'SUPER_ADMIN' | 'PROPERTY_MANAGER' | 'CARETAKER' | 'SECURITY_GUARD'
+export type UserRole =
+  | 'SUPER_ADMIN'
+  | 'PROPERTY_MANAGER'
+  | 'CARETAKER'
+  | 'SECURITY_GUARD'
+  | 'SALON_OWNER'
+  | 'SALON_RECEPTIONIST'
+  | 'SALON_PROVIDER'
 
 export type PropertyStatus = 'ACTIVE' | 'TRIAL' | 'SUSPENDED' | 'ARCHIVED'
 
@@ -102,6 +109,7 @@ export interface AppUser {
   phone?: string
   role: UserRole
   propertyId: string | null    // null for SUPER_ADMIN
+  salonId?: string | null      // for salon roles
   status: StaffStatus
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -257,6 +265,9 @@ export interface Visitor {
   checkOutTime?: Timestamp | null
   durationMinutes?: number | null
   notificationSent: boolean
+  tenantPhone?: string        // denormalized at SMS send time for reply correlation
+  smsNotifiedAt?: Timestamp   // when the tenant was last SMSed
+  tenantApproval?: 'APPROVED' | 'DENIED' | null
   notes?: string
   // Conditional — populated only when relevant to the visit type:
   company?: string              // WORK / SERVICE_PROVIDER employer
@@ -673,6 +684,7 @@ export interface AuthUser {
   displayName: string | null
   role: UserRole | null
   propertyId: string | null
+  salonId: string | null
   profile: AppUser | null
 }
 
@@ -846,4 +858,284 @@ export interface TenantInvite {
   usedAt?: Timestamp | null
   createdAt: Timestamp
   createdBy: string
+}
+
+// ============================================================
+// SALON STAFF PERMISSIONS
+// ============================================================
+
+export type SalonDataVisibility = 'OWN_CLIENTS' | 'BRANCH_CLIENTS' | 'ALL_CLIENTS'
+
+export type SalonPermissionKey =
+  | 'viewClientName' | 'viewServiceHistory' | 'viewAllergiesNotes'
+  | 'viewPhone' | 'viewEmail' | 'viewAddress'
+  | 'createClients' | 'editClients' | 'deleteClients'
+  | 'createBookings' | 'editBookings' | 'cancelBookings' | 'completeBookings'
+  | 'viewPrices' | 'viewPayments' | 'viewRevenue' | 'viewReports'
+  | 'manageStaff' | 'manageProviders' | 'manageBranches'
+  | 'manageServices' | 'manageMarketing' | 'deleteRecords'
+
+export interface SalonStaffPermissions {
+  uid: string
+  salonId: string
+  staffName: string
+  role: UserRole
+  isActive: boolean
+  // Client data
+  viewClientName: boolean
+  viewServiceHistory: boolean
+  viewAllergiesNotes: boolean
+  viewPhone: boolean
+  viewEmail: boolean
+  viewAddress: boolean
+  createClients: boolean
+  editClients: boolean
+  deleteClients: boolean
+  // Bookings
+  createBookings: boolean
+  editBookings: boolean
+  cancelBookings: boolean
+  completeBookings: boolean
+  // Financial
+  viewPrices: boolean
+  viewPayments: boolean
+  viewRevenue: boolean
+  viewReports: boolean
+  // Management
+  manageStaff: boolean
+  manageProviders: boolean
+  manageBranches: boolean
+  manageServices: boolean
+  manageMarketing: boolean
+  deleteRecords: boolean
+  // Visibility scope
+  dataVisibility: SalonDataVisibility
+  updatedAt: Timestamp
+  updatedBy: string
+  updatedByName: string
+}
+
+export interface SalonPermissionAuditLog {
+  logId: string
+  salonId: string
+  staffId: string
+  staffName: string
+  changedBy: string
+  changedByName: string
+  previousPermissions: Partial<Record<SalonPermissionKey, boolean>> & { dataVisibility?: SalonDataVisibility }
+  newPermissions: Partial<Record<SalonPermissionKey, boolean>> & { dataVisibility?: SalonDataVisibility }
+  timestamp: Timestamp
+}
+
+export const PROVIDER_DEFAULT_PERMISSIONS: Omit<SalonStaffPermissions, 'uid' | 'salonId' | 'staffName' | 'role' | 'updatedAt' | 'updatedBy' | 'updatedByName'> = {
+  isActive: true,
+  viewClientName: true,
+  viewServiceHistory: true,
+  viewAllergiesNotes: true,
+  viewPhone: false,
+  viewEmail: false,
+  viewAddress: false,
+  createClients: false,
+  editClients: false,
+  deleteClients: false,
+  createBookings: false,
+  editBookings: false,
+  cancelBookings: false,
+  completeBookings: true,
+  viewPrices: false,
+  viewPayments: false,
+  viewRevenue: false,
+  viewReports: false,
+  manageStaff: false,
+  manageProviders: false,
+  manageBranches: false,
+  manageServices: false,
+  manageMarketing: false,
+  deleteRecords: false,
+  dataVisibility: 'OWN_CLIENTS',
+}
+
+export const RECEPTIONIST_DEFAULT_PERMISSIONS: Omit<SalonStaffPermissions, 'uid' | 'salonId' | 'staffName' | 'role' | 'updatedAt' | 'updatedBy' | 'updatedByName'> = {
+  isActive: true,
+  viewClientName: true,
+  viewServiceHistory: true,
+  viewAllergiesNotes: false,
+  viewPhone: true,
+  viewEmail: false,
+  viewAddress: false,
+  createClients: true,
+  editClients: true,
+  deleteClients: false,
+  createBookings: true,
+  editBookings: true,
+  cancelBookings: true,
+  completeBookings: true,
+  viewPrices: true,
+  viewPayments: true,
+  viewRevenue: false,
+  viewReports: false,
+  manageStaff: false,
+  manageProviders: false,
+  manageBranches: false,
+  manageServices: false,
+  manageMarketing: false,
+  deleteRecords: false,
+  dataVisibility: 'ALL_CLIENTS',
+}
+
+// ============================================================
+// SALON MANAGEMENT MODULE
+// ============================================================
+
+export type SalonStatus = 'ACTIVE' | 'INACTIVE'
+
+export type SalonServiceType =
+  | 'HAIR_UNDOING'
+  | 'HAIR_WASHING'
+  | 'BLOW_DRY'
+  | 'HAIR_DRESSING'
+  | 'MANICURE'
+  | 'PEDICURE'
+  | 'LASH_SERVICE'
+  | 'TATTOO'
+  | 'CLEANING'
+  | 'OTHER'
+
+export const SALON_SERVICE_LABELS: Record<SalonServiceType, string> = {
+  HAIR_UNDOING: 'Hair Undoing',
+  HAIR_WASHING: 'Hair Washing',
+  BLOW_DRY:     'Blow-dry',
+  HAIR_DRESSING:'Hair Dressing',
+  MANICURE:     'Manicure',
+  PEDICURE:     'Pedicure',
+  LASH_SERVICE: 'Lash Service',
+  TATTOO:       'Tattoo',
+  CLEANING:     'Cleaning',
+  OTHER:        'Other',
+}
+
+export type SalonServiceStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+export type SalonClientStatus  = 'ACTIVE' | 'CHECKED_OUT' | 'CANCELLED'
+export type SalonPaymentMethod = 'MPESA' | 'CASH' | 'OTHER'
+
+export interface Salon {
+  salonId: string
+  name: string
+  initials: string          // used in provider code generation e.g. "LS"
+  phone: string
+  location: string
+  status: SalonStatus
+  ownerUid?: string | null
+  ownerName: string
+  ownerPhone: string
+  ownerEmail: string
+  providerCount: number     // atomic counter for provider code generation
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  createdBy: string
+}
+
+export interface SalonProvider {
+  providerId: string        // Firestore doc id
+  salonId: string
+  providerCode: string      // e.g. "LS001JD" — unique within salon
+  name: string
+  phone: string
+  idNumber?: string | null
+  services: SalonServiceType[]
+  status: SalonStatus
+  uid?: string | null       // Firebase Auth UID once account is created
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  createdBy: string
+}
+
+// One Firestore doc per client visit session
+export interface SalonClient {
+  clientId: string
+  salonId: string
+  name: string
+  phone: string
+  packageId?: string | null  // set if part of a group/family package
+  status: SalonClientStatus
+  receptionistId: string
+  receptionistName: string
+  checkoutId?: string | null
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Service line item — NO price stored here (providers can read this)
+export interface SalonService {
+  serviceId: string
+  salonId: string
+  clientId: string
+  clientName: string
+  providerId: string         // SalonProvider.providerId (Firestore doc id)
+  providerUid?: string | null // Firebase Auth UID of provider (for query by uid)
+  providerName: string
+  providerCode: string
+  serviceType: SalonServiceType
+  serviceName?: string
+  status: SalonServiceStatus
+  serviceDate: Timestamp
+  receptionistId: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Pricing doc — same id as clientId; ONLY owner/receptionist can read
+export interface SalonClientPricing {
+  clientId: string
+  salonId: string
+  servicesPricing: Array<{
+    serviceId: string
+    serviceType: SalonServiceType
+    providerId: string
+    price: number
+  }>
+  totalAmount: number
+  updatedAt: Timestamp
+}
+
+export interface SalonPackage {
+  packageId: string
+  salonId: string
+  label: string                   // e.g. "Mama + Mtoto package"
+  memberClientIds: string[]
+  memberNames: string[]
+  totalAmount: number
+  status: 'PENDING' | 'CHECKED_OUT'
+  receptionistId: string
+  receptionistName: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Full checkout record — ONLY owner/receptionist can read
+export interface SalonCheckout {
+  checkoutId: string
+  salonId: string
+  clientId: string
+  clientName: string
+  packageId?: string | null
+  servicesSnapshot: Array<{
+    serviceId: string
+    serviceType: SalonServiceType
+    providerId: string
+    providerName: string
+    providerCode: string
+    price: number
+  }>
+  totalAmount: number
+  paymentMethod: SalonPaymentMethod
+  mpesaCode?: string | null
+  paymentConfirmed: boolean
+  hasComplaint: boolean
+  complaintText?: string | null
+  satisfied: boolean | null
+  receptionistId: string
+  receptionistName: string
+  checkoutAt: Timestamp
+  createdAt: Timestamp
 }

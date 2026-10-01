@@ -33,7 +33,7 @@ export function CtaConsultation() {
 
   return (
     <section id="consultation" className="bg-gray-50/70 py-20 lg:py-28">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="px-6 sm:px-10 lg:px-16 xl:px-24">
         <Reveal>
           <div className="rounded-3xl bg-lango-dark overflow-hidden relative">
             {/* Dot-grid texture */}

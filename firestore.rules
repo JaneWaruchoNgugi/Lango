@@ -66,7 +66,12 @@ service cloud.firestore {
     // Users can read their own profile only
     // Guards cannot read other users
     match /users/{userId} {
-      allow read:   if isAuth() && (isSuperAdmin() || request.auth.uid == userId || isPropertyStaff());
+      allow read:   if isAuth() && (
+        isSuperAdmin()
+        || request.auth.uid == userId
+        || isPropertyStaff()
+        || (isSalonOwner() && resource.data.salonId == request.auth.token.salonId)
+      );
       allow create: if isSuperAdmin();
       allow update: if isSuperAdmin() || request.auth.uid == userId;
       allow delete: if isSuperAdmin();
@@ -314,6 +319,176 @@ service cloud.firestore {
       allow update: if isSuperAdmin()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow create, delete: if false; // Cloud Functions use Admin SDK, bypassing this
+    }
+
+    // ============================================================
+    // SALON MANAGEMENT
+    // ============================================================
+
+    function isSalonOwner() {
+      return isAuth() && request.auth.token.role == 'SALON_OWNER';
+    }
+
+    function isSalonReceptionist() {
+      return isAuth() && request.auth.token.role == 'SALON_RECEPTIONIST';
+    }
+
+    function isSalonProvider() {
+      return isAuth() && request.auth.token.role == 'SALON_PROVIDER';
+    }
+
+    function isSalonStaff() {
+      return isSalonOwner() || isSalonReceptionist() || isSalonProvider();
+    }
+
+    function isSalonOwnerOrReceptionist() {
+      return isSalonOwner() || isSalonReceptionist();
+    }
+
+    // Caller belongs to this salon
+    function ownsSalon(salonId) {
+      return request.auth.token.salonId == salonId;
+    }
+
+    // Check whether a salon staff member's permissions doc grants a named permission.
+    // If no permissions doc exists yet the staff member gets default access (backward compat).
+    function staffHasPermission(uid, perm) {
+      return !exists(/databases/$(database)/documents/salonStaffPermissions/$(uid))
+             || get(/databases/$(database)/documents/salonStaffPermissions/$(uid)).data.get(perm, false) == true;
+    }
+
+    // Strict version: only grants access when permissions doc explicitly says true.
+    // Used for sensitive fields (pricing, payments) where the default should be DENY.
+    function staffHasPermissionStrict(uid, perm) {
+      return exists(/databases/$(database)/documents/salonStaffPermissions/$(uid))
+             && get(/databases/$(database)/documents/salonStaffPermissions/$(uid)).data.get(perm, false) == true;
+    }
+
+    // Receptionist permission check: falls back to true so existing receptionists
+    // keep working before permissions are explicitly configured
+    function receptionistMayCreateClients() {
+      return isSalonReceptionist() && staffHasPermission(request.auth.uid, 'createClients');
+    }
+
+    match /salons/{salonId} {
+      allow read: if isSuperAdmin() || (isSalonStaff() && ownsSalon(salonId));
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (isSalonOwner() && ownsSalon(salonId));
+    }
+
+    match /salonProviders/{providerId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwnerOrReceptionist() && ownsSalon(resource.data.salonId))
+                  || (isSalonProvider() && request.auth.uid == providerId);
+      allow create: if false; // Cloud Function only
+      allow update: if isSuperAdmin() || (isSalonOwner() && ownsSalon(resource.data.salonId));
+      allow delete: if isSuperAdmin();
+    }
+
+    match /salonClients/{clientId} {
+      // Provider can read only if explicitly granted contact+name permissions (phone is in the doc)
+      allow read: if isSuperAdmin()
+                  || (isSalonOwnerOrReceptionist() && ownsSalon(resource.data.salonId))
+                  || (isSalonProvider()
+                      && ownsSalon(resource.data.salonId)
+                      && staffHasPermission(request.auth.uid, 'viewClientName')
+                      && staffHasPermission(request.auth.uid, 'viewPhone'));
+      allow create: if receptionistMayCreateClients()
+                    && ownsSalon(request.resource.data.salonId)
+                    && request.resource.data.receptionistId == request.auth.uid;
+      allow update: if isSuperAdmin()
+                    || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                    || (isSalonReceptionist()
+                        && ownsSalon(resource.data.salonId)
+                        && staffHasPermission(request.auth.uid, 'editClients'));
+      allow delete: if isSuperAdmin()
+                    || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                    || (isSalonReceptionist()
+                        && ownsSalon(resource.data.salonId)
+                        && staffHasPermission(request.auth.uid, 'deleteClients'));
+    }
+
+    match /salonServices/{serviceId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwnerOrReceptionist() && ownsSalon(resource.data.salonId))
+                  || (isSalonProvider()
+                      && ownsSalon(resource.data.salonId)
+                      && resource.data.providerUid == request.auth.uid);
+      allow create: if (isSalonReceptionist() || isSalonOwner())
+                    && ownsSalon(request.resource.data.salonId)
+                    && staffHasPermission(request.auth.uid, 'createBookings');
+      allow update: if isSuperAdmin()
+                    || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                    || (isSalonReceptionist()
+                        && ownsSalon(resource.data.salonId)
+                        && staffHasPermission(request.auth.uid, 'editBookings'))
+                    || (isSalonProvider()
+                        && ownsSalon(resource.data.salonId)
+                        && resource.data.providerUid == request.auth.uid
+                        && staffHasPermission(request.auth.uid, 'completeBookings'));
+      allow delete: if isSuperAdmin();
+    }
+
+    // Pricing — provider can NEVER access; receptionist needs explicit viewPrices grant
+    match /salonClientPricing/{clientId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                  || (isSalonReceptionist()
+                      && ownsSalon(resource.data.salonId)
+                      && staffHasPermission(request.auth.uid, 'viewPrices'));
+      allow create: if (isSalonReceptionist() || isSalonOwner())
+                    && ownsSalon(request.resource.data.salonId)
+                    && staffHasPermission(request.auth.uid, 'viewPrices');
+      allow update: if isSuperAdmin()
+                    || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                    || (isSalonReceptionist()
+                        && ownsSalon(resource.data.salonId)
+                        && staffHasPermission(request.auth.uid, 'viewPrices'));
+      allow delete: if isSuperAdmin();
+    }
+
+    match /salonPackages/{packageId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwnerOrReceptionist() && ownsSalon(resource.data.salonId));
+      allow create: if isSalonReceptionist() && ownsSalon(request.resource.data.salonId);
+      allow update: if isSuperAdmin()
+                    || (isSalonOwnerOrReceptionist() && ownsSalon(resource.data.salonId));
+      allow delete: if isSuperAdmin();
+    }
+
+    // Checkouts — provider can NEVER access; receptionist needs explicit viewPayments grant
+    match /salonCheckouts/{checkoutId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                  || (isSalonReceptionist()
+                      && ownsSalon(resource.data.salonId)
+                      && staffHasPermission(request.auth.uid, 'viewPayments'));
+      allow create: if (isSalonReceptionist() || isSalonOwner())
+                    && ownsSalon(request.resource.data.salonId)
+                    && request.resource.data.receptionistId == request.auth.uid
+                    && staffHasPermission(request.auth.uid, 'viewPayments');
+      allow update: if isSuperAdmin()
+                    || (isSalonOwner() && ownsSalon(resource.data.salonId));
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // SALON STAFF PERMISSIONS
+    // ============================================================
+
+    match /salonStaffPermissions/{uid} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwner() && ownsSalon(resource.data.salonId))
+                  || (isAuth() && request.auth.uid == uid);
+      // Writes only via Cloud Function (Admin SDK bypasses rules)
+      allow write: if false;
+    }
+
+    match /salonPermissionAudit/{logId} {
+      allow read: if isSuperAdmin()
+                  || (isSalonOwner() && ownsSalon(resource.data.salonId));
+      // Immutable — written only by Cloud Function
+      allow write: if false;
     }
 
     // ============================================================

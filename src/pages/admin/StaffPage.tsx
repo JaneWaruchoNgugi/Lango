@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/config'
-import { Users, Search, Plus, UserCheck, Shield, Home } from 'lucide-react'
+import { Users, Search, Plus, UserCheck, Shield, Home, Pencil, Trash2 } from 'lucide-react'
 import { StaffStatusBadge } from '../../components/ui/StatusBadge'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { PageLoader } from '../../components/ui/LoadingScreen'
-import { Modal } from '../../components/ui/Modal'
+import { PageLoader, Spinner } from '../../components/ui/LoadingScreen'
+import { Modal, ConfirmDialog } from '../../components/ui/Modal'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,7 +13,6 @@ import type { AppUser, Property, UserRole } from '../../types'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../../firebase/config'
 import toast from 'react-hot-toast'
-import { Spinner } from '../../components/ui/LoadingScreen'
 
 const staffSchema = z.object({
   name:       z.string().min(2, 'Name is required'),
@@ -26,6 +25,15 @@ const staffSchema = z.object({
 })
 type StaffForm = z.infer<typeof staffSchema>
 
+const editStaffSchema = z.object({
+  name:       z.string().min(2, 'Name is required'),
+  email:      z.string().email('Valid email required'),
+  phone:      z.string().min(9, 'Valid phone required'),
+  role:       z.enum(['PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD']),
+  propertyId: z.string().min(1, 'Assign a property'),
+})
+type EditStaffForm = z.infer<typeof editStaffSchema>
+
 export default function StaffPage() {
   const [staff, setStaff]         = useState<AppUser[]>([])
   const [properties, setProperties] = useState<Property[]>([])
@@ -35,11 +43,17 @@ export default function StaffPage() {
   const [showModal, setShowModal] = useState(false)
   const [creating, setCreating]   = useState(false)
   const [tempCred, setTempCred] = useState<{ name: string; email: string; password: string } | null>(null)
+  const [memberToDelete, setMemberToDelete] = useState<AppUser | null>(null)
+  const [deleting, setDeleting]   = useState(false)
+  const [memberToEdit, setMemberToEdit] = useState<AppUser | null>(null)
+  const [editing, setEditing]     = useState(false)
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<StaffForm>({
     resolver: zodResolver(staffSchema),
     defaultValues: { role: 'SECURITY_GUARD', status: 'ACTIVE' },
   })
+
+  const editForm = useForm<EditStaffForm>({ resolver: zodResolver(editStaffSchema) })
 
   // Suggest a strong temporary password the admin can accept or overwrite.
   const suggestPassword = () => {
@@ -94,6 +108,60 @@ export default function StaffPage() {
       toast.success(`${member.name} ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`)
     } catch {
       toast.error('Failed to update status')
+    }
+  }
+
+  const onDeleteStaff = async () => {
+    if (!memberToDelete) return
+    setDeleting(true)
+    try {
+      const fn = httpsCallable<{ uid: string }, { ok: boolean }>(functions, 'deleteStaffUser')
+      await fn({ uid: memberToDelete.uid })
+      setStaff(prev => prev.filter(s => s.uid !== memberToDelete.uid))
+      toast.success(`${memberToDelete.name} deleted`)
+      setMemberToDelete(null)
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const openEdit = (member: AppUser) => {
+    editForm.reset({
+      name:       member.name,
+      email:      member.email,
+      phone:      member.phone ?? '',
+      role:       member.role as EditStaffForm['role'],
+      propertyId: member.propertyId ?? '',
+    })
+    setMemberToEdit(member)
+  }
+
+  const onEditStaff = async (data: EditStaffForm) => {
+    if (!memberToEdit) return
+    setEditing(true)
+    try {
+      // Role/property changes go through setUserClaims (server-side claims re-mint)
+      if (data.role !== memberToEdit.role || data.propertyId !== memberToEdit.propertyId) {
+        const claimsFn = httpsCallable<{ uid: string; role: string; propertyId: string }, { ok: boolean }>(functions, 'setUserClaims')
+        await claimsFn({ uid: memberToEdit.uid, role: data.role, propertyId: data.propertyId })
+      }
+      await updateDoc(doc(db, 'users', memberToEdit.uid), {
+        name: data.name, email: data.email, phone: data.phone,
+        role: data.role, propertyId: data.propertyId,
+        updatedAt: serverTimestamp(),
+      })
+      setStaff(prev => prev.map(s => s.uid === memberToEdit.uid
+        ? { ...s, name: data.name, email: data.email, phone: data.phone, role: data.role, propertyId: data.propertyId }
+        : s,
+      ))
+      toast.success(`${data.name} updated`)
+      setMemberToEdit(null)
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update')
+    } finally {
+      setEditing(false)
     }
   }
 
@@ -174,12 +242,28 @@ export default function StaffPage() {
                       <td className="hidden md:table-cell text-xs text-gray-600">{member.phone ?? '—'}</td>
                       <td><StaffStatusBadge status={member.status} /></td>
                       <td>
-                        <button
-                          onClick={() => toggleStatus(member)}
-                          className="text-xs text-lango-primary hover:underline"
-                        >
-                          {member.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(member)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-lango-primary hover:bg-lango-light transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setMemberToDelete(member)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => toggleStatus(member)}
+                            className="text-xs text-lango-primary hover:underline"
+                          >
+                            {member.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -274,6 +358,73 @@ export default function StaffPage() {
           Copy credentials
         </button>
       </Modal>
+
+      {/* Edit Staff Modal */}
+      <Modal
+        isOpen={!!memberToEdit}
+        onClose={() => setMemberToEdit(null)}
+        title="Edit Staff Member"
+        size="md"
+        footer={
+          <>
+            <button onClick={() => setMemberToEdit(null)} className="btn-secondary" disabled={editing}>Cancel</button>
+            <button form="editStaffForm" type="submit" className="btn-primary" disabled={editing}>
+              {editing && <Spinner size="sm" className="text-white" />}
+              Save Changes
+            </button>
+          </>
+        }
+      >
+        <form id="editStaffForm" onSubmit={editForm.handleSubmit(onEditStaff)} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="label">Full Name *</label>
+              <input {...editForm.register('name')} className="input" />
+              {editForm.formState.errors.name && <p className="form-error">{editForm.formState.errors.name.message}</p>}
+            </div>
+            <div>
+              <label className="label">Email *</label>
+              <input {...editForm.register('email')} type="email" className="input" />
+              {editForm.formState.errors.email && <p className="form-error">{editForm.formState.errors.email.message}</p>}
+            </div>
+            <div>
+              <label className="label">Phone *</label>
+              <input {...editForm.register('phone')} className="input" />
+              {editForm.formState.errors.phone && <p className="form-error">{editForm.formState.errors.phone.message}</p>}
+            </div>
+            <div>
+              <label className="label">Role *</label>
+              <select {...editForm.register('role')} className="input">
+                <option value="SECURITY_GUARD">Security Guard</option>
+                <option value="CARETAKER">Caretaker</option>
+                <option value="PROPERTY_MANAGER">Property Manager</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Assign to Property *</label>
+              <select {...editForm.register('propertyId')} className="input">
+                <option value="">Select property...</option>
+                {properties.map(p => (
+                  <option key={p.propertyId} value={p.propertyId}>{p.name}</option>
+                ))}
+              </select>
+              {editForm.formState.errors.propertyId && <p className="form-error">{editForm.formState.errors.propertyId.message}</p>}
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Staff Confirmation */}
+      <ConfirmDialog
+        isOpen={!!memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+        onConfirm={onDeleteStaff}
+        title="Delete staff member"
+        message={memberToDelete ? `Delete ${memberToDelete.name}? This removes their login access and cannot be undone.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   )
 }

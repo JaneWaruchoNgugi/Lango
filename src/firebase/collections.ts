@@ -31,6 +31,15 @@ import type {
   Complaint,
   UnitInspection,
   TenantInvite,
+  Salon,
+  SalonProvider,
+  SalonClient,
+  SalonService,
+  SalonClientPricing,
+  SalonPackage,
+  SalonCheckout,
+  SalonStaffPermissions,
+  SalonPermissionAuditLog,
 } from '../types'
 
 // ============================================================
@@ -76,6 +85,30 @@ export const adminAlertDoc    = (id: string): DocumentReference<AdminAlert> => d
 
 // Singleton platform settings document (Super Admin write, all staff read)
 export const platformSettingsDoc = doc(db, 'platform_settings', 'main') as DocumentReference<PlatformSettings>
+
+// ============================================================
+// SALON MANAGEMENT COLLECTIONS
+// ============================================================
+export const salonsCol           = collection(db, 'salons')              as CollectionReference<Salon>
+export const salonProvidersCol   = collection(db, 'salonProviders')      as CollectionReference<SalonProvider>
+export const salonClientsCol     = collection(db, 'salonClients')        as CollectionReference<SalonClient>
+export const salonServicesCol    = collection(db, 'salonServices')       as CollectionReference<SalonService>
+export const salonPricingCol     = collection(db, 'salonClientPricing')  as CollectionReference<SalonClientPricing>
+export const salonPackagesCol    = collection(db, 'salonPackages')       as CollectionReference<SalonPackage>
+export const salonCheckoutsCol   = collection(db, 'salonCheckouts')      as CollectionReference<SalonCheckout>
+
+export const salonDoc        = (id: string) => doc(salonsCol, id)
+export const salonProviderDoc= (id: string) => doc(salonProvidersCol, id)
+export const salonClientDoc  = (id: string) => doc(salonClientsCol, id)
+export const salonServiceDoc = (id: string) => doc(salonServicesCol, id)
+export const salonPricingDoc = (id: string) => doc(salonPricingCol, id)
+export const salonPackageDoc = (id: string) => doc(salonPackagesCol, id)
+export const salonCheckoutDoc= (id: string) => doc(salonCheckoutsCol, id)
+
+export const salonStaffPermsCol     = collection(db, 'salonStaffPermissions') as CollectionReference<SalonStaffPermissions>
+export const salonPermAuditCol      = collection(db, 'salonPermissionAudit')  as CollectionReference<SalonPermissionAuditLog>
+export const salonStaffPermsDoc     = (uid: string) => doc(salonStaffPermsCol, uid)
+export const salonPermAuditDoc      = (id: string)  => doc(salonPermAuditCol, id)
 
 export const maintenanceCol  = collection(db, 'maintenance')  as CollectionReference<MaintenanceRequest>
 export const paymentsCol     = collection(db, 'payments')     as CollectionReference<UnitPayment>

@@ -29,10 +29,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
         try {
-          // Get custom claims from token (role is set server-side)
-          const tokenResult = await firebaseUser.getIdTokenResult()
-          const role        = tokenResult.claims.role as UserRole | undefined
-          const propertyId  = tokenResult.claims.propertyId as string | null | undefined
+          // Get custom claims from token (role is set server-side).
+          // If the cached token has no role claim (e.g. claims were set after
+          // the token was issued), force-refresh once to get the latest claims.
+          let tokenResult = await firebaseUser.getIdTokenResult()
+          if (!tokenResult.claims.role) {
+            tokenResult = await firebaseUser.getIdTokenResult(true)
+          }
+          const role       = tokenResult.claims.role as UserRole | undefined
+          const propertyId = tokenResult.claims.propertyId as string | null | undefined
+          const salonId    = tokenResult.claims.salonId as string | null | undefined
 
           // Fetch user profile from Firestore
           const profileSnap = await getDoc(doc(db, 'users', firebaseUser.uid))
@@ -44,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             displayName: firebaseUser.displayName,
             role:        role ?? profile?.role ?? null,
             propertyId:  propertyId !== undefined ? propertyId : (profile?.propertyId ?? null),
+            salonId:     salonId !== undefined ? salonId : (profile?.salonId ?? null),
             profile,
           })
 

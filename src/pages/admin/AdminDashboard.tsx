@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building2, Users, Home, DoorOpen,
-  AlertTriangle, Plus, ArrowRight,
+  AlertTriangle, Plus, ArrowRight, Trash2,
 } from 'lucide-react'
 import {
-  collection, query, where, getDocs, orderBy, limit,
+  collection, query, where, getDocs, orderBy, limit, doc, deleteDoc,
 } from 'firebase/firestore'
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, Tooltip,
+} from 'recharts'
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { PropertyStatusBadge } from '../../components/ui/StatusBadge'
@@ -26,13 +29,31 @@ interface Stats {
   activeStaff: number
 }
 
+interface TrendPoint {
+  day: string
+  visitors: number
+  incidents: number
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentProperties, setRecentProperties] = useState<Property[]>([])
   const [recentIncidents, setRecentIncidents] = useState<Incident[]>([])
   const [recentVisitors, setRecentVisitors] = useState<Visitor[]>([])
+  const [trend, setTrend]                   = useState<TrendPoint[]>([])
+  const [expiringTrials, setExpiringTrials] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+
+  const deleteIncident = async (incidentId: string) => {
+    await deleteDoc(doc(db, 'incidents', incidentId))
+    setRecentIncidents(prev => prev.filter(i => i.incidentId !== incidentId))
+  }
+
+  const deleteVisitor = async (visitorId: string) => {
+    await deleteDoc(doc(db, 'visitors', visitorId))
+    setRecentVisitors(prev => prev.filter(v => v.visitorId !== visitorId))
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +96,37 @@ export default function AdminDashboard() {
           query(collection(db, 'properties'), orderBy('createdAt', 'desc'), limit(5))
         )
         const recentProps = recentPropSnap.docs.map(d => d.data() as Property)
+
+        // 7-day trend
+        const weekStart = new Date(Date.now() - 6 * 86400000)
+        weekStart.setHours(0, 0, 0, 0)
+        const [trendVisSnap, trendIncSnap] = await Promise.all([
+          getDocs(query(collection(db, 'visitors'),  where('checkInTime', '>=', weekStart), orderBy('checkInTime'))),
+          getDocs(query(collection(db, 'incidents'), where('createdAt', '>=', weekStart),   orderBy('createdAt'))),
+        ])
+        const trendVis = trendVisSnap.docs.map(d => d.data() as Visitor)
+        const trendInc = trendIncSnap.docs.map(d => d.data() as Incident)
+        const trendPoints: TrendPoint[] = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(Date.now() - (6 - i) * 86400000)
+          const lo = new Date(d); lo.setHours(0, 0, 0, 0)
+          const hi = new Date(d); hi.setHours(23, 59, 59, 999)
+          return {
+            day: format(d, 'EEE'),
+            visitors:  trendVis.filter(v => { const t = v.checkInTime?.toMillis?.() ?? 0; return t >= lo.getTime() && t <= hi.getTime() }).length,
+            incidents: trendInc.filter(v => { const t = v.createdAt?.toMillis?.() ?? 0;   return t >= lo.getTime() && t <= hi.getTime() }).length,
+          }
+        })
+        setTrend(trendPoints)
+
+        // B6: properties on TRIAL expiring within 7 days
+        const in7Days = Date.now() + 7 * 86400000
+        setExpiringTrials(
+          props.filter(p =>
+            p.status === 'TRIAL' &&
+            p.trialEndDate &&
+            p.trialEndDate.toMillis() <= in7Days,
+          ).sort((a, b) => (a.trialEndDate!.toMillis() - b.trialEndDate!.toMillis())),
+        )
 
         setStats({
           totalProperties:    props.length,
@@ -173,6 +225,64 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Trial expiry warnings (B6) */}
+      {expiringTrials.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <p className="text-sm font-semibold text-amber-800">
+              {expiringTrials.length} trial {expiringTrials.length === 1 ? 'property expires' : 'properties expire'} within 7 days
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {expiringTrials.map(p => (
+              <Link
+                key={p.propertyId}
+                to={`/admin/properties/${p.propertyId}`}
+                className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2 text-sm hover:bg-white transition-colors"
+              >
+                <span className="font-medium text-gray-800">{p.name}</span>
+                <span className="text-xs text-amber-700">
+                  Expires {format(p.trialEndDate!.toDate(), 'dd MMM yyyy')}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 7-day trend charts (B3) */}
+      {trend.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="card p-5">
+            <p className="text-xs font-medium text-gray-500 mb-3">Visitors — last 7 days</p>
+            <ResponsiveContainer width="100%" height={80}>
+              <LineChart data={trend} margin={{ top: 2, right: 4, left: -30, bottom: 0 }}>
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, padding: '4px 8px', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,.12)' }}
+                  labelStyle={{ color: '#6b7280' }}
+                />
+                <Line type="monotone" dataKey="visitors" stroke="#7c3aed" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="card p-5">
+            <p className="text-xs font-medium text-gray-500 mb-3">Incidents — last 7 days</p>
+            <ResponsiveContainer width="100%" height={80}>
+              <LineChart data={trend} margin={{ top: 2, right: 4, left: -30, bottom: 0 }}>
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, padding: '4px 8px', border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,.12)' }}
+                  labelStyle={{ color: '#6b7280' }}
+                />
+                <Line type="monotone" dataKey="incidents" stroke="#f97316" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Properties */}
         <div className="card">
@@ -228,16 +338,25 @@ export default function AdminDashboard() {
           ) : (
             <div className="divide-y divide-gray-50">
               {recentVisitors.map(v => (
-                <div key={v.visitorId} className="flex items-center justify-between px-5 py-3.5">
+                <div key={v.visitorId} className="flex items-center justify-between px-5 py-3.5 group">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{v.visitorName}</p>
                     <p className="text-xs text-gray-500">
                       Unit {v.unitNumber} · {format(v.checkInTime.toDate(), 'h:mm a')}
                     </p>
                   </div>
-                  <span className={`badge ${v.status === 'INSIDE' ? 'badge-green' : 'badge-gray'}`}>
-                    {v.status === 'INSIDE' ? 'Inside' : 'Checked Out'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge ${v.status === 'INSIDE' ? 'badge-green' : 'badge-gray'}`}>
+                      {v.status === 'INSIDE' ? 'Inside' : 'Checked Out'}
+                    </span>
+                    <button
+                      onClick={() => deleteVisitor(v.visitorId)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete visitor record"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -256,18 +375,29 @@ export default function AdminDashboard() {
           </div>
           <div className="divide-y divide-gray-50">
             {recentIncidents.map(inc => (
-              <div key={inc.incidentId} className="flex items-center justify-between px-5 py-3.5">
+              <div key={inc.incidentId} className="flex items-center justify-between px-5 py-3.5 group">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{inc.type.replace(/_/g, ' ')}</p>
                   <p className="text-xs text-gray-500 truncate">{inc.description}</p>
                 </div>
-                <span className={`badge ${
-                  inc.severity === 'CRITICAL' ? 'badge-red' :
-                  inc.severity === 'HIGH'     ? 'badge-orange' :
-                  inc.severity === 'MEDIUM'   ? 'badge-yellow' : 'badge-green'
-                }`}>
-                  {inc.severity}
-                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {inc.status === 'RESOLVED' || inc.status === 'CLOSED' ? (
+                    <span className="badge badge-green">{inc.status}</span>
+                  ) : (
+                    <span className={`badge ${
+                      inc.severity === 'CRITICAL' ? 'badge-red' :
+                      inc.severity === 'HIGH'     ? 'badge-orange' :
+                      inc.severity === 'MEDIUM'   ? 'badge-yellow' : 'badge-green'
+                    }`}>{inc.severity}</span>
+                  )}
+                  <button
+                    onClick={() => deleteIncident(inc.incidentId)}
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete incident"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

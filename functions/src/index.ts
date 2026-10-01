@@ -1,5 +1,5 @@
 import { randomInt, timingSafeEqual } from 'node:crypto'
-import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
+import { onCall, onRequest, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { setGlobalOptions } from 'firebase-functions/v2'
@@ -14,7 +14,8 @@ import { firestore } from './lib/db'
 initializeApp()
 setGlobalOptions({ region: 'us-central1' })
 
-type Role = 'SUPER_ADMIN' | 'PROPERTY_MANAGER' | 'CARETAKER' | 'SECURITY_GUARD'
+type Role = 'SUPER_ADMIN' | 'PROPERTY_MANAGER' | 'CARETAKER' | 'SECURITY_GUARD' | 'SALON_OWNER' | 'SALON_RECEPTIONIST' | 'SALON_PROVIDER'
+type SalonRole = 'SALON_OWNER' | 'SALON_RECEPTIONIST' | 'SALON_PROVIDER'
 
 function assertSuperAdmin(auth: CallableRequest['auth']) {
   if (!auth || auth.token?.role !== 'SUPER_ADMIN') {
@@ -365,6 +366,7 @@ export const bootstrapSuperAdmin = onCall(async (request) => {
 import Anthropic from '@anthropic-ai/sdk'
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY')
+const INFOBIP_API_KEY   = defineSecret('INFOBIP_API_KEY')
 
 type OcrDocType = 'national_id' | 'passport' | 'driver_license' | 'unknown'
 
@@ -503,6 +505,377 @@ export const analyzeIdDocument = onCall(
   },
 )
 
+// ============================================================
+// SALON MANAGEMENT
+// ============================================================
+
+function generateProviderCode(salonInitials: string, providerName: string, seq: number): string {
+  const seqStr = String(seq).padStart(3, '0')
+  const parts = providerName.trim().split(/\s+/)
+  let letters: string
+  if (parts.length >= 2) {
+    letters = (parts[0][0] ?? 'X').toUpperCase() + (parts[parts.length - 1][0] ?? 'X').toUpperCase()
+  } else {
+    const n = parts[0] ?? 'X'
+    letters = (n[0] ?? 'X').toUpperCase() + (n[n.length - 1] ?? 'X').toUpperCase()
+  }
+  return `${salonInitials.toUpperCase()}${seqStr}${letters}`
+}
+
+// createSalon — Super Admin creates a new salon
+export const createSalon = onCall(async (request) => {
+  assertSuperAdmin(request.auth)
+  const { name, initials, phone, location, ownerName, ownerPhone, ownerEmail, ownerPassword } = request.data as {
+    name: string; initials: string; phone: string; location: string
+    ownerName: string; ownerPhone: string; ownerEmail: string; ownerPassword?: string
+  }
+  if (!name || !initials || !phone || !location || !ownerName || !ownerPhone || !ownerEmail) {
+    throw new HttpsError('invalid-argument', 'All fields are required.')
+  }
+  const normOwnerPhone = normalizeKenyanPhone(ownerPhone)
+  if (!normOwnerPhone) throw new HttpsError('invalid-argument', 'Invalid owner phone number.')
+
+  const db = firestore()
+  const auth = getAuth()
+
+  // Create salon doc first to get the salonId
+  const salonRef = db.collection('salons').doc()
+  const salonId = salonRef.id
+
+  // Create owner Firebase Auth account
+  const tempPassword = ownerPassword && ownerPassword.length >= 8 ? ownerPassword : generateTempPassword()
+  let ownerUid: string
+  try {
+    const record = await auth.createUser({ email: ownerEmail, password: tempPassword, displayName: ownerName, phoneNumber: normOwnerPhone })
+    ownerUid = record.uid
+  } catch (err: any) {
+    if (err?.code === 'auth/email-already-exists') {
+      // Only recover from a hollow orphan left by a previous failed run.
+      // Hard-reject if: (a) Lango already owns this account (users doc exists),
+      //                 (b) another role was assigned (custom claims present).
+      // This prevents using createSalon to reset an unrelated account's password.
+      const existing = await auth.getUserByEmail(ownerEmail)
+      const userDoc = await db.collection('users').doc(existing.uid).get()
+      if (userDoc.exists || existing.customClaims?.role) {
+        throw new HttpsError('already-exists', 'Owner email already in use.')
+      }
+      // Truly hollow orphan — delete it and create fresh so we own the UID
+      await auth.deleteUser(existing.uid)
+      const fresh = await auth.createUser({ email: ownerEmail, password: tempPassword, displayName: ownerName, phoneNumber: normOwnerPhone })
+      ownerUid = fresh.uid
+    } else if (err?.code === 'auth/phone-number-already-exists') {
+      throw new HttpsError('already-exists', 'Owner phone number already in use.')
+    } else {
+      throw new HttpsError('internal', err?.message ?? 'Failed to create owner account.')
+    }
+  }
+
+  await auth.setCustomUserClaims(ownerUid, { role: 'SALON_OWNER', salonId, propertyId: null })
+
+  const now = FieldValue.serverTimestamp()
+  await Promise.all([
+    salonRef.set({
+      salonId, name, initials: initials.toUpperCase(), phone, location, status: 'ACTIVE',
+      ownerUid, ownerName, ownerPhone: normOwnerPhone, ownerEmail, providerCount: 0,
+      createdAt: now, updatedAt: now, createdBy: request.auth!.uid,
+    }),
+    db.collection('users').doc(ownerUid).set({
+      uid: ownerUid, name: ownerName, email: ownerEmail, phone: normOwnerPhone,
+      role: 'SALON_OWNER', salonId, propertyId: null, status: 'ACTIVE',
+      tempPasswordSet: true, createdBy: request.auth!.uid, createdAt: now, updatedAt: now,
+    }),
+  ])
+
+  return { salonId, ownerUid, tempPassword }
+})
+
+// updateSalon — Super Admin updates salon info
+export const updateSalon = onCall(async (request) => {
+  assertSuperAdmin(request.auth)
+  const { salonId, name, phone, location, status } = request.data as {
+    salonId: string; name?: string; phone?: string; location?: string; status?: string
+  }
+  if (!salonId) throw new HttpsError('invalid-argument', 'salonId required.')
+  const db = firestore()
+  const updates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() }
+  if (name)     updates.name     = name
+  if (phone)    updates.phone    = phone
+  if (location) updates.location = location
+  if (status === 'ACTIVE' || status === 'INACTIVE') updates.status = status
+  await db.collection('salons').doc(salonId).update(updates)
+  return { ok: true }
+})
+
+// createSalonStaff — creates SALON_RECEPTIONIST or SALON_PROVIDER accounts
+// Callable by: SUPER_ADMIN (any salon) or SALON_OWNER (own salon only)
+export const createSalonStaff = onCall(async (request) => {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'SALON_OWNER') {
+    throw new HttpsError('permission-denied', 'Only a Super Admin or Salon Owner may create salon staff.')
+  }
+
+  const { salonId, role, name, phone, email, password, idNumber, services } = request.data as {
+    salonId: string; role: SalonRole; name: string; phone: string
+    email?: string; password?: string; idNumber?: string; services?: string[]
+  }
+
+  const SALON_ROLES: SalonRole[] = ['SALON_RECEPTIONIST', 'SALON_PROVIDER']
+  if (!SALON_ROLES.includes(role)) throw new HttpsError('invalid-argument', 'Invalid salon role.')
+  if (!name || !phone || !salonId) throw new HttpsError('invalid-argument', 'name, phone, salonId required.')
+
+  // SALON_OWNER can only manage their own salon
+  if (callerRole === 'SALON_OWNER') {
+    const ownerSalonId = caller.token?.salonId as string | undefined
+    if (ownerSalonId !== salonId) throw new HttpsError('permission-denied', 'You can only manage your own salon.')
+    if (role === 'SALON_OWNER') throw new HttpsError('permission-denied', 'Cannot create another owner.')
+  }
+
+  const normPhone = normalizeKenyanPhone(phone)
+  if (!normPhone) throw new HttpsError('invalid-argument', 'Invalid phone number.')
+
+  const db = firestore()
+  const authAdmin = getAuth()
+
+  // Verify salon exists
+  const salonSnap = await db.collection('salons').doc(salonId).get()
+  if (!salonSnap.exists) throw new HttpsError('not-found', 'Salon not found.')
+  const salonData = salonSnap.data() as { initials: string; name: string; providerCount: number }
+
+  // Derive email for Firebase Auth: use provided email or phone-based for providers
+  const authEmail = email?.trim() || `${normPhone.replace(/\D/g, '')}@salonstaff.lango.app`
+  const tempPassword = password && password.length >= 8 ? password : generateTempPassword()
+
+  let uid: string
+  try {
+    const record = await authAdmin.createUser({
+      email: authEmail, password: tempPassword, displayName: name, phoneNumber: normPhone,
+    })
+    uid = record.uid
+  } catch (err: any) {
+    if (err?.code === 'auth/email-already-exists') throw new HttpsError('already-exists', 'Email already in use.')
+    if (err?.code === 'auth/phone-number-already-exists') throw new HttpsError('already-exists', 'Phone already in use.')
+    throw new HttpsError('internal', err?.message ?? 'Failed to create user.')
+  }
+
+  await authAdmin.setCustomUserClaims(uid, { role, salonId, propertyId: null })
+
+  const now = FieldValue.serverTimestamp()
+  let providerCode: string | null = null
+
+  if (role === 'SALON_PROVIDER') {
+    // Atomic counter for collision-safe provider code
+    const salonRef = db.collection('salons').doc(salonId)
+    await db.runTransaction(async tx => {
+      const fresh = await tx.get(salonRef)
+      const nextSeq = ((fresh.data()?.providerCount ?? 0) as number) + 1
+      providerCode = generateProviderCode(salonData.initials, name, nextSeq)
+      tx.update(salonRef, { providerCount: nextSeq, updatedAt: now })
+      const providerRef = db.collection('salonProviders').doc(uid)
+      tx.set(providerRef, {
+        providerId: uid, salonId, providerCode, name, phone: normPhone,
+        idNumber: idNumber?.trim() || null,
+        services: Array.isArray(services) ? services : [],
+        status: 'ACTIVE', uid,
+        createdBy: caller.uid, createdAt: now, updatedAt: now,
+      })
+    })
+  }
+
+  await db.collection('users').doc(uid).set({
+    uid, name, email: authEmail, phone: normPhone,
+    role, salonId, propertyId: null, status: 'ACTIVE',
+    tempPasswordSet: true, createdBy: caller.uid, createdAt: now, updatedAt: now,
+    ...(idNumber?.trim() ? { idNumber: idNumber.trim() } : {}),
+  })
+
+  // Initialise default permissions based on role
+  const defaultPerms = role === 'SALON_PROVIDER'
+    ? {
+        isActive: true,
+        viewClientName: true, viewServiceHistory: true, viewAllergiesNotes: true,
+        viewPhone: false, viewEmail: false, viewAddress: false,
+        createClients: false, editClients: false, deleteClients: false,
+        createBookings: false, editBookings: false, cancelBookings: false, completeBookings: true,
+        viewPrices: false, viewPayments: false, viewRevenue: false, viewReports: false,
+        manageStaff: false, manageProviders: false, manageBranches: false,
+        manageServices: false, manageMarketing: false, deleteRecords: false,
+        dataVisibility: 'OWN_CLIENTS',
+      }
+    : {
+        isActive: true,
+        viewClientName: true, viewServiceHistory: true, viewAllergiesNotes: false,
+        viewPhone: true, viewEmail: false, viewAddress: false,
+        createClients: true, editClients: true, deleteClients: false,
+        createBookings: true, editBookings: true, cancelBookings: true, completeBookings: true,
+        viewPrices: true, viewPayments: true, viewRevenue: false, viewReports: false,
+        manageStaff: false, manageProviders: false, manageBranches: false,
+        manageServices: false, manageMarketing: false, deleteRecords: false,
+        dataVisibility: 'ALL_CLIENTS',
+      }
+
+  await db.collection('salonStaffPermissions').doc(uid).set({
+    uid, salonId, staffName: name, role,
+    ...defaultPerms,
+    updatedAt: now, updatedBy: caller.uid, updatedByName: (caller.token?.name as string | undefined) ?? 'Owner',
+  })
+
+  return { uid, tempPassword, providerCode }
+})
+
+// deleteSalonStaff — removes a salon staff member (Super Admin or Salon Owner)
+export const deleteSalonStaff = onCall(async (request) => {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'SALON_OWNER') {
+    throw new HttpsError('permission-denied', 'Only a Super Admin or Salon Owner may delete salon staff.')
+  }
+  const { uid } = request.data as { uid: string }
+  if (!uid) throw new HttpsError('invalid-argument', 'uid required.')
+
+  const db = firestore()
+  const snap = await db.collection('users').doc(uid).get()
+  if (!snap.exists) throw new HttpsError('not-found', 'User not found.')
+  const target = snap.data() as { role: Role; salonId?: string | null; name?: string }
+
+  if (callerRole === 'SALON_OWNER') {
+    const ownerSalonId = caller.token?.salonId as string | undefined
+    if (ownerSalonId !== target.salonId) throw new HttpsError('permission-denied', 'That user belongs to another salon.')
+    if (target.role === 'SALON_OWNER') throw new HttpsError('permission-denied', 'Cannot delete another owner.')
+  }
+
+  try { await getAuth().deleteUser(uid) } catch (e: any) {
+    if (e?.code !== 'auth/user-not-found') throw e
+  }
+  await db.collection('users').doc(uid).delete()
+  // If provider, also delete provider record
+  if (target.role === 'SALON_PROVIDER') {
+    await db.collection('salonProviders').doc(uid).delete().catch(() => {})
+  }
+  return { ok: true }
+})
+
+// resetSalonStaffPassword — owner or super admin resets a staff member's password
+export const resetSalonStaffPassword = onCall(async (request) => {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'SALON_OWNER') {
+    throw new HttpsError('permission-denied', 'Only a Super Admin or Salon Owner may reset passwords.')
+  }
+  const { uid } = request.data as { uid: string }
+  if (!uid) throw new HttpsError('invalid-argument', 'uid required.')
+
+  const db = firestore()
+  const snap = await db.collection('users').doc(uid).get()
+  if (!snap.exists) throw new HttpsError('not-found', 'User not found.')
+  const target = snap.data() as { salonId?: string | null }
+
+  if (callerRole === 'SALON_OWNER') {
+    const ownerSalonId = caller.token?.salonId as string | undefined
+    if (ownerSalonId !== target.salonId) throw new HttpsError('permission-denied', 'That user belongs to another salon.')
+  }
+
+  const newPassword = generateTempPassword()
+  await getAuth().updateUser(uid, { password: newPassword })
+  await db.collection('users').doc(uid).update({ tempPasswordSet: true, updatedAt: FieldValue.serverTimestamp() })
+  return { tempPassword: newPassword }
+})
+
+// setSalonStaffPermissions — owner sets granular per-person permissions + writes audit trail
+export const setSalonStaffPermissions = onCall(async (request) => {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'SALON_OWNER') {
+    throw new HttpsError('permission-denied', 'Only a Super Admin or Salon Owner may configure staff permissions.')
+  }
+
+  const { targetUid, permissions } = request.data as {
+    targetUid: string
+    permissions: Record<string, boolean | string>
+  }
+  if (!targetUid || !permissions) {
+    throw new HttpsError('invalid-argument', 'targetUid and permissions are required.')
+  }
+
+  const db = firestore()
+
+  // Fetch target staff to verify salon membership
+  const targetSnap = await db.collection('users').doc(targetUid).get()
+  if (!targetSnap.exists) throw new HttpsError('not-found', 'Staff member not found.')
+  const target = targetSnap.data() as { salonId?: string | null; name?: string; role?: Role }
+
+  if (callerRole === 'SALON_OWNER') {
+    const ownerSalonId = caller.token?.salonId as string | undefined
+    if (ownerSalonId !== target.salonId) {
+      throw new HttpsError('permission-denied', 'That staff member belongs to another salon.')
+    }
+    if (target.role === 'SALON_OWNER') {
+      throw new HttpsError('permission-denied', 'Cannot modify owner permissions via this function.')
+    }
+  }
+
+  const salonId = target.salonId as string
+  const now = FieldValue.serverTimestamp()
+
+  // Read previous permissions for audit log
+  const prevSnap = await db.collection('salonStaffPermissions').doc(targetUid).get()
+  const prevPerms = prevSnap.exists ? prevSnap.data() : {}
+
+  const callerName = (caller.token?.name as string | undefined) ?? 'Owner'
+
+  const batch = db.batch()
+
+  batch.set(db.collection('salonStaffPermissions').doc(targetUid), {
+    uid: targetUid,
+    salonId,
+    staffName: target.name ?? '',
+    role: target.role ?? 'SALON_PROVIDER',
+    ...permissions,
+    updatedAt: now,
+    updatedBy: caller.uid,
+    updatedByName: callerName,
+  }, { merge: true })
+
+  const auditRef = db.collection('salonPermissionAudit').doc()
+  batch.set(auditRef, {
+    logId: auditRef.id,
+    salonId,
+    staffId: targetUid,
+    staffName: target.name ?? '',
+    changedBy: caller.uid,
+    changedByName: callerName,
+    previousPermissions: prevPerms,
+    newPermissions: { ...permissions },
+    timestamp: now,
+  })
+
+  await batch.commit()
+  return { ok: true }
+})
+
+// updateSalonProviderServices — owner updates which services a provider can perform
+export const updateSalonProviderServices = onCall(async (request) => {
+  const caller = request.auth
+  if (!caller) throw new HttpsError('unauthenticated', 'Sign in required.')
+  const callerRole = caller.token?.role as Role | undefined
+  if (callerRole !== 'SUPER_ADMIN' && callerRole !== 'SALON_OWNER') {
+    throw new HttpsError('permission-denied', 'Only a Super Admin or Salon Owner may update providers.')
+  }
+  const { uid, services, status } = request.data as { uid: string; services?: string[]; status?: string }
+  if (!uid) throw new HttpsError('invalid-argument', 'uid required.')
+
+  const db = firestore()
+  const updates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() }
+  if (Array.isArray(services)) updates.services = services
+  if (status === 'ACTIVE' || status === 'INACTIVE') updates.status = status
+  await db.collection('salonProviders').doc(uid).update(updates)
+  return { ok: true }
+})
+
 // Notify Super Admin whenever a new consultation lead is submitted from the landing page.
 // Writes an adminAlert document that the admin UI listens to in real-time.
 // `database: 'default'` is required because this project uses a named DB, not `(default)`.
@@ -523,6 +896,357 @@ export const onLeadCreated = onDocumentCreated({ document: 'leads/{leadId}', dat
     createdAt: FieldValue.serverTimestamp(),
   })
   console.log(`adminAlert created for lead ${event.params.leadId} — ${lead.name}`)
+})
+
+// ── Infobip SMS 2FA ──────────────────────────────────────────────────────────
+
+function infobipHeaders(apiKey: string) {
+  return {
+    'Authorization': `App ${apiKey}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  }
+}
+
+/**
+ * Send a 4-digit OTP to a phone number via Infobip 2FA.
+ * Binds pinId → normalizedPhone in Firestore so signInWithPhoneOtp can
+ * look up the phone server-side rather than trusting the client-supplied value.
+ */
+export const sendSmsOtp = onCall(
+  { secrets: [INFOBIP_API_KEY] },
+  async (req) => {
+    const rawPhone = req.data?.phone
+    if (typeof rawPhone !== 'string') {
+      throw new HttpsError('invalid-argument', 'A valid phone number is required.')
+    }
+    const normPhone = normalizeKenyanPhone(rawPhone)
+    if (!normPhone) throw new HttpsError('invalid-argument', 'Invalid Kenyan phone number.')
+
+    const baseUrl    = process.env.INFOBIP_BASE_URL
+    const appId      = process.env.INFOBIP_APP_ID
+    const messageId  = process.env.INFOBIP_MESSAGE_ID
+    const from       = process.env.INFOBIP_FROM
+    const apiKey     = INFOBIP_API_KEY.value()
+
+    if (!baseUrl || !appId || !messageId || !from) {
+      console.error('Infobip env vars not configured', { baseUrl, appId, messageId, from })
+      throw new HttpsError('internal', 'SMS service not configured.')
+    }
+
+    const res = await fetch(`${baseUrl}/2fa/2/pin`, {
+      method: 'POST',
+      headers: infobipHeaders(apiKey),
+      body: JSON.stringify({ applicationId: appId, messageId, from, to: normPhone }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text()
+      console.error('Infobip sendPin failed', res.status, body)
+      throw new HttpsError('internal', 'Failed to send verification code.')
+    }
+
+    const data = await res.json() as { pinId: string }
+
+    // Bind pinId → phone server-side; prevents a caller from supplying a different
+    // phone in signInWithPhoneOtp to hijack another account.
+    const db = firestore()
+    await db.collection('otpSessions').doc(data.pinId).set({
+      phone: normPhone,
+      used: false,
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt: Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
+    })
+
+    return { pinId: data.pinId }
+  }
+)
+
+/**
+ * Verify the OTP the user typed against Infobip.
+ * Returns { verified: true } on success.
+ */
+export const verifySmsOtp = onCall(
+  { secrets: [INFOBIP_API_KEY] },
+  async (req) => {
+    const { pinId, pin } = req.data ?? {}
+    if (typeof pinId !== 'string' || typeof pin !== 'string') {
+      throw new HttpsError('invalid-argument', 'pinId and pin are required.')
+    }
+
+    const baseUrl = process.env.INFOBIP_BASE_URL
+    const apiKey  = INFOBIP_API_KEY.value()
+
+    if (!baseUrl) throw new HttpsError('internal', 'SMS service not configured.')
+
+    const res = await fetch(`${baseUrl}/2fa/2/pin/${encodeURIComponent(pinId)}/verify`, {
+      method: 'POST',
+      headers: infobipHeaders(apiKey),
+      body: JSON.stringify({ pin }),
+    })
+
+    const data = await res.json() as { verified?: boolean; pinError?: string }
+
+    if (!res.ok || !data.verified) {
+      console.warn('OTP verification failed', { pinId, pinError: data.pinError })
+      return { verified: false, reason: data.pinError ?? 'WRONG_PIN' }
+    }
+
+    return { verified: true }
+  }
+)
+
+/**
+ * signInWithPhoneOtp — verify OTP with Infobip and mint a Firebase custom token.
+ * The client signs into Firebase with signInWithCustomToken(customToken).
+ *
+ * Security: the phone number is read from the Firestore otpSessions document
+ * that was written by sendSmsOtp. The client never supplies the phone here —
+ * this prevents a caller from presenting a valid pinId for their own number
+ * while claiming a different phone to obtain another account's custom token.
+ */
+export const signInWithPhoneOtp = onCall(
+  { secrets: [INFOBIP_API_KEY] },
+  async (req) => {
+    const { pinId, pin } = req.data ?? {}
+    if (typeof pinId !== 'string' || typeof pin !== 'string') {
+      throw new HttpsError('invalid-argument', 'pinId and pin are required.')
+    }
+
+    const db = firestore()
+
+    // Atomically read, validate, and consume the OTP session
+    const sessionRef = db.collection('otpSessions').doc(pinId)
+    let sessionPhone: string
+
+    await db.runTransaction(async tx => {
+      const sessionSnap = await tx.get(sessionRef)
+      if (!sessionSnap.exists) throw new HttpsError('not-found', 'Verification session not found.')
+
+      const session = sessionSnap.data() as { phone: string; used: boolean; expiresAt: Timestamp }
+      if (session.used) throw new HttpsError('unauthenticated', 'Verification code has already been used.')
+      if (session.expiresAt.toMillis() < Date.now()) {
+        throw new HttpsError('unauthenticated', 'Verification code has expired. Please request a new one.')
+      }
+
+      sessionPhone = session.phone
+      tx.update(sessionRef, { used: true })
+    })
+
+    const baseUrl = process.env.INFOBIP_BASE_URL
+    const apiKey  = INFOBIP_API_KEY.value()
+    if (!baseUrl) throw new HttpsError('internal', 'SMS service not configured.')
+
+    // Verify OTP with Infobip using the server-stored phone
+    const verifyRes = await fetch(`${baseUrl}/2fa/2/pin/${encodeURIComponent(pinId)}/verify`, {
+      method: 'POST',
+      headers: infobipHeaders(apiKey),
+      body: JSON.stringify({ pin }),
+    })
+    const verifyData = await verifyRes.json() as { verified?: boolean; pinError?: string }
+    if (!verifyRes.ok || !verifyData.verified) {
+      // Undo consume so the user can retry with a new OTP request
+      await sessionRef.update({ used: false })
+      console.warn('signInWithPhoneOtp: OTP not verified', { pinId, pinError: verifyData.pinError })
+      throw new HttpsError('unauthenticated', 'Incorrect or expired verification code.')
+    }
+
+    // Resolve the server-stored phone → Firebase user
+    const snap = await db.collection('users').where('phone', '==', sessionPhone!).limit(1).get()
+    if (snap.empty) throw new HttpsError('not-found', 'No Lango account found for that phone number.')
+
+    const uid = snap.docs[0].id
+    const customToken = await getAuth().createCustomToken(uid)
+    return { customToken }
+  }
+)
+
+/**
+ * onVisitorCreated — when a visitor is logged, SMS the tenant for approval.
+ * Skips if the visitor has no tenantId (walk-ins, deliveries, etc.).
+ */
+export const onVisitorCreated = onDocumentCreated(
+  { document: 'visitors/{visitorId}', database: 'default', secrets: [INFOBIP_API_KEY] },
+  async (event) => {
+    const snap = event.data
+    if (!snap) return
+
+    const visitor = snap.data() as {
+      tenantId?: string
+      tenantName?: string
+      visitorName?: string
+      name?: string
+      unitName?: string
+      unitNumber?: string
+      propertyId?: string
+      notificationSent?: boolean
+    }
+
+    if (!visitor.tenantId) return
+
+    const db = firestore()
+
+    // Look up tenant's phone number
+    const tenantSnap = await db.collection('tenants').doc(visitor.tenantId).get()
+    if (!tenantSnap.exists) {
+      console.warn(`onVisitorCreated: tenant ${visitor.tenantId} not found`)
+      return
+    }
+    const tenantData = tenantSnap.data() as { phoneNumber?: string; fullName?: string }
+    if (!tenantData.phoneNumber) {
+      console.warn(`onVisitorCreated: tenant ${visitor.tenantId} has no phoneNumber`)
+      return
+    }
+
+    const normTenantPhone = normalizeKenyanPhone(tenantData.phoneNumber)
+    if (!normTenantPhone) {
+      console.warn(`onVisitorCreated: tenant ${visitor.tenantId} has invalid phoneNumber: ${tenantData.phoneNumber}`)
+      return
+    }
+
+    const baseUrl = process.env.INFOBIP_BASE_URL
+    const from    = process.env.INFOBIP_FROM
+    const apiKey  = INFOBIP_API_KEY.value()
+
+    if (!baseUrl || !from) {
+      console.error('onVisitorCreated: Infobip env vars not configured')
+      return
+    }
+
+    const guestName = visitor.visitorName ?? visitor.name ?? 'A visitor'
+    const unit      = visitor.unitName ?? visitor.unitNumber ?? 'your unit'
+    const message   = `LANGO: ${guestName} is at the gate for ${unit}. Reply YES to allow entry or NO to deny.`
+
+    try {
+      const smsRes = await fetch(`${baseUrl}/sms/2/text/advanced`, {
+        method: 'POST',
+        headers: infobipHeaders(apiKey),
+        body: JSON.stringify({
+          messages: [{
+            from,
+            destinations: [{ to: normTenantPhone }],
+            text: message,
+          }],
+        }),
+      })
+
+      if (!smsRes.ok) {
+        const body = await smsRes.text()
+        console.error('onVisitorCreated: SMS send failed', smsRes.status, body)
+        return
+      }
+
+      await snap.ref.update({
+        tenantPhone: normTenantPhone,
+        smsNotifiedAt: FieldValue.serverTimestamp(),
+        notificationSent: true,
+        tenantApproval: null,  // explicit null so the inbound webhook query matches
+      })
+      console.log(`onVisitorCreated: SMS sent to ${normTenantPhone} for visitor ${event.params.visitorId}`)
+    } catch (err) {
+      console.error('onVisitorCreated: unexpected error', err)
+    }
+  }
+)
+
+/**
+ * smsInboundWebhook — Infobip posts here when a tenant replies YES/NO.
+ * Configure this URL in the Infobip portal as the inbound webhook endpoint.
+ * Set a custom "Authorization: Bearer <INFOBIP_WEBHOOK_SECRET>" header in
+ * the Infobip portal → Forward SMS → HTTP Forwarding → Custom Headers.
+ */
+export const smsInboundWebhook = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed')
+    return
+  }
+
+  // Verify Basic auth — Infobip sends Authorization: Basic base64(username:password)
+  // Set username=lango, password=<INFOBIP_WEBHOOK_SECRET> in the Infobip portal
+  const webhookSecret = process.env.INFOBIP_WEBHOOK_SECRET
+  if (webhookSecret) {
+    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : ''
+    let authenticated = false
+    if (authHeader.startsWith('Basic ')) {
+      try {
+        const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf8')
+        const colonIdx = decoded.indexOf(':')
+        const password = colonIdx >= 0 ? decoded.slice(colonIdx + 1) : ''
+        authenticated = secretsMatch(password, webhookSecret)
+      } catch { authenticated = false }
+    }
+    if (!authenticated) {
+      console.warn('smsInboundWebhook: unauthorized request rejected')
+      res.status(401).send('Unauthorized')
+      return
+    }
+  } else {
+    console.warn('smsInboundWebhook: INFOBIP_WEBHOOK_SECRET not set — running unauthenticated')
+  }
+
+  type InfobipInboundResult = { from: string; text: string; receivedAt: string }
+  const results: InfobipInboundResult[] = req.body?.results ?? []
+
+  if (!Array.isArray(results) || results.length === 0) {
+    res.status(200).send('ok')
+    return
+  }
+
+  const db = firestore()
+
+  for (const msg of results) {
+    const rawFrom = typeof msg.from === 'string' ? msg.from.trim() : ''
+    const text    = typeof msg.text === 'string' ? msg.text.trim().toUpperCase() : ''
+
+    if (!rawFrom) continue
+    const from = normalizeKenyanPhone(rawFrom) ?? rawFrom
+
+    let approval: 'APPROVED' | 'DENIED' | null = null
+    if (text === 'YES' || text.startsWith('YES ')) approval = 'APPROVED'
+    else if (text === 'NO' || text.startsWith('NO ')) approval = 'DENIED'
+
+    if (!approval) {
+      console.log(`smsInboundWebhook: unrecognised reply "${msg.text}" from ${from}`)
+      continue
+    }
+
+    // Find the most-recent pending visitor notification for this phone
+    const visitorSnap = await db
+      .collection('visitors')
+      .where('tenantPhone', '==', from)
+      .where('tenantApproval', '==', null)
+      .orderBy('smsNotifiedAt', 'desc')
+      .limit(1)
+      .get()
+
+    if (visitorSnap.empty) {
+      console.log(`smsInboundWebhook: no pending visitor found for ${from}`)
+      continue
+    }
+
+    const visitorRef = visitorSnap.docs[0].ref
+    const visitorData = visitorSnap.docs[0].data() as { visitorName?: string; name?: string; propertyId?: string }
+
+    await visitorRef.update({
+      tenantApproval: approval,
+      tenantApprovalAt: FieldValue.serverTimestamp(),
+    })
+
+    // Create a guard-facing alert so the kiosk/app notifies the guard
+    await db.collection('adminAlerts').add({
+      type: 'VISITOR_APPROVAL',
+      visitorId: visitorRef.id,
+      visitorName: visitorData.visitorName ?? visitorData.name ?? 'Visitor',
+      approval,
+      propertyId: visitorData.propertyId ?? null,
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    })
+
+    console.log(`smsInboundWebhook: ${from} replied ${approval} for visitor ${visitorRef.id}`)
+  }
+
+  res.status(200).send('ok')
 })
 
 // B6 — Auto-suspend TRIAL properties whose trialEndDate has passed

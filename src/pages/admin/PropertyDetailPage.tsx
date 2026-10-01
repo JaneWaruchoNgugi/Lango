@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
-  doc, getDoc, collection, query, where, getDocs, orderBy,
+  doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, serverTimestamp, setDoc, Timestamp, deleteDoc,
 } from 'firebase/firestore'
-import { db } from '../../firebase/config'
+import { httpsCallable } from 'firebase/functions'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { db, functions } from '../../firebase/config'
 import {
   ArrowLeft, Building2, MapPin, Pencil,
-  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard, Trash2,
+  Home, Users, DoorOpen, AlertTriangle, BarChart3, CreditCard, Trash2, UserX, UserCheck,
 } from 'lucide-react'
 import { PropertyStatusBadge } from '../../components/ui/StatusBadge'
-import { PageLoader } from '../../components/ui/LoadingScreen'
+import { PageLoader, Spinner } from '../../components/ui/LoadingScreen'
 import { EmptyState } from '../../components/ui/EmptyState'
-import type { Property, Block, Unit, Visitor, AppUser, Incident } from '../../types'
+import type { Property, Block, Unit, Visitor, AppUser, Incident, Subscription, SubscriptionPlan } from '../../types'
 import { format } from 'date-fns'
 import { SUBSCRIPTION_PLANS } from '../../types'
 import { useAuth } from '../../contexts/AuthContext'
@@ -19,9 +23,16 @@ import { GenerateUnitsForm } from '../../components/units/GenerateUnitsForm'
 import { ManualUnitForm } from '../../components/units/ManualUnitForm'
 import { DeleteBlockDialog } from '../../components/units/DeleteBlockDialog'
 import { unitDisplayName, unitFloorLabel } from '../../domain/unitHelpers'
-import { ConfirmDialog } from '../../components/ui/Modal'
+import { Modal, ConfirmDialog } from '../../components/ui/Modal'
 import { deleteUnit } from '../../services/unitService'
 import toast from 'react-hot-toast'
+
+const staffEditSchema = z.object({
+  name:  z.string().min(2, 'Name required'),
+  phone: z.string().min(9, 'Valid phone required'),
+  role:  z.enum(['PROPERTY_MANAGER', 'CARETAKER', 'SECURITY_GUARD']),
+})
+type StaffEditForm = z.infer<typeof staffEditSchema>
 
 type TabId = 'overview' | 'blocks' | 'units' | 'staff' | 'visitors' | 'deliveries' | 'incidents' | 'subscription'
 
@@ -53,6 +64,26 @@ export default function PropertyDetailPage() {
   const [blockToDelete, setBlockToDelete] = useState<Block | null>(null)
   const [unitToDelete, setUnitToDelete]   = useState<Unit | null>(null)
   const [deletingUnit, setDeletingUnit]   = useState(false)
+  // Subscription / upgrade plan
+  const [showUpgradePlan, setShowUpgradePlan]   = useState(false)
+  const [selectedPlan, setSelectedPlan]         = useState<SubscriptionPlan>('SMALL')
+  const [upgradingPlan, setUpgradingPlan]       = useState(false)
+  const [showInvoices, setShowInvoices]         = useState(false)
+  const [subscriptions, setSubscriptions]       = useState<Subscription[]>([])
+  const [loadingInvoices, setLoadingInvoices]   = useState(false)
+  // Delete property
+  const [showDeleteProperty, setShowDeleteProperty] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName]   = useState('')
+  const [deletingProperty, setDeletingProperty]     = useState(false)
+  // Staff actions (B1)
+  const [staffToEdit, setStaffToEdit]     = useState<AppUser | null>(null)
+  const [staffEditing, setStaffEditing]   = useState(false)
+  const [staffToToggle, setStaffToToggle] = useState<AppUser | null>(null)
+  const [staffToggling, setStaffToggling] = useState(false)
+  // Renewal date for upgrade-plan modal (B2)
+  const [renewalDate, setRenewalDate]     = useState('')
+
+  const staffEditForm = useForm<StaffEditForm>({ resolver: zodResolver(staffEditSchema) })
 
   const reload = useCallback(async () => {
     if (!id) return
@@ -67,7 +98,13 @@ export default function PropertyDetailPage() {
       ])
       setProperty(propSnap.exists() ? propSnap.data() as Property : null)
       setBlocks(blockSnap.docs.map(d => d.data() as Block))
-      setUnits(unitSnap.docs.map(d => d.data() as Unit))
+      const parseFloor = (f?: string | null) => { const n = parseInt(f ?? '', 10); return isNaN(n) ? 0 : n }
+      const rawUnits = unitSnap.docs.map(d => d.data() as Unit)
+      rawUnits.sort((a, b) => {
+        const fd = parseFloor(a.floor) - parseFloor(b.floor)
+        return fd !== 0 ? fd : a.unitNumber.localeCompare(b.unitNumber, undefined, { numeric: true, sensitivity: 'base' })
+      })
+      setUnits(rawUnits)
       setStaff(staffSnap.docs.map(d => d.data() as AppUser))
       setVisitors(visSnap.docs.map(d => d.data() as Visitor))
       setIncidents(incSnap.docs.map(d => d.data() as Incident))
@@ -77,6 +114,114 @@ export default function PropertyDetailPage() {
       setLoading(false)
     }
   }, [id])
+
+  const onUpgradePlan = async () => {
+    if (!property || selectedPlan === property.plan) { setShowUpgradePlan(false); return }
+    setUpgradingPlan(true)
+    try {
+      const now      = Timestamp.now()
+      const nextDate = renewalDate
+        ? new Date(renewalDate)
+        : new Date(now.toDate().getFullYear(), now.toDate().getMonth() + 1, now.toDate().getDate())
+      const renewal  = Timestamp.fromDate(nextDate)
+      const planInfo = SUBSCRIPTION_PLANS[selectedPlan]
+
+      await updateDoc(doc(db, 'properties', id!), { plan: selectedPlan, updatedAt: serverTimestamp() })
+
+      const subRef = doc(collection(db, 'subscriptions'))
+      await setDoc(subRef, {
+        subscriptionId: subRef.id,
+        propertyId:    id!,
+        planId:        selectedPlan,
+        price:         planInfo.monthlyPrice,
+        billingCycle:  'MONTHLY',
+        startDate:     now,
+        renewalDate:   renewal,
+        status:        'ACTIVE',
+        createdAt:     serverTimestamp(),
+      })
+
+      setProperty(prev => prev ? { ...prev, plan: selectedPlan } : null)
+      toast.success('Plan updated')
+      setShowUpgradePlan(false)
+      setRenewalDate('')
+    } catch {
+      toast.error('Failed to update plan')
+    } finally {
+      setUpgradingPlan(false)
+    }
+  }
+
+  const loadInvoices = async () => {
+    setLoadingInvoices(true)
+    setShowInvoices(true)
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'subscriptions'),
+        where('propertyId', '==', id),
+        orderBy('createdAt', 'desc'),
+      ))
+      setSubscriptions(snap.docs.map(d => d.data() as Subscription))
+    } catch {
+      toast.error('Failed to load invoice history')
+    } finally {
+      setLoadingInvoices(false)
+    }
+  }
+
+  const onDeleteProperty = async () => {
+    if (!property || deleteConfirmName !== property.name) return
+    setDeletingProperty(true)
+    try {
+      const fn = httpsCallable<{ propertyId: string }, { ok: boolean }>(functions, 'deleteProperty')
+      await fn({ propertyId: id! })
+      toast.success('Property deleted')
+      navigate('/admin/properties')
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete property')
+      setDeletingProperty(false)
+    }
+  }
+
+  // B1: Edit staff member scoped to this property
+  const onStaffEdit = async (data: StaffEditForm) => {
+    if (!staffToEdit) return
+    setStaffEditing(true)
+    try {
+      if (data.role !== staffToEdit.role) {
+        const claimsFn = httpsCallable<{ uid: string; role: string; propertyId: string }, { ok: boolean }>(functions, 'setUserClaims')
+        await claimsFn({ uid: staffToEdit.uid, role: data.role, propertyId: id! })
+      }
+      await updateDoc(doc(db, 'users', staffToEdit.uid), {
+        name: data.name, phone: data.phone, role: data.role, updatedAt: serverTimestamp(),
+      })
+      setStaff(prev => prev.map(s => s.uid === staffToEdit.uid
+        ? { ...s, name: data.name, phone: data.phone, role: data.role } : s))
+      toast.success(`${data.name} updated`)
+      setStaffToEdit(null)
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to update')
+    } finally {
+      setStaffEditing(false)
+    }
+  }
+
+  // B1: Toggle staff active/inactive
+  const onToggleStaff = async () => {
+    if (!staffToToggle) return
+    setStaffToggling(true)
+    const newStatus = staffToToggle.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    try {
+      await updateDoc(doc(db, 'users', staffToToggle.uid), { status: newStatus, updatedAt: serverTimestamp() })
+      setStaff(prev => prev.map(s => s.uid === staffToToggle.uid ? { ...s, status: newStatus } : s))
+      toast.success(`${staffToToggle.name} ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}`)
+      setStaffToToggle(null)
+    } catch {
+      toast.error('Failed to update status')
+    } finally {
+      setStaffToggling(false)
+    }
+  }
 
   useEffect(() => { reload() }, [reload])
 
@@ -112,9 +257,18 @@ export default function PropertyDetailPage() {
                 <span>{property.address}, {property.city}</span>
               </div>
             </div>
-            <Link to={`/admin/properties/${id}/edit`} className="btn-secondary">
-              <Pencil className="w-3.5 h-3.5" /> Edit
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to={`/admin/properties/${id}/edit`} className="btn-secondary">
+                <Pencil className="w-3.5 h-3.5" /> Edit
+              </Link>
+              <button
+                onClick={() => { setDeleteConfirmName(''); setShowDeleteProperty(true) }}
+                className="btn-danger text-sm"
+                title="Delete property"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -338,6 +492,27 @@ export default function PropertyDetailPage() {
                   <div className="flex items-center gap-2">
                     <span className="badge badge-blue">{s.role.replace(/_/g,' ')}</span>
                     <span className={`badge ${s.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{s.status}</span>
+                    <button
+                      onClick={() => {
+                        staffEditForm.reset({ name: s.name, phone: s.phone ?? '', role: s.role as StaffEditForm['role'] })
+                        setStaffToEdit(s)
+                      }}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-lango-primary hover:bg-lango-light transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setStaffToToggle(s)}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        s.status === 'ACTIVE'
+                          ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                          : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+                      }`}
+                      title={s.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                    >
+                      {s.status === 'ACTIVE' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -356,15 +531,27 @@ export default function PropertyDetailPage() {
           ) : (
             <div className="table-container">
               <table className="table">
-                <thead><tr><th>Name</th><th>Unit</th><th>Type</th><th>Status</th><th>Check-in</th></tr></thead>
+                <thead><tr><th>Name</th><th>Unit</th><th>Type</th><th>Status</th><th>Check-in</th><th></th></tr></thead>
                 <tbody>
                   {visitors.slice(0, 50).map(v => (
-                    <tr key={v.visitorId}>
+                    <tr key={v.visitorId} className="group">
                       <td className="font-medium">{v.visitorName}</td>
                       <td>{v.unitNumber}</td>
                       <td><span className="badge badge-blue">{v.visitType}</span></td>
                       <td><span className={`badge ${v.status === 'INSIDE' ? 'badge-green' : 'badge-gray'}`}>{v.status}</span></td>
                       <td className="text-gray-500 text-xs">{format(v.checkInTime.toDate(), 'dd MMM, h:mm a')}</td>
+                      <td>
+                        <button
+                          onClick={async () => {
+                            await deleteDoc(doc(db, 'visitors', v.visitorId))
+                            setVisitors(prev => prev.filter(x => x.visitorId !== v.visitorId))
+                          }}
+                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete visitor record"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -384,17 +571,54 @@ export default function PropertyDetailPage() {
           ) : (
             <div className="divide-y divide-gray-50">
               {incidents.map(inc => (
-                <div key={inc.incidentId} className="px-5 py-3.5 flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{inc.type.replace(/_/g,' ')}</p>
-                    <p className="text-xs text-gray-500 truncate">{inc.description}</p>
+                <div key={inc.incidentId} className="px-5 py-3.5 flex items-start justify-between gap-4 group">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-900">{inc.type.replace(/_/g,' ')}</p>
+                      {inc.status === 'RESOLVED' || inc.status === 'CLOSED' ? (
+                        <span className="badge badge-green flex-shrink-0">{inc.status}</span>
+                      ) : (
+                        <>
+                          <span className={`badge flex-shrink-0 ${
+                            inc.severity === 'CRITICAL' ? 'badge-red' :
+                            inc.severity === 'HIGH'     ? 'badge-orange' :
+                            inc.severity === 'MEDIUM'   ? 'badge-yellow' : 'badge-green'
+                          }`}>{inc.severity}</span>
+                          {inc.status === 'INVESTIGATING' && (
+                            <span className="badge badge-blue flex-shrink-0">INVESTIGATING</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{inc.description}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{format(inc.createdAt.toDate(), 'dd MMM yyyy, h:mm a')}</p>
                   </div>
-                  <span className={`badge flex-shrink-0 ${
-                    inc.severity === 'CRITICAL' ? 'badge-red' :
-                    inc.severity === 'HIGH'     ? 'badge-orange' :
-                    inc.severity === 'MEDIUM'   ? 'badge-yellow' : 'badge-green'
-                  }`}>{inc.severity}</span>
+                  <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {inc.status !== 'RESOLVED' && inc.status !== 'CLOSED' && (
+                      <button
+                        onClick={async () => {
+                          await updateDoc(doc(db, 'incidents', inc.incidentId), {
+                            status: 'RESOLVED', resolvedBy: actor.name, resolvedAt: serverTimestamp(), updatedAt: serverTimestamp(),
+                          })
+                          setIncidents(prev => prev.map(i => i.incidentId === inc.incidentId ? { ...i, status: 'RESOLVED' } : i))
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors"
+                        title="Mark as resolved"
+                      >
+                        Resolve
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        await deleteDoc(doc(db, 'incidents', inc.incidentId))
+                        setIncidents(prev => prev.filter(i => i.incidentId !== inc.incidentId))
+                      }}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Delete incident"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -433,6 +657,178 @@ export default function PropertyDetailPage() {
         loading={deletingUnit}
       />
 
+      {/* Upgrade Plan Modal */}
+      <Modal
+        isOpen={showUpgradePlan}
+        onClose={() => setShowUpgradePlan(false)}
+        title="Change subscription plan"
+        size="sm"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setShowUpgradePlan(false)} disabled={upgradingPlan}>Cancel</button>
+            <button className="btn-primary" onClick={onUpgradePlan} disabled={upgradingPlan}>
+              {upgradingPlan && <Spinner size="sm" className="text-white" />}
+              Save
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">Current plan: <span className="font-medium text-gray-800">{SUBSCRIPTION_PLANS[property.plan].name}</span></p>
+          <div>
+            <label className="label">New plan</label>
+            <select className="input" value={selectedPlan} onChange={e => setSelectedPlan(e.target.value as SubscriptionPlan)}>
+              {(Object.keys(SUBSCRIPTION_PLANS) as SubscriptionPlan[]).map(p => (
+                <option key={p} value={p}>
+                  {SUBSCRIPTION_PLANS[p].name} — KES {SUBSCRIPTION_PLANS[p].monthlyPrice.toLocaleString()}/mo
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Renewal date <span className="text-gray-400 font-normal">(optional — defaults to +1 month)</span></label>
+            <input
+              type="date"
+              className="input"
+              value={renewalDate}
+              onChange={e => setRenewalDate(e.target.value)}
+              min={format(new Date(), 'yyyy-MM-dd')}
+            />
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
+            {SUBSCRIPTION_PLANS[selectedPlan].features.map(f => (
+              <p key={f} className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-lango-primary flex-shrink-0" />{f}
+              </p>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Invoice History Modal */}
+      <Modal
+        isOpen={showInvoices}
+        onClose={() => setShowInvoices(false)}
+        title="Invoice history"
+        size="md"
+      >
+        {loadingInvoices ? (
+          <div className="flex justify-center py-8"><Spinner /></div>
+        ) : subscriptions.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-8">No subscription records found for this property.</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {subscriptions.map(sub => (
+              <div key={sub.subscriptionId} className="py-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{SUBSCRIPTION_PLANS[sub.planId]?.name ?? sub.planId}</p>
+                  <p className="text-xs text-gray-500">{sub.billingCycle} · KES {sub.price.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {format(sub.startDate.toDate(), 'dd MMM yyyy')} → {format(sub.renewalDate.toDate(), 'dd MMM yyyy')}
+                  </p>
+                </div>
+                <span className={`badge flex-shrink-0 ${
+                  sub.status === 'ACTIVE' ? 'badge-green' :
+                  sub.status === 'PAST_DUE' ? 'badge-yellow' :
+                  sub.status === 'SUSPENDED' ? 'badge-red' : 'badge-gray'
+                }`}>{sub.status}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Property Modal */}
+      <Modal
+        isOpen={showDeleteProperty}
+        onClose={() => setShowDeleteProperty(false)}
+        title="Delete property"
+        size="sm"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setShowDeleteProperty(false)} disabled={deletingProperty}>Cancel</button>
+            <button
+              className="btn-danger"
+              disabled={deleteConfirmName !== property.name || deletingProperty}
+              onClick={onDeleteProperty}
+            >
+              {deletingProperty && <Spinner size="sm" className="text-white" />}
+              Delete permanently
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            This will permanently delete <span className="font-medium">{property.name}</span> and all related data — blocks, units, staff, visitors, and history. This cannot be undone.
+          </p>
+          <div>
+            <label className="label">
+              Type <span className="font-mono text-red-600">{property.name}</span> to confirm
+            </label>
+            <input
+              className="input"
+              value={deleteConfirmName}
+              onChange={e => setDeleteConfirmName(e.target.value)}
+              placeholder={property.name}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Staff Modal (B1) */}
+      <Modal
+        isOpen={!!staffToEdit}
+        onClose={() => setStaffToEdit(null)}
+        title="Edit staff member"
+        size="sm"
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setStaffToEdit(null)} disabled={staffEditing}>Cancel</button>
+            <button className="btn-primary" form="staffEditForm" type="submit" disabled={staffEditing}>
+              {staffEditing && <Spinner size="sm" className="text-white" />}
+              Save
+            </button>
+          </>
+        }
+      >
+        <form id="staffEditForm" onSubmit={staffEditForm.handleSubmit(onStaffEdit)} className="space-y-3">
+          <div>
+            <label className="label">Name</label>
+            <input className="input" {...staffEditForm.register('name')} />
+            {staffEditForm.formState.errors.name && <p className="error-text">{staffEditForm.formState.errors.name.message}</p>}
+          </div>
+          <div>
+            <label className="label">Phone</label>
+            <input className="input" {...staffEditForm.register('phone')} />
+            {staffEditForm.formState.errors.phone && <p className="error-text">{staffEditForm.formState.errors.phone.message}</p>}
+          </div>
+          <div>
+            <label className="label">Role</label>
+            <select className="input" {...staffEditForm.register('role')}>
+              <option value="PROPERTY_MANAGER">Property Manager</option>
+              <option value="CARETAKER">Caretaker</option>
+              <option value="SECURITY_GUARD">Security Guard</option>
+            </select>
+            {staffEditForm.formState.errors.role && <p className="error-text">{staffEditForm.formState.errors.role.message}</p>}
+          </div>
+        </form>
+      </Modal>
+
+      {/* Toggle Staff ConfirmDialog (B1) */}
+      <ConfirmDialog
+        isOpen={!!staffToToggle}
+        onClose={() => setStaffToToggle(null)}
+        onConfirm={onToggleStaff}
+        title={staffToToggle?.status === 'ACTIVE' ? 'Deactivate staff' : 'Activate staff'}
+        message={staffToToggle
+          ? `${staffToToggle.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} ${staffToToggle.name}?`
+          : ''}
+        confirmLabel={staffToToggle?.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+        variant={staffToToggle?.status === 'ACTIVE' ? 'danger' : 'primary'}
+        loading={staffToggling}
+      />
+
       {tab === 'subscription' && (
         <div className="card p-6">
           <h3 className="section-title">Subscription Details</h3>
@@ -455,8 +851,12 @@ export default function PropertyDetailPage() {
             </div>
           </div>
           <div className="mt-4 flex gap-3">
-            <button className="btn-primary text-sm">Upgrade Plan</button>
-            <button className="btn-secondary text-sm">View Invoice History</button>
+            <button className="btn-primary text-sm" onClick={() => { setSelectedPlan(property.plan); setShowUpgradePlan(true) }}>
+              Upgrade Plan
+            </button>
+            <button className="btn-secondary text-sm" onClick={loadInvoices}>
+              View Invoice History
+            </button>
           </div>
         </div>
       )}
