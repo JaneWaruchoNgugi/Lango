@@ -9,7 +9,7 @@ import { EmptyState } from '../../../components/ui/EmptyState'
 import { Toggle } from '../../../components/ui/Toggle'
 import toast from 'react-hot-toast'
 import { Shield, ChevronRight, Clock } from 'lucide-react'
-import { format } from 'date-fns'
+
 import type { AppUser, SalonStaffPermissions, SalonPermissionKey, SalonDataVisibility, UserRole } from '../../../types'
 import { PROVIDER_DEFAULT_PERMISSIONS, RECEPTIONIST_DEFAULT_PERMISSIONS } from '../../../types'
 

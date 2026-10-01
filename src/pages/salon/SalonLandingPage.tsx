@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Menu, X, ShieldCheck, Users, Building2, Scissors,
@@ -375,7 +375,7 @@ function S2Permissions() {
                   { label: 'Service prices',  on: false },
                   { label: 'Payments',        on: false },
                   { label: 'Revenue reports', on: false },
-                ].map(({ label, on }) => (
+                ].map(({ label }) => (
                   <div key={label} className="flex items-center justify-between py-1.5">
                     <span className="text-sm text-gray-700">{label}</span>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">
@@ -829,7 +829,7 @@ function S11Pricing() {
           sub="No hidden fees. Start with a 30-day free trial — we'll recommend the right plan for your salon."
         />
         <div className="grid md:grid-cols-3 gap-5">
-          {SALON_PLANS.map((p, i) => (
+          {SALON_PLANS.map((p) => (
             <div key={p.name} className={`rounded-2xl p-6 flex flex-col relative border ${p.popular ? 'l-plan-popular' : 'bg-white border-gray-100 shadow-sm'}`}>
               {p.popular && (
                 <div className="absolute -top-4 inset-x-0 flex justify-center">

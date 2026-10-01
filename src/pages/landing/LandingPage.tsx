@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Menu, X, Building2, Scissors, ShieldCheck, Users, BarChart3,
   CheckCircle2, Calendar, CreditCard, Package, Bell, Clock,
-  Smartphone, Coins, Lock, KeyRound, ChevronRight, ArrowRight,
+  Smartphone, Coins, Lock, KeyRound, ArrowRight,
   Phone, Mail, MapPin, UserPlus, MessageCircle, LayoutDashboard,
 } from 'lucide-react'
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
@@ -531,7 +531,7 @@ function Pricing() {
 
         {tab === 'gate' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-end">
-            {gatePlans.map((p, i) => {
+            {gatePlans.map((p) => {
               const popular = p.planId === 'MEDIUM'
               return (
                 <div key={p.planId} className={`rounded-2xl p-6 flex flex-col relative border ${popular ? 'l-plan-popular' : 'bg-white border-gray-100 shadow-sm'}`}>
