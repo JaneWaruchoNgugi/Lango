@@ -1164,24 +1164,25 @@ export const smsInboundWebhook = onRequest(async (req, res) => {
   // Verify Basic auth — Infobip sends Authorization: Basic base64(username:password)
   // Set username=lango, password=<INFOBIP_WEBHOOK_SECRET> in the Infobip portal
   const webhookSecret = process.env.INFOBIP_WEBHOOK_SECRET
-  if (webhookSecret) {
-    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : ''
-    let authenticated = false
-    if (authHeader.startsWith('Basic ')) {
-      try {
-        const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf8')
-        const colonIdx = decoded.indexOf(':')
-        const password = colonIdx >= 0 ? decoded.slice(colonIdx + 1) : ''
-        authenticated = secretsMatch(password, webhookSecret)
-      } catch { authenticated = false }
-    }
-    if (!authenticated) {
-      console.warn('smsInboundWebhook: unauthorized request rejected')
-      res.status(401).send('Unauthorized')
-      return
-    }
-  } else {
-    console.warn('smsInboundWebhook: INFOBIP_WEBHOOK_SECRET not set — running unauthenticated')
+  if (!webhookSecret) {
+    console.error('smsInboundWebhook: INFOBIP_WEBHOOK_SECRET not configured — refusing all requests')
+    res.status(500).send('Not configured')
+    return
+  }
+  const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : ''
+  let authenticated = false
+  if (authHeader.startsWith('Basic ')) {
+    try {
+      const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf8')
+      const colonIdx = decoded.indexOf(':')
+      const password = colonIdx >= 0 ? decoded.slice(colonIdx + 1) : ''
+      authenticated = secretsMatch(password, webhookSecret)
+    } catch { authenticated = false }
+  }
+  if (!authenticated) {
+    console.warn('smsInboundWebhook: unauthorized request rejected')
+    res.status(401).send('Unauthorized')
+    return
   }
 
   type InfobipInboundResult = { from: string; text: string; receivedAt: string }
