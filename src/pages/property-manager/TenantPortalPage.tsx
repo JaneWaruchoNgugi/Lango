@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { deleteDoc, doc, getDocs, query, where, Timestamp } from 'firebase/firestore'
+import { deleteDoc, doc, getDocs, query, setDoc, where, Timestamp } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { tenantInvitesCol } from '../../firebase/collections'
 import { useTenants } from '../../hooks/useTenants'
@@ -71,7 +71,6 @@ export default function TenantPortalPage() {
       }
       // Store with token as doc ID for O(1) lookup on registration side
       const ref = doc(db, 'tenantInvites', token)
-      const { setDoc } = await import('firebase/firestore')
       await setDoc(ref, { ...data, id: token })
       toast.success('Invite link generated')
       await loadInvites()

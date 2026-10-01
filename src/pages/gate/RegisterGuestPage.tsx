@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore'
+import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { useShift } from '../../hooks/useShift'
 import { WORK_TYPES, SERVICE_TYPES, DELIVERY_KINDS, VISIT_TYPE_LABEL } from '../../domain/visitTypes'
@@ -154,13 +156,11 @@ export default function RegisterGuestPage() {
     setBlacklistWarning(null)
     if (propertyId) {
       try {
-        const { getDocs: gd, query: q, collection: col, where: wh } = await import('firebase/firestore')
-        const { db: firestoreDb } = await import('../../firebase/config')
         const values = form.getValues() as Record<string, string | undefined>
         const idNumber = values['idNumber'] ?? ''
         const phone    = values['phone'] ?? ''
         if (idNumber || phone) {
-          const snap = await gd(q(col(firestoreDb, 'blacklist'), wh('propertyId', '==', propertyId), wh('isActive', '==', true)))
+          const snap = await getDocs(query(collection(db, 'blacklist'), where('propertyId', '==', propertyId), where('isActive', '==', true)))
           const match = snap.docs.find(d => {
             const e = d.data() as { idNumber?: string; phone?: string }
             return (idNumber && e.idNumber === idNumber) || (phone && e.phone === phone)
@@ -230,9 +230,7 @@ export default function RegisterGuestPage() {
           if (!matchedPreApproved.idNumber && data.idNumber) patches.idNumber = data.idNumber
           if (!matchedPreApproved.phone && data.phone) patches.phone = data.phone
           if (Object.keys(patches).length) {
-            const { updateDoc, doc: fd } = await import('firebase/firestore')
-            const { db: fdb } = await import('../../firebase/config')
-            updateDoc(fd(fdb, 'preApproved', matchedPreApproved.id), patches).catch(() => {})
+            updateDoc(doc(db, 'preApproved', matchedPreApproved.id), patches).catch(() => {})
           }
         }
         if (visiting.tenantPhone) await sendVisitorNotification({ propertyId, type: 'VISITOR_ALERT', recipientPhone: visiting.tenantPhone, recipientName: visiting.tenantName ?? '', relatedEntityId: id, data: { visitorName: data.visitorName, unitNumber: visiting.unitNumber, visitType: VISIT_TYPE_LABEL[data.visitType], reason: ('reason' in data ? data.reason : '') ?? '', idNumber: data.idNumber ?? '' } })

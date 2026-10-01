@@ -10,6 +10,7 @@ import {
   ChevronRight, ArrowLeft, KeyRound
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import i18n from '../../i18n'
 import toast from 'react-hot-toast'
 import type { NotificationPreferences, UserPreferences } from '../../types'
 
@@ -94,7 +95,7 @@ export default function GuardSettingsPage() {
       setPrefs(merged)
       document.documentElement.classList.toggle('dark', merged.darkMode ?? false)
       if (merged.language && merged.language !== 'en') {
-        import('../../i18n').then(m => m.default.changeLanguage(merged.language))
+        i18n.changeLanguage(merged.language)
       }
     }
   }, [user?.profile])
@@ -241,7 +242,7 @@ export default function GuardSettingsPage() {
               onChange={e => {
                 const lang = e.target.value
                 setPrefs(p => ({ ...p, language: lang }))
-                import('../../i18n').then(m => m.default.changeLanguage(lang))
+                i18n.changeLanguage(lang)
               }}
             >
               <option value="en">English</option>
