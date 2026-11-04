@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot, orderBy, limit, writeBatch, doc }
 import { db } from '../../firebase/config'
 import { useAuth } from '../../contexts/AuthContext'
 import { OnlinePill } from '../ui/OnlinePill'
+import { LangoLogo } from '../ui/LangoLogo'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import type { Notification, AdminAlert } from '../../types'
@@ -76,8 +77,9 @@ function NotificationBell({ propertyId, role }: { propertyId: string | null | un
     <div className="relative" ref={ref}>
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100"
+        className="relative p-2 rounded-lg bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lango-primary/40"
         title="Notifications"
+        aria-label="Notifications"
       >
         <Bell className="w-4 h-4" />
         {unread > 0 && (
@@ -87,7 +89,7 @@ function NotificationBell({ propertyId, role }: { propertyId: string | null | un
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-pop border border-gray-200/70 z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             {unread > 0 && <span className="text-xs text-lango-primary font-medium">{unread} new</span>}
@@ -158,28 +160,30 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo, onSignOut
 
   const Sidebar = ({ full }: { full?: boolean }) => (
     <div className="flex flex-col h-full">
-      <div className={`flex items-center gap-3 px-4 py-5 ${full ? '' : 'md:justify-center lg:justify-start lg:px-5'}`}>
-        <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center font-bold shrink-0">L</div>
-        <div className={full ? '' : 'hidden lg:block'}><p className="font-bold tracking-wide leading-tight">LANGO</p><p className="text-white/50 text-xs">{roleLabel}</p></div>
+      <div className={`flex items-center px-4 h-16 border-b border-white/[0.06] ${full ? '' : 'md:justify-center lg:justify-start lg:px-5'}`}>
+        <span className={full ? '' : 'lg:hidden'}>{!full && <LangoLogo size={32} wordmark={false} />}</span>
+        <LangoLogo size={32} tone="light" caption={roleLabel} className={full ? '' : 'hidden lg:inline-flex'} />
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2 space-y-1 px-2 lg:px-3 scrollbar-hide">
+      <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2 lg:px-3 scrollbar-hide" aria-label="Main">
         {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} onClick={() => setMobileOpen(false)} title={label}
-            className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${full ? '' : 'md:justify-center lg:justify-start'} ${
-              isActive ? 'bg-lango-primary text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}>
-            <Icon className="w-5 h-5 shrink-0" /> <span className={full ? '' : 'hidden lg:inline'}>{label}</span>
+            className={({ isActive }) => `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${full ? '' : 'md:justify-center lg:justify-start'} ${
+              isActive
+                ? 'bg-white/[0.09] text-white before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-lango-accent'
+                : 'text-white/60 hover:bg-white/[0.05] hover:text-white'}`}>
+            <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.9} /> <span className={full ? '' : 'hidden lg:inline'}>{label}</span>
           </NavLink>
         ))}
       </nav>
 
       <div className="px-2 lg:px-3 py-4 border-t border-white/10">
         <div className={`flex items-center gap-3 px-2 py-2 ${full ? '' : 'md:justify-center lg:justify-start'}`}>
-          <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-sm font-semibold shrink-0">{initials}</div>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lango-accent to-lango-secondary ring-2 ring-white/10 flex items-center justify-center text-[13px] font-semibold shrink-0">{initials}</div>
           <div className={`flex-1 min-w-0 ${full ? '' : 'hidden lg:block'}`}><p className="text-sm font-medium truncate">{name}</p><p className="text-white/50 text-xs">{roleLabel}</p></div>
-          {settingsTo && <button onClick={() => { setMobileOpen(false); navigate(settingsTo) }} className={`text-white/60 hover:text-white ${full ? '' : 'hidden lg:block'}`}><Settings className="w-4 h-4" /></button>}
+          {settingsTo && <button onClick={() => { setMobileOpen(false); navigate(settingsTo) }} aria-label="Settings" className={`p-1 rounded-md text-white/50 hover:text-white hover:bg-white/5 ${full ? '' : 'hidden lg:block'}`}><Settings className="w-4 h-4" /></button>}
         </div>
-        <button onClick={exit} title={exitLabel} className={`flex items-center gap-3 px-2 py-2 mt-1 w-full text-sm text-white/70 hover:text-white ${full ? '' : 'md:justify-center lg:justify-start'}`}>
+        <button onClick={exit} title={exitLabel} className={`flex items-center gap-3 px-3 py-2 mt-1 w-full rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] ${full ? '' : 'md:justify-center lg:justify-start'}`}>
           <LogOut className="w-4 h-4 shrink-0" /> <span className={full ? '' : 'hidden lg:inline'}>{exitLabel}</span>
         </button>
       </div>
@@ -187,9 +191,9 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo, onSignOut
   )
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-surface">
       {/* Sidebar: icon-only on tablet, full on desktop */}
-      <aside className="hidden md:flex md:flex-col md:w-16 lg:w-60 shrink-0 bg-lango-dark text-white transition-[width]"><Sidebar /></aside>
+      <aside className="hidden md:flex md:flex-col md:w-[68px] lg:w-64 shrink-0 bg-lango-dark text-white transition-[width]"><Sidebar /></aside>
 
       {/* Mobile drawer (full labels) */}
       {mobileOpen && (
@@ -201,30 +205,30 @@ export function AppShell({ navItems, bottomNav, roleLabel, settingsTo, onSignOut
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shrink-0">
-          <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"><Menu className="w-5 h-5" /></button>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-lango-dark rounded-md flex items-center justify-center"><span className="text-white font-bold text-xs">L</span></div>
-            <span className="font-bold text-lango-dark text-sm">LANGO</span>
-          </div>
-          <button onClick={exit} className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
+        <header className="md:hidden flex items-center justify-between px-3 h-14 bg-white/90 backdrop-blur border-b border-gray-200/70 shrink-0">
+          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"><Menu className="w-5 h-5" /></button>
+          <LangoLogo size={26} />
+          <NotificationBell propertyId={user?.propertyId} role={user?.role} />
         </header>
 
         {/* Desktop/tablet top bar */}
-        <div className="hidden md:flex items-center justify-end gap-3 px-6 py-3">
+        <div className="hidden md:flex items-center justify-end gap-2.5 px-6 lg:px-8 h-14 shrink-0">
           <OnlinePill />
           <NotificationBell propertyId={user?.propertyId} role={user?.role} />
-          <button onClick={exit} className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100"><LogOut className="w-4 h-4" /></button>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 md:pb-6"><Outlet /></main>
+        <main className="flex-1 overflow-y-auto px-4 pt-4 md:pt-0 md:px-6 lg:px-8 pb-28 md:pb-10">
+          <div className="mx-auto w-full max-w-7xl"><Outlet /></div>
+        </main>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 flex justify-around py-2 z-40">
+        <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-gray-200/70 flex justify-around pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-40" aria-label="Quick">
           {bottomNav.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
-              className={({ isActive }) => `flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium ${isActive ? 'text-lango-primary' : 'text-gray-400'}`}>
-              <item.icon className="w-5 h-5" /> {item.label}
+              className={({ isActive }) => `flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${isActive ? 'text-lango-primary' : 'text-gray-400 hover:text-gray-600'}`}>
+              {({ isActive }) => (<>
+                <span className={`flex items-center justify-center w-12 h-7 rounded-full transition-colors ${isActive ? 'bg-lango-light' : ''}`}><item.icon className="w-5 h-5" /></span> {item.label}
+              </>)}
             </NavLink>
           ))}
         </nav>

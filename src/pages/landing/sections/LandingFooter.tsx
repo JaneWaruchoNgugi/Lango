@@ -16,13 +16,13 @@ export function LandingFooter() {
               </div>
               <span className="font-display font-bold text-white text-base tracking-wide">LANGO</span>
             </div>
-            <p className="text-sm text-white/40 font-dm leading-relaxed max-w-xs">
+            <p className="text-sm text-white/40 font-sans leading-relaxed max-w-xs">
               Smart gate management for Kenyan properties. Real-time records, instant WhatsApp alerts, zero paper.
             </p>
             <div className="mt-7">
               <a
                 href="#consultation"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-lango-amber hover:text-amber-300 transition-colors font-dm"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-lango-amber hover:text-amber-300 transition-colors font-sans"
               >
                 Book a free consultation →
               </a>
@@ -31,8 +31,8 @@ export function LandingFooter() {
 
           {/* Contact */}
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-dm">Contact</p>
-            <div className="space-y-3.5 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-sans">Contact</p>
+            <div className="space-y-3.5 text-sm text-white/45 font-sans">
               <a href={telLink} className="flex items-center gap-3 hover:text-white transition-colors">
                 <Phone className="w-3.5 h-3.5 text-white/25" />
                 {LANDING_CONTACT.phone}
@@ -50,8 +50,8 @@ export function LandingFooter() {
 
           {/* Links */}
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-dm">Product</p>
-            <div className="space-y-3 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-sans">Product</p>
+            <div className="space-y-3 text-sm text-white/45 font-sans">
               <a href="#features"   className="block hover:text-white transition-colors">Features</a>
               <a href="#pricing"    className="block hover:text-white transition-colors">Pricing</a>
               <a href="#how"        className="block hover:text-white transition-colors">How it works</a>
@@ -63,7 +63,7 @@ export function LandingFooter() {
 
         </div>
 
-        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-gray-400 font-dm">
+        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-gray-400 font-sans">
           <p>© 2026 Lango. All rights reserved.</p>
           <div className="flex gap-5">
             <a href="#" className="hover:text-gray-400 transition-colors">Privacy Policy</a>

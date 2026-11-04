@@ -34,7 +34,7 @@ export function LandingNav() {
           </a>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-dm">
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-sans">
             {LINKS.map(l => (
               <a
                 key={l.href}
@@ -50,7 +50,7 @@ export function LandingNav() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               to="/salon"
-              className={`flex items-center gap-1.5 text-sm font-medium font-dm transition-colors px-3 py-1.5 rounded-lg border ${
+              className={`flex items-center gap-1.5 text-sm font-medium font-sans transition-colors px-3 py-1.5 rounded-lg border ${
                 scrolled
                   ? 'text-lango-amber border-lango-amber/30 hover:bg-amber-50'
                   : 'text-lango-amber border-lango-amber/30 hover:bg-lango-amber/10'
@@ -60,13 +60,13 @@ export function LandingNav() {
             </Link>
             <Link
               to="/login"
-              className={`text-sm font-medium font-dm transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}
+              className={`text-sm font-medium font-sans transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}
             >
               Sign In
             </Link>
             <a
               href="/demo"
-              className={`text-sm font-semibold font-dm px-4 py-2 rounded-lg transition-all ${
+              className={`text-sm font-semibold font-sans px-4 py-2 rounded-lg transition-all ${
                 scrolled
                   ? 'bg-lango-primary text-white hover:bg-lango-secondary'
                   : 'bg-white/10 text-white border border-white/18 hover:bg-white/16 hover:border-white/28'
@@ -109,7 +109,7 @@ export function LandingNav() {
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-dm"
+                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-sans"
                 >
                   {l.label}
                 </a>
@@ -117,7 +117,7 @@ export function LandingNav() {
             </nav>
             <div className="mt-auto flex flex-col gap-3">
               <Link to="/salon" onClick={() => setOpen(false)}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-lango-amber/40 text-sm font-semibold text-lango-amber font-dm hover:bg-amber-50 transition-colors">
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-lango-amber/40 text-sm font-semibold text-lango-amber font-sans hover:bg-amber-50 transition-colors">
                 <Scissors className="w-4 h-4" /> Explore Salon product
               </Link>
               <Link to="/login" onClick={() => setOpen(false)} className="btn-secondary w-full justify-center">Sign In</Link>

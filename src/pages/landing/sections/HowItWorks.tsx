@@ -30,7 +30,7 @@ export function HowItWorks() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               How it works
             </h2>
-            <p className="mt-4 text-gray-500 max-w-lg mx-auto font-dm leading-relaxed">
+            <p className="mt-4 text-gray-500 max-w-lg mx-auto font-sans leading-relaxed">
               Get live in under 24 hours and transform how your property handles every visitor, delivery, and incident — forever.
             </p>
           </div>
@@ -63,7 +63,7 @@ export function HowItWorks() {
                 )}
 
                 <h3 className="mt-5 font-display font-bold text-gray-900 text-lg">{step.title}</h3>
-                <p className="mt-2 text-sm text-gray-500 font-dm leading-relaxed max-w-[220px] mx-auto">{step.blurb}</p>
+                <p className="mt-2 text-sm text-gray-500 font-sans leading-relaxed max-w-[220px] mx-auto">{step.blurb}</p>
               </div>
             </Reveal>
           ))}

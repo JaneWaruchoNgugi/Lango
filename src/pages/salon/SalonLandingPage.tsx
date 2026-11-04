@@ -44,7 +44,7 @@ function SalonNav() {
             </div>
           </a>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-dm">
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-sans">
             {NAV_LINKS.map(l => (
               <a key={l.href} href={l.href}
                 className={`transition-colors ${scrolled ? 'text-gray-500 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
@@ -56,7 +56,7 @@ function SalonNav() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               to="/"
-              className={`flex items-center gap-1.5 text-sm font-medium font-dm transition-colors px-3 py-1.5 rounded-lg border ${
+              className={`flex items-center gap-1.5 text-sm font-medium font-sans transition-colors px-3 py-1.5 rounded-lg border ${
                 scrolled
                   ? 'text-lango-primary border-lango-primary/30 hover:bg-blue-50'
                   : 'text-white/70 border-white/20 hover:bg-white/10'
@@ -64,10 +64,10 @@ function SalonNav() {
             >
               <KeyRound className="w-3.5 h-3.5" /> Gate & Security
             </Link>
-            <Link to="/login" className={`text-sm font-medium font-dm transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
+            <Link to="/login" className={`text-sm font-medium font-sans transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
               Login
             </Link>
-            <a href="#s-trial" className={`text-sm font-semibold font-dm px-4 py-2 rounded-lg transition-all ${scrolled ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'bg-lango-amber text-lango-dark hover:bg-amber-400'}`}>
+            <a href="#s-trial" className={`text-sm font-semibold font-sans px-4 py-2 rounded-lg transition-all ${scrolled ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'bg-lango-amber text-lango-dark hover:bg-amber-400'}`}>
               Start Free Trial
             </a>
           </div>
@@ -92,14 +92,14 @@ function SalonNav() {
             <nav className="flex flex-col gap-1">
               {NAV_LINKS.map(l => (
                 <a key={l.href} href={l.href} onClick={() => setOpen(false)}
-                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-dm">
+                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-sans">
                   {l.label}
                 </a>
               ))}
             </nav>
             <div className="mt-auto flex flex-col gap-3">
               <Link to="/" onClick={() => setOpen(false)}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-lango-primary/30 text-sm font-semibold text-lango-primary font-dm hover:bg-blue-50 transition-colors">
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-lango-primary/30 text-sm font-semibold text-lango-primary font-sans hover:bg-blue-50 transition-colors">
                 <KeyRound className="w-4 h-4" /> Explore Gate & Security
               </Link>
               <Link to="/login" onClick={() => setOpen(false)} className="btn-secondary w-full justify-center">Login</Link>
@@ -124,7 +124,7 @@ function SalonHero() {
       <div className="relative px-6 sm:px-10 lg:px-16 xl:px-24 pt-12 pb-24 lg:pt-16 lg:pb-32">
         <div className="grid lg:grid-cols-2 gap-14 items-center">
           <div>
-            <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-dm">
+            <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-lango-amber l-pulse" />
               Built for Kenyan Salons
             </div>
@@ -137,7 +137,7 @@ function SalonHero() {
               of your clients.
             </h1>
 
-            <p className="l-anim-3 mt-5 text-lg text-gray-300 max-w-md leading-relaxed font-dm">
+            <p className="l-anim-3 mt-5 text-lg text-gray-300 max-w-md leading-relaxed font-sans">
               Manage clients, staff, providers, bookings, payments and multiple branches from one secure dashboard.
             </p>
 
@@ -147,7 +147,7 @@ function SalonHero() {
                 'Client contact details stay with the salon — not the provider',
                 'Built for growing salons in Kenya',
               ].map(b => (
-                <li key={b} className="flex items-center gap-3 text-sm text-white/65 font-dm">
+                <li key={b} className="flex items-center gap-3 text-sm text-white/65 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                   {b}
                 </li>
@@ -180,7 +180,7 @@ function SalonHero() {
               <div className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] text-gray-300 font-dm">Glam Hub Salon</p>
+                    <p className="text-[11px] text-gray-300 font-sans">Glam Hub Salon</p>
                     <p className="text-sm font-bold text-white font-display">Good morning, Wanjiru 👋</p>
                   </div>
                   <span className="text-[10px] font-bold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-1 rounded-full font-mono l-pulse">● LIVE</span>
@@ -194,13 +194,13 @@ function SalonHero() {
                   ].map(({ n, label, color }) => (
                     <div key={label} className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
                       <p className={`text-xl font-bold font-display ${color}`}>{n}</p>
-                      <p className="text-[10px] text-gray-400 font-dm mt-0.5">{label}</p>
+                      <p className="text-[10px] text-gray-400 font-sans mt-0.5">{label}</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3.5">
-                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-dm mb-2.5">Jane — Hair Stylist</p>
+                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-sans mb-2.5">Jane — Hair Stylist</p>
                   <div className="space-y-1.5">
                     {[
                       { label: 'Client name',     allowed: true },
@@ -209,7 +209,7 @@ function SalonHero() {
                       { label: 'Payments',        allowed: false },
                     ].map(({ label, allowed }) => (
                       <div key={label} className="flex items-center justify-between">
-                        <span className="text-[10px] text-gray-300 font-dm">{label}</span>
+                        <span className="text-[10px] text-gray-300 font-sans">{label}</span>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono ${allowed ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
                           {allowed ? '✓ allowed' : '✗ restricted'}
                         </span>
@@ -226,7 +226,7 @@ function SalonHero() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-900 font-display">Access controlled</p>
-                <p className="text-[10px] text-gray-400 font-dm">Per person, per permission</p>
+                <p className="text-[10px] text-gray-400 font-sans">Per person, per permission</p>
               </div>
             </div>
           </div>
@@ -243,7 +243,7 @@ function SalonHero() {
           ].map(({ n, label }) => (
             <div key={label} className="text-center">
               <p className="font-display text-2xl font-bold text-white">{n}</p>
-              <p className="text-xs text-gray-400 font-dm mt-1">{label}</p>
+              <p className="text-xs text-gray-400 font-sans mt-1">{label}</p>
             </div>
           ))}
         </div>
@@ -264,7 +264,7 @@ function SectionHead({ overline, title, sub }: { overline: string; title: React.
     <div className="text-center mb-14">
       <span className="l-overline">{overline}</span>
       <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">{title}</h2>
-      {sub && <p className="mt-4 text-gray-500 font-dm max-w-xl mx-auto leading-relaxed">{sub}</p>}
+      {sub && <p className="mt-4 text-gray-500 font-sans max-w-xl mx-auto leading-relaxed">{sub}</p>}
     </div>
   )
 }
@@ -305,7 +305,7 @@ function S1Features() {
                 <Icon className="w-6 h-6" />
               </div>
               <h3 className="font-display text-lg font-bold text-lango-dark mb-2">{title}</h3>
-              <p className="text-gray-500 text-sm font-dm leading-relaxed">{body}</p>
+              <p className="text-gray-500 text-sm font-sans leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -326,7 +326,7 @@ function S2Permissions() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Give every employee the access they actually need.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               Permissions are assigned per person — not simply by job title. An owner can grant or revoke individual access to client contact details, financial data, and management functions at any time.
             </p>
             <ul className="mt-6 space-y-3">
@@ -336,7 +336,7 @@ function S2Permissions() {
                 'Prices, payments and revenue — restricted to authorised staff only',
                 'Every change is audit-logged with the name of who made it',
               ].map(b => (
-                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-dm">
+                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                   {b}
                 </li>
@@ -347,7 +347,7 @@ function S2Permissions() {
           {/* Realistic permissions mockup */}
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50 bg-lango-dark">
-              <p className="text-xs font-semibold text-white/60 uppercase tracking-wide font-dm">Staff Permissions</p>
+              <p className="text-xs font-semibold text-white/60 uppercase tracking-wide font-sans">Staff Permissions</p>
               <p className="text-white font-bold mt-0.5">Jane Mwangi — Hair Stylist</p>
             </div>
             <div className="divide-y divide-gray-50">
@@ -385,7 +385,7 @@ function S2Permissions() {
                 ))}
               </div>
               <div className="px-5 py-3 bg-gray-50/50">
-                <p className="text-xs text-gray-400 font-dm italic">Last updated by Salon Owner · permissions enforced server-side</p>
+                <p className="text-xs text-gray-400 font-sans italic">Last updated by Salon Owner · permissions enforced server-side</p>
               </div>
             </div>
           </div>
@@ -410,7 +410,7 @@ function S3Booking() {
               </div>
               <div>
                 <p className="text-sm font-bold text-lango-dark">Glam Hub Nairobi</p>
-                <p className="text-[11px] text-gray-400 font-dm">Book a service · No app needed</p>
+                <p className="text-[11px] text-gray-400 font-sans">Book a service · No app needed</p>
               </div>
             </div>
             <div className="p-5 space-y-3">
@@ -425,7 +425,7 @@ function S3Booking() {
                     {done ? '✓' : step}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 font-dm">{label}</p>
+                    <p className="text-xs text-gray-500 font-sans">{label}</p>
                     {value && <p className="text-sm font-semibold text-gray-900">{value}</p>}
                     {!done && <p className="text-sm text-lango-primary font-medium">Tap to confirm →</p>}
                   </div>
@@ -439,7 +439,7 @@ function S3Booking() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Let clients book without downloading an app.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               Share your salon's booking link and clients can select a service, choose a provider, and pick a time — all from their phone browser.
             </p>
             <ul className="mt-6 space-y-3">
@@ -449,7 +449,7 @@ function S3Booking() {
                 'Provider selection keeps client accountability clear',
                 'Works on any phone — WhatsApp-shareable link',
               ].map(b => (
-                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-dm">
+                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                   {b}
                 </li>
@@ -474,7 +474,7 @@ function S4Branches() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               One owner. Every branch.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               As you open new locations, they're all connected under your owner account. Switch between consolidated and branch-specific reporting instantly.
             </p>
             <div className="mt-7 grid grid-cols-2 gap-3">
@@ -506,7 +506,7 @@ function S4Branches() {
               ].map(({ branch, pct, color }) => (
                 <div key={branch}>
                   <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-gray-700 font-dm">Branch — {branch}</span>
+                    <span className="text-gray-700 font-sans">Branch — {branch}</span>
                     <span className="text-gray-500">{pct}% capacity</span>
                   </div>
                   <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
@@ -514,7 +514,7 @@ function S4Branches() {
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-gray-400 font-dm text-center pt-1">Branch permissions do not bypass salon isolation</p>
+              <p className="text-xs text-gray-400 font-sans text-center pt-1">Branch permissions do not bypass salon isolation</p>
             </div>
           </div>
         </div>
@@ -548,7 +548,7 @@ function S5Staff() {
                 <Icon className="w-4 h-4 text-lango-primary" />
               </div>
               <h3 className="text-sm font-bold text-lango-dark mb-1">{title}</h3>
-              <p className="text-xs text-gray-500 font-dm leading-relaxed">{body}</p>
+              <p className="text-xs text-gray-500 font-sans leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -569,10 +569,10 @@ function S6History() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Know who served every client.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               Every service is linked to the provider who performed it. Salon management can review service history and identify accountability without exposing financial data to providers.
             </p>
-            <p className="mt-3 text-sm text-gray-500 font-dm">
+            <p className="mt-3 text-sm text-gray-500 font-sans">
               Providers see only the services they performed — not prices, not revenue, not other providers' client information.
             </p>
           </div>
@@ -630,7 +630,7 @@ function S7Checkout() {
                 <div className="w-12 h-12 rounded-2xl bg-lango-light flex items-center justify-center">
                   <Icon className="w-6 h-6 text-lango-primary" />
                 </div>
-                <p className="text-xs text-center font-dm text-gray-600">{label}</p>
+                <p className="text-xs text-center font-sans text-gray-600">{label}</p>
               </div>
               {i < arr.length - 1 && <ChevronRight key={`arr-${i}`} className="w-4 h-4 text-gray-300 mx-1" />}
             </>
@@ -677,7 +677,7 @@ function S8ClientHistory() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Every visit becomes part of your salon's history.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               Build a complete record of each client's visits — services, providers, branches, and relevant notes — while respecting the access permissions you've configured for each staff member.
             </p>
             <ul className="mt-6 space-y-2">
@@ -687,7 +687,7 @@ function S8ClientHistory() {
                 'Allergies and notes accessible only to permitted staff',
                 'No client contact data shown without explicit permission',
               ].map(b => (
-                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-dm">
+                <li key={b} className="flex items-start gap-3 text-sm text-gray-600 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                   {b}
                 </li>
@@ -698,7 +698,7 @@ function S8ClientHistory() {
           <div className="card p-0 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50">
               <p className="font-bold text-gray-900">Mary Njoki</p>
-              <p className="text-xs text-gray-400 mt-0.5 font-dm">Client since August 2026 · 7 visits</p>
+              <p className="text-xs text-gray-400 mt-0.5 font-sans">Client since August 2026 · 7 visits</p>
             </div>
             <div className="divide-y divide-gray-50">
               {[
@@ -715,7 +715,7 @@ function S8ClientHistory() {
                 </div>
               ))}
               <div className="px-5 py-3 bg-gray-50/50">
-                <p className="text-xs text-gray-400 font-dm italic">Phone and payment history shown only to permitted staff</p>
+                <p className="text-xs text-gray-400 font-sans italic">Phone and payment history shown only to permitted staff</p>
               </div>
             </div>
           </div>
@@ -750,7 +750,7 @@ function S9Kenya() {
                 <Icon className="w-5 h-5" />
               </div>
               <p className="text-sm font-bold text-white mb-1">{title}</p>
-              <p className="text-xs text-white/50 font-dm leading-relaxed">{body}</p>
+              <p className="text-xs text-white/50 font-sans leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -782,7 +782,7 @@ function S10Partner() {
                 <Icon className="w-6 h-6 text-lango-amber" />
               </div>
               <h3 className="font-display text-base font-bold text-lango-dark mb-2">{title}</h3>
-              <p className="text-sm text-gray-500 font-dm">{body}</p>
+              <p className="text-sm text-gray-500 font-sans">{body}</p>
             </div>
           ))}
         </div>
@@ -833,7 +833,7 @@ function S11Pricing() {
             <div key={p.name} className={`rounded-2xl p-6 flex flex-col relative border ${p.popular ? 'l-plan-popular' : 'bg-white border-gray-100 shadow-sm'}`}>
               {p.popular && (
                 <div className="absolute -top-4 inset-x-0 flex justify-center">
-                  <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-dm uppercase">Most Popular</span>
+                  <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-sans uppercase">Most Popular</span>
                 </div>
               )}
               <div className="mb-6">
@@ -841,18 +841,18 @@ function S11Pricing() {
                 <p className={`mt-2 text-3xl font-bold font-display ${p.popular ? 'text-white' : 'text-lango-dark'}`}>
                   KES {p.price.toLocaleString()}
                 </p>
-                <p className={`text-[11px] mt-1 font-dm ${p.popular ? 'text-white/38' : 'text-gray-400'}`}>per month</p>
+                <p className={`text-[11px] mt-1 font-sans ${p.popular ? 'text-white/38' : 'text-gray-400'}`}>per month</p>
               </div>
               <ul className="flex-1 space-y-2.5 mb-7">
                 {p.features.map(f => (
-                  <li key={f} className={`flex items-start gap-2.5 text-sm font-dm ${p.popular ? 'text-white/75' : 'text-gray-600'}`}>
+                  <li key={f} className={`flex items-start gap-2.5 text-sm font-sans ${p.popular ? 'text-white/75' : 'text-gray-600'}`}>
                     <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${p.popular ? 'text-lango-amber' : 'text-green-500'}`} />
                     {f}
                   </li>
                 ))}
               </ul>
               <a href="#s-trial"
-                className={`block text-center text-sm font-semibold rounded-xl py-2.5 px-4 font-dm transition-all ${p.popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-primary text-lango-primary hover:bg-lango-primary hover:text-white'}`}>
+                className={`block text-center text-sm font-semibold rounded-xl py-2.5 px-4 font-sans transition-all ${p.popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-primary text-lango-primary hover:bg-lango-primary hover:text-white'}`}>
                 Start Free Trial
               </a>
             </div>
@@ -902,7 +902,7 @@ function S12CtaForm() {
           <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             Your salon. Your clients. Your branches. One Lango.
           </h2>
-          <p className="mt-4 text-white/60 font-dm">
+          <p className="mt-4 text-white/60 font-sans">
             Fill in your details and we'll contact you to set up your free 30-day trial.
           </p>
         </div>
@@ -911,13 +911,13 @@ function S12CtaForm() {
           <div className="bg-white/10 border border-white/15 rounded-2xl p-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
             <p className="text-lg font-bold text-white font-display">Request received!</p>
-            <p className="text-white/60 font-dm mt-2">We'll call or message you within one business day to schedule your salon setup.</p>
+            <p className="text-white/60 font-sans mt-2">We'll call or message you within one business day to schedule your salon setup.</p>
           </div>
         ) : (
           <form onSubmit={submit} className="bg-white/8 border border-white/10 rounded-2xl p-6 sm:p-8 space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5 font-dm">Your name *</label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5 font-sans">Your name *</label>
                 <input
                   value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                   className="w-full px-3 py-2.5 text-sm bg-white/10 border border-white/15 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-lango-amber"
@@ -926,7 +926,7 @@ function S12CtaForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5 font-dm">Phone number *</label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5 font-sans">Phone number *</label>
                 <input
                   type="tel"
                   value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
@@ -937,7 +937,7 @@ function S12CtaForm() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1.5 font-dm">Salon name</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5 font-sans">Salon name</label>
               <input
                 value={form.salonName} onChange={e => setForm(p => ({ ...p, salonName: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm bg-white/10 border border-white/15 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-lango-amber"
@@ -945,7 +945,7 @@ function S12CtaForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1.5 font-dm">Message (optional)</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5 font-sans">Message (optional)</label>
               <textarea
                 rows={3}
                 value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
@@ -961,7 +961,7 @@ function S12CtaForm() {
                 <Phone className="w-4 h-4" /> Call us instead
               </a>
             </div>
-            <p className="text-xs text-white/30 text-center font-dm">No credit card required · We'll handle your setup</p>
+            <p className="text-xs text-white/30 text-center font-sans">No credit card required · We'll handle your setup</p>
           </form>
         )}
       </div>
@@ -984,13 +984,13 @@ function SalonFooter() {
                 <span className="text-[10px] font-bold tracking-widest uppercase text-lango-amber">Salon</span>
               </div>
             </div>
-            <p className="text-sm text-white/40 font-dm leading-relaxed">
+            <p className="text-sm text-white/40 font-sans leading-relaxed">
               Secure salon management for Kenyan salons. Client records, staff permissions, multi-branch — one dashboard.
             </p>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-4 font-dm">Product</p>
-            <div className="space-y-3 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-4 font-sans">Product</p>
+            <div className="space-y-3 text-sm text-white/45 font-sans">
               <a href="#s-features"    className="block hover:text-white transition-colors">Features</a>
               <a href="#s-permissions" className="block hover:text-white transition-colors">Staff & Permissions</a>
               <a href="#s-booking"     className="block hover:text-white transition-colors">Online Booking</a>
@@ -998,8 +998,8 @@ function SalonFooter() {
             </div>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-4 font-dm">Contact</p>
-            <div className="space-y-3 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-4 font-sans">Contact</p>
+            <div className="space-y-3 text-sm text-white/45 font-sans">
               <a href="tel:+254700000000" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone className="w-3.5 h-3.5" /> +254 700 000 000
               </a>
@@ -1010,7 +1010,7 @@ function SalonFooter() {
             </div>
           </div>
         </div>
-        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-white/25 font-dm">
+        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-white/25 font-sans">
           <p>© 2026 Lango. All rights reserved.</p>
           <Link to="/login" className="hover:text-white/60 transition-colors">Sign in →</Link>
         </div>

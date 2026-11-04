@@ -115,7 +115,7 @@ export default function PropertiesPage() {
                 className="card p-5 hover:shadow-card-hover transition-all duration-150 block"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 bg-lango-light rounded-xl flex items-center justify-center group-hover:bg-brand-100 transition-colors">
+                  <div className="w-10 h-10 bg-lango-light rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                     <Building2 className="w-5 h-5 text-lango-primary" />
                   </div>
                   <PropertyStatusBadge status={prop.status} />

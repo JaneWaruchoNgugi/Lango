@@ -55,7 +55,7 @@ export function ProductPickerModal() {
             <h2 className="font-display text-xl font-bold text-lango-dark leading-snug">
               What are you managing?
             </h2>
-            <p className="mt-1.5 text-sm text-gray-500 font-dm leading-relaxed">
+            <p className="mt-1.5 text-sm text-gray-500 font-sans leading-relaxed">
               Lango builds management software for Kenyan businesses. Pick the product that fits your needs.
             </p>
           </div>
@@ -80,18 +80,18 @@ export function ProductPickerModal() {
               <Building2 className="w-5 h-5 text-lango-primary" />
             </div>
             <p className="font-display font-bold text-gray-900 text-sm">Gate & Visitor Management</p>
-            <p className="mt-1.5 text-xs text-gray-500 font-dm leading-relaxed">
+            <p className="mt-1.5 text-xs text-gray-500 font-sans leading-relaxed">
               For apartments, estates and gated properties. Control visitor access, deliveries and incidents.
             </p>
             <ul className="mt-3 space-y-1.5">
               {['Visitor check-in & WhatsApp alerts', 'Delivery tracking', 'Incident reports'].map(f => (
-                <li key={f} className="flex items-center gap-2 text-[11px] text-gray-500 font-dm">
+                <li key={f} className="flex items-center gap-2 text-[11px] text-gray-500 font-sans">
                   <ShieldCheck className="w-3 h-3 text-lango-primary shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-lango-primary font-dm group-hover:gap-2 transition-all">
+            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-lango-primary font-sans group-hover:gap-2 transition-all">
               Explore <ArrowRight className="w-3 h-3" />
             </div>
           </button>
@@ -105,18 +105,18 @@ export function ProductPickerModal() {
               <Scissors className="w-5 h-5 text-lango-amber" />
             </div>
             <p className="font-display font-bold text-gray-900 text-sm">Salon Management</p>
-            <p className="mt-1.5 text-xs text-gray-500 font-dm leading-relaxed">
+            <p className="mt-1.5 text-xs text-gray-500 font-sans leading-relaxed">
               For salons with staff, providers and multiple branches. Client records and granular permissions.
             </p>
             <ul className="mt-3 space-y-1.5">
               {['Client & booking management', 'Staff access permissions', 'Multi-branch & M-Pesa'].map(f => (
-                <li key={f} className="flex items-center gap-2 text-[11px] text-gray-500 font-dm">
+                <li key={f} className="flex items-center gap-2 text-[11px] text-gray-500 font-sans">
                   <Users className="w-3 h-3 text-lango-amber shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-lango-amber font-dm group-hover:gap-2 transition-all">
+            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-lango-amber font-sans group-hover:gap-2 transition-all">
               Explore <ArrowRight className="w-3 h-3" />
             </div>
           </button>
@@ -124,7 +124,7 @@ export function ProductPickerModal() {
 
         {/* Footer note */}
         <div className="px-7 pb-6 pt-0">
-          <p className="text-center text-[11px] text-gray-400 font-dm">
+          <p className="text-center text-[11px] text-gray-400 font-sans">
             Not sure? <button onClick={dismiss} className="underline hover:text-gray-600 transition-colors">Browse both</button> — or{' '}
             <a href="#consultation" onClick={dismiss} className="underline hover:text-gray-600 transition-colors">book a free call</a> and we'll guide you.
           </p>
