@@ -123,7 +123,7 @@ export default function PreApprovedPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-6xl mx-auto space-y-4">
       <PageHeader icon={ShieldCheck} title="Pre-Approved Visitors" subtitle="Standing access for regular visitors" actions={<button className="btn-primary" onClick={() => { reset(); setSelectedDays([1,2,3,4,5]); setShowAdd(true) }}>
           <Plus className="w-4 h-4" /> Add Visitor
         </button>} />

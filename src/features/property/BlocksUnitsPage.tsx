@@ -8,6 +8,8 @@ import { canViewTenantAssignment } from '../../domain/permissions'
 import { Boxes, Building2, Plus, Search, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Unit } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Segmented } from '../../components/ui/Segmented'
 
 type BlockStatus = 'OCCUPIED' | 'PARTIAL' | 'VACANT'
 const BLOCK_BADGE: Record<BlockStatus, [string, string]> = {
@@ -56,21 +58,10 @@ export default function BlocksUnitsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Boxes className="w-5 h-5 text-lango-primary" /></div>
-          <div><h1 className="text-xl font-bold text-gray-900">Blocks &amp; Units</h1><p className="text-sm text-gray-500">Manage blocks and units in your property.</p></div>
-        </div>
-        <button className="btn-primary" onClick={() => toast('Blocks are set up by the administrator.')}><Plus className="w-4 h-4" /> Add Block</button>
-      </div>
+      <PageHeader icon={Boxes} title="Blocks &amp; Units" subtitle="Manage blocks and units in your property." actions={<button className="btn-primary" onClick={() => toast('Blocks are set up by the administrator.')}><Plus className="w-4 h-4" /> Add Block</button>} />
 
       {/* Tabs */}
-      <div className="inline-flex bg-gray-100 rounded-xl p-1">
-        {(['blocks', 'units'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-6 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${tab === t ? 'bg-lango-primary text-white' : 'text-gray-600'}`}>{t}</button>
-        ))}
-      </div>
+      <Segmented value={tab} onChange={setTab} options={[{ value: 'blocks', label: 'Blocks' }, { value: 'units', label: 'Units' }]} />
 
       {/* Search + filters */}
       <div className="flex gap-2 flex-col sm:flex-row">

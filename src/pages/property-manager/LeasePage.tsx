@@ -12,6 +12,8 @@ import { z } from 'zod'
 import { format, differenceInDays, addMonths } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { LeaseRecord } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const schema = z.object({
   moveInDate:           z.string().min(1, 'Move-in date required'),
@@ -137,16 +139,8 @@ export default function LeasePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-          <FileText className="w-5 h-5 text-lango-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Lease Tracker</h1>
-          <p className="text-sm text-gray-500">{stats.total} leases recorded · {stats.expiring} expiring soon · {stats.expired} expired</p>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-4">
+      <PageHeader icon={FileText} title="Lease Tracker" subtitle={<>{stats.total} leases recorded · {stats.expiring} expiring soon · {stats.expired} expired</>} />
 
       {/* Stats badges */}
       {(stats.expiring > 0 || stats.expired > 0) && (
@@ -172,10 +166,7 @@ export default function LeasePage() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <FileText className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No tenants match this filter.</p>
-        </div>
+        <EmptyState card icon={FileText} title="No tenants match this filter" />
       ) : (
         <div className="card overflow-hidden">
           <div className="table-container">

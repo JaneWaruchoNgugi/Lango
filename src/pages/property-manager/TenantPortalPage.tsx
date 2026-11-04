@@ -9,6 +9,7 @@ import { Link2, Copy, Trash2, RefreshCw, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { formatDistanceToNow } from 'date-fns'
 import type { TenantInvite, Tenant } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 function makeToken(): string {
   const buf = new Uint8Array(32)
@@ -100,21 +101,11 @@ export default function TenantPortalPage() {
     : active
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <Link2 className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="page-title">Tenant Portal Invites</h1>
-            <p className="page-subtitle">Generate registration links for tenants to set up their portal access.</p>
-          </div>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader icon={Link2} title="Tenant portal invites" subtitle="Send tenants a link to set up their own portal account." className="!mb-2" />
 
-      <div className="card p-4 bg-blue-50 border-blue-100">
-        <p className="text-sm text-blue-800">
+      <div className="rounded-xl p-4 bg-blue-50/70 border border-blue-100">
+        <p className="text-sm text-blue-900">
           Each link is valid for <strong>7 days</strong> and can only be used once. Share it with the tenant directly — the link lets them register their own portal account.
         </p>
       </div>
@@ -189,7 +180,7 @@ export default function TenantPortalPage() {
                           </button>
                         )}
                         <button
-                          className="btn-primary py-1 px-2 text-xs"
+                          className="btn-secondary !min-h-8 py-1 px-2.5 text-xs"
                           disabled={isBusy}
                           onClick={() => generateInvite(tenant)}
                         >

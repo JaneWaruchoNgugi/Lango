@@ -11,6 +11,8 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { BlacklistEntry } from '../../types'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const schema = z.object({
   name:     z.string().min(2, 'Name required'),
@@ -102,21 +104,9 @@ export default function BlacklistPage() {
   const inactiveCount = entries.filter(e => !e.isActive).length
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-            <Ban className="w-5 h-5 text-red-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Visitor Blacklist</h1>
-            <p className="text-sm text-gray-500">{activeCount} active · {inactiveCount} inactive</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
-          <Plus className="w-4 h-4" /> Add to Blacklist
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-4">
+      <PageHeader icon={Ban} title="Visitor blacklist" subtitle={`${activeCount} active · ${inactiveCount} inactive`}
+        actions={<button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}><Plus className="w-4 h-4" /> Add to blacklist</button>} />
 
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -130,10 +120,7 @@ export default function BlacklistPage() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <Ban className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No blacklist entries found.</p>
-        </div>
+        <EmptyState card icon={Ban} title="No blacklist entries found" />
       ) : (
         <div className="space-y-2">
           {shown.map(e => (
