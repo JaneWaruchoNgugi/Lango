@@ -23,7 +23,7 @@ export function Hero() {
 
           {/* ── Left: Copy ── */}
           <div>
-            <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-dm">
+            <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-lango-amber l-pulse" />
               Built for Kenyan Properties
             </div>
@@ -35,7 +35,7 @@ export function Hero() {
               <span className="text-lango-amber">Zero surprises.</span>
             </h1>
 
-            <p className="l-anim-3 mt-5 text-lg text-gray-300 max-w-md leading-relaxed font-dm">
+            <p className="l-anim-3 mt-5 text-lg text-gray-300 max-w-md leading-relaxed font-sans">
               Replace the paper gate book with instant WhatsApp alerts, digital visitor records, and live incident tracking.
             </p>
 
@@ -45,7 +45,7 @@ export function Hero() {
                 'No app for residents to download',
                 'Flat monthly pricing from KES 4,000',
               ].map(b => (
-                <li key={b} className="flex items-center gap-3 text-sm text-white/65 font-dm">
+                <li key={b} className="flex items-center gap-3 text-sm text-white/65 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
                   {b}
                 </li>
@@ -74,7 +74,7 @@ export function Hero() {
                   </div>
                 ))}
               </div>
-              <div className="font-dm">
+              <div className="font-sans">
                 <p className="text-sm font-semibold text-white">Trusted by 500+ properties across Kenya</p>
                 <p className="text-xs text-white/40 mt-0.5">★★★★★ &nbsp;4.9 average rating</p>
               </div>
@@ -113,7 +113,7 @@ export function Hero() {
               <div className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[11px] text-gray-300 font-dm">Good afternoon</p>
+                    <p className="text-[11px] text-gray-300 font-sans">Good afternoon</p>
                     <p className="text-sm font-bold text-white font-display">Mercy Njeri 👋</p>
                   </div>
                   <span className="text-[10px] font-bold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-1 rounded-full font-mono l-pulse">
@@ -129,13 +129,13 @@ export function Hero() {
                   ] as { n: string; label: string; color: string }[]).map(({ n, label, color }) => (
                     <div key={label} className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
                       <p className={`text-xl font-bold font-display ${color}`}>{n}</p>
-                      <p className="text-[10px] text-gray-400 font-dm mt-0.5">{label}</p>
+                      <p className="text-[10px] text-gray-400 font-sans mt-0.5">{label}</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="bg-white/5 border border-white/5 rounded-xl p-3.5 space-y-2.5">
-                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-dm">Recent Activity</p>
+                  <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-sans">Recent Activity</p>
                   {([
                     { dot: 'bg-green-500', label: 'Visitor checked in', sub: 'A-204 · Work visit', time: '2m ago' },
                     { dot: 'bg-blue-400',  label: 'Delivery collected', sub: 'B-103 · Uber Eats',   time: '15m ago' },
@@ -144,8 +144,8 @@ export function Hero() {
                     <div key={label} className="flex items-center gap-2.5">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-green-50 font-dm truncate">{label}</p>
-                        <p className="text-[10px] text-gray-400 font-dm truncate">{sub}</p>
+                        <p className="text-[11px] font-semibold text-green-50 font-sans truncate">{label}</p>
+                        <p className="text-[10px] text-gray-400 font-sans truncate">{sub}</p>
                       </div>
                       <span className="text-[10px] text-gray-400 shrink-0 font-mono">{time}</span>
                     </div>
@@ -161,7 +161,7 @@ export function Hero() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-900 font-display">WhatsApp alert sent</p>
-                <p className="text-[10px] text-gray-400 font-dm">Tenant notified instantly</p>
+                <p className="text-[10px] text-gray-400 font-sans">Tenant notified instantly</p>
               </div>
             </div>
 
@@ -172,7 +172,7 @@ export function Hero() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-900 font-display">Secure &amp; auditable</p>
-                <p className="text-[10px] text-gray-400 font-dm">Every entry recorded</p>
+                <p className="text-[10px] text-gray-400 font-sans">Every entry recorded</p>
               </div>
             </div>
           </div>
@@ -190,7 +190,7 @@ export function Hero() {
           ] as { n: string; label: string }[]).map(({ n, label }) => (
             <div key={label} className="text-center">
               <p className="font-display text-2xl font-bold text-white">{n}</p>
-              <p className="text-xs text-gray-400 font-dm mt-1">{label}</p>
+              <p className="text-xs text-gray-400 font-sans mt-1">{label}</p>
             </div>
           ))}
         </div>

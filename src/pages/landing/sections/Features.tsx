@@ -47,7 +47,7 @@ export function Features() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight max-w-lg">
               Every tool to run a tighter, safer gate
             </h2>
-            <p className="mt-4 text-gray-500 font-dm max-w-lg leading-relaxed">
+            <p className="mt-4 text-gray-500 font-sans max-w-lg leading-relaxed">
               From visitor registration to incident management — one platform that replaces every paper logbook, phone call, and WhatsApp chain.
             </p>
           </div>
@@ -62,13 +62,13 @@ export function Features() {
                     <f.icon className="w-5 h-5 text-lango-primary" />
                   </div>
                   {f.tag && (
-                    <span className="text-[11px] font-semibold text-lango-primary bg-lango-primary/8 px-2.5 py-0.5 rounded-full font-dm">
+                    <span className="text-[11px] font-semibold text-lango-primary bg-lango-primary/8 px-2.5 py-0.5 rounded-full font-sans">
                       {f.tag}
                     </span>
                   )}
                 </div>
                 <h3 className="font-display font-bold text-gray-900">{f.title}</h3>
-                <p className="mt-2 text-sm text-gray-500 font-dm leading-relaxed flex-1">{f.desc}</p>
+                <p className="mt-2 text-sm text-gray-500 font-sans leading-relaxed flex-1">{f.desc}</p>
               </div>
             </Reveal>
           ))}

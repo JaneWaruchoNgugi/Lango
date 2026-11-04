@@ -50,12 +50,12 @@ export function CtaConsultation() {
               <div className="flex flex-col justify-center">
                 <div className="flex items-center gap-3 mb-6">
                   <span className="w-6 h-px bg-white/20" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/35 font-dm">Ready to get started?</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/35 font-sans">Ready to get started?</span>
                 </div>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight tracking-tight">
                   Book a free consultation
                 </h2>
-                <p className="mt-4 text-white/55 font-dm leading-relaxed max-w-sm">
+                <p className="mt-4 text-white/55 font-sans leading-relaxed max-w-sm">
                   Speak with our team, pick the right plan for your property, and get access the same day. No pressure.
                 </p>
                 <div className="mt-9 space-y-4">
@@ -64,11 +64,11 @@ export function CtaConsultation() {
                       <div className="w-10 h-10 rounded-xl bg-white/7 border border-white/10 flex items-center justify-center flex-shrink-0">
                         <perk.icon className="w-4 h-4 text-white/60" />
                       </div>
-                      <p className="text-sm text-white/65 font-dm">{perk.label}</p>
+                      <p className="text-sm text-white/65 font-sans">{perk.label}</p>
                     </div>
                   ))}
                 </div>
-                <p className="mt-9 text-xs text-white/22 font-dm">
+                <p className="mt-9 text-xs text-white/22 font-sans">
                   No credit card required · We'll confirm within one business day
                 </p>
               </div>
@@ -110,7 +110,7 @@ export function CtaConsultation() {
                       : <>Book Consultation <ArrowRight className="w-4 h-4" /></>
                     }
                   </button>
-                  <p className="text-center text-xs text-gray-400 font-dm">Free, no-obligation call with our team</p>
+                  <p className="text-center text-xs text-gray-400 font-sans">Free, no-obligation call with our team</p>
                 </form>
               </div>
             </div>

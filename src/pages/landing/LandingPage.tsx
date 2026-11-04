@@ -42,7 +42,7 @@ function Nav() {
             <span className={`font-display font-bold tracking-wide text-base transition-colors ${scrolled ? 'text-lango-dark' : 'text-white'}`}>LANGO</span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-dm">
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium font-sans">
             {NAV_LINKS.map(l => (
               <a key={l.href} href={l.href}
                 className={`transition-colors ${scrolled ? 'text-gray-500 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
@@ -53,11 +53,11 @@ function Nav() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link to="/login"
-              className={`text-sm font-medium font-dm transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
+              className={`text-sm font-medium font-sans transition-colors ${scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/65 hover:text-white'}`}>
               Sign In
             </Link>
             <a href="#cta"
-              className={`text-sm font-semibold font-dm px-4 py-2 rounded-lg transition-all ${scrolled ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'bg-lango-amber text-lango-dark hover:bg-amber-400'}`}>
+              className={`text-sm font-semibold font-sans px-4 py-2 rounded-lg transition-all ${scrolled ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'bg-lango-amber text-lango-dark hover:bg-amber-400'}`}>
               Get Started
             </a>
           </div>
@@ -85,7 +85,7 @@ function Nav() {
             <nav className="flex flex-col gap-1">
               {NAV_LINKS.map(l => (
                 <a key={l.href} href={l.href} onClick={() => setOpen(false)}
-                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-dm">
+                  className="py-3 px-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-lango-primary transition-colors font-sans">
                   {l.label}
                 </a>
               ))}
@@ -114,7 +114,7 @@ function Hero() {
 
       <div className="relative px-6 sm:px-10 lg:px-16 xl:px-24 pt-14 pb-20 lg:pt-20 lg:pb-28">
         <div className="max-w-2xl">
-          <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-dm mb-6">
+          <div className="l-anim-1 inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase bg-lango-amber/10 border border-lango-amber/25 text-lango-amber px-3 py-1.5 rounded-full font-sans mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-lango-amber l-pulse" />
             Built for Kenyan Businesses
           </div>
@@ -127,7 +127,7 @@ function Hero() {
             Stay in control.
           </h1>
 
-          <p className="l-anim-3 mt-6 text-lg text-gray-300 leading-relaxed font-dm max-w-xl">
+          <p className="l-anim-3 mt-6 text-lg text-gray-300 leading-relaxed font-sans max-w-xl">
             Lango is an operations platform built for Kenyan businesses. Whether you manage an apartment complex or a growing salon, Lango gives you the tools to run it properly — with real records, real accountability, and real control.
           </p>
 
@@ -152,7 +152,7 @@ function Hero() {
           ].map(({ n, label }) => (
             <div key={label} className="text-center">
               <p className="font-display text-2xl font-bold text-white">{n}</p>
-              <p className="text-xs text-gray-400 font-dm mt-1">{label}</p>
+              <p className="text-xs text-gray-400 font-sans mt-1">{label}</p>
             </div>
           ))}
         </div>
@@ -174,10 +174,10 @@ function Problem() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight leading-snug">
               Most Kenyan businesses still run on paper, WhatsApp, and guesswork.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               A torn logbook at the gate. A provider who left and took all the client contacts. A payment made in cash with no record. A complaint that was never followed up.
             </p>
-            <p className="mt-3 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-3 text-gray-500 font-sans leading-relaxed">
               These aren't small problems — they are security gaps, revenue leaks, and liability risks. Lango exists to fix them.
             </p>
           </div>
@@ -200,10 +200,10 @@ function Problem() {
               }
               return (
                 <div key={before} className={`rounded-2xl border p-4 ${colours[color]}`}>
-                  <p className="text-[11px] text-red-400 font-semibold mb-1 font-dm line-through">{before}</p>
+                  <p className="text-[11px] text-red-400 font-semibold mb-1 font-sans line-through">{before}</p>
                   <div className="flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${dot[color]}`} />
-                    <p className="text-xs font-semibold text-gray-800 font-dm">{after}</p>
+                    <p className="text-xs font-semibold text-gray-800 font-sans">{after}</p>
                   </div>
                 </div>
               )
@@ -226,7 +226,7 @@ function ProductsOverview() {
           <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
             What does Lango do?
           </h2>
-          <p className="mt-4 text-gray-500 font-dm max-w-xl mx-auto leading-relaxed">
+          <p className="mt-4 text-gray-500 font-sans max-w-xl mx-auto leading-relaxed">
             Lango currently has two products — one for property security and visitor management, one for salon operations. Both built for the Kenyan market.
           </p>
         </div>
@@ -240,21 +240,21 @@ function ProductsOverview() {
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-lango-dark">Gate & Visitor Management</p>
-                <p className="text-sm text-gray-400 font-dm">For apartments & gated properties</p>
+                <p className="text-sm text-gray-400 font-sans">For apartments & gated properties</p>
               </div>
             </div>
-            <p className="text-gray-500 font-dm leading-relaxed text-sm">
+            <p className="text-gray-500 font-sans leading-relaxed text-sm">
               Replace the paper logbook with a live digital system. Log every visitor, alert tenants via WhatsApp, track deliveries, and manage incidents — all from one dashboard.
             </p>
             <ul className="mt-5 space-y-2">
               {['Visitor check-in with photo & ID', 'WhatsApp tenant alerts', 'Delivery & incident tracking', 'Security reports & shift management'].map(f => (
-                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 font-dm">
+                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-lango-primary shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-lango-primary font-dm group-hover:gap-3 transition-all">
+            <div className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-lango-primary font-sans group-hover:gap-3 transition-all">
               Explore Gate Management <ArrowRight className="w-4 h-4" />
             </div>
           </a>
@@ -267,21 +267,21 @@ function ProductsOverview() {
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-lango-dark">Salon Management</p>
-                <p className="text-sm text-gray-400 font-dm">For salons with staff & multiple branches</p>
+                <p className="text-sm text-gray-400 font-sans">For salons with staff & multiple branches</p>
               </div>
             </div>
-            <p className="text-gray-500 font-dm leading-relaxed text-sm">
+            <p className="text-gray-500 font-sans leading-relaxed text-sm">
               Keep client records where they belong — with the salon, not the provider. Manage bookings, control what each staff member can see, and track revenue across multiple branches.
             </p>
             <ul className="mt-5 space-y-2">
               {['Client & service records', 'Per-person staff permissions', 'M-Pesa payment recording', 'Multi-branch management'].map(f => (
-                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 font-dm">
+                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 font-sans">
                   <CheckCircle2 className="w-4 h-4 text-lango-amber shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
-            <div className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-lango-amber font-dm group-hover:gap-3 transition-all">
+            <div className="mt-6 flex items-center gap-1.5 text-sm font-semibold text-lango-amber font-sans group-hover:gap-3 transition-all">
               Explore Salon Management <ArrowRight className="w-4 h-4" />
             </div>
           </a>
@@ -323,10 +323,10 @@ function GateSection() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Your gate runs on paper. It shouldn't.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               Every apartment block, gated estate, and commercial property has one vulnerability: the gate. A paper logbook can't tell you who's inside right now, alert a tenant in real time, or prove accountability when something goes wrong.
             </p>
-            <p className="mt-3 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-3 text-gray-500 font-sans leading-relaxed">
               Lango Gate gives your security team a digital system that works on any phone — no expensive hardware, no app installation for residents.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -349,7 +349,7 @@ function GateSection() {
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] text-gray-400 font-dm">Sunrise Gardens · Main Gate</p>
+                  <p className="text-[11px] text-gray-400 font-sans">Sunrise Gardens · Main Gate</p>
                   <p className="text-sm font-bold text-white">Officer James Waweru</p>
                 </div>
                 <span className="text-[10px] font-bold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-1 rounded-full font-mono l-pulse">● LIVE</span>
@@ -358,12 +358,12 @@ function GateSection() {
                 {[{ n: '18', l: 'Visitors today', c: 'text-blue-400' },{ n: '4', l: 'Inside now', c: 'text-green-400' },{ n: '2', l: 'Deliveries', c: 'text-lango-amber' }].map(({n,l,c})=>(
                   <div key={l} className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
                     <p className={`text-xl font-bold font-display ${c}`}>{n}</p>
-                    <p className="text-[10px] text-gray-400 font-dm mt-0.5">{l}</p>
+                    <p className="text-[10px] text-gray-400 font-sans mt-0.5">{l}</p>
                   </div>
                 ))}
               </div>
               <div className="bg-white/5 border border-white/5 rounded-xl p-3.5 space-y-2.5">
-                <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-dm">Live Activity</p>
+                <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest font-sans">Live Activity</p>
                 {[
                   { dot: 'bg-green-500', t: 'Visitor checked in', s: 'Unit A-204 · Work visit', time: '2m ago' },
                   { dot: 'bg-blue-400',  t: 'Delivery collected', s: 'Unit B-103 · Jumia',     time: '18m ago' },
@@ -372,8 +372,8 @@ function GateSection() {
                   <div key={t} className="flex items-center gap-2.5">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold text-white/80 truncate font-dm">{t}</p>
-                      <p className="text-[10px] text-gray-400 truncate font-dm">{s}</p>
+                      <p className="text-[11px] font-semibold text-white/80 truncate font-sans">{t}</p>
+                      <p className="text-[10px] text-gray-400 truncate font-sans">{s}</p>
                     </div>
                     <span className="text-[10px] text-gray-400 shrink-0 font-mono">{time}</span>
                   </div>
@@ -390,7 +390,7 @@ function GateSection() {
                 <Icon className="w-5 h-5 text-lango-primary" />
               </div>
               <h3 className="font-display font-bold text-gray-900 text-sm mb-1.5">{title}</h3>
-              <p className="text-xs text-gray-500 font-dm leading-relaxed">{desc}</p>
+              <p className="text-xs text-gray-500 font-sans leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -418,12 +418,12 @@ function SalonSection() {
           {/* Permissions mockup */}
           <div className="card p-0 overflow-hidden order-2 lg:order-1">
             <div className="px-5 py-4 border-b border-gray-50 bg-lango-dark">
-              <p className="text-xs font-semibold text-white/50 uppercase tracking-wide font-dm">Staff Permissions · Glam Hub Salon</p>
+              <p className="text-xs font-semibold text-white/50 uppercase tracking-wide font-sans">Staff Permissions · Glam Hub Salon</p>
               <p className="text-white font-bold mt-0.5">Jane Mwangi — Hair Stylist</p>
             </div>
             <div className="divide-y divide-gray-50">
               <div className="px-5 py-4">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 font-dm">Client Data</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Client Data</p>
                 {[
                   { label: 'Client name',           on: true },
                   { label: 'Service & visit history',on: true },
@@ -440,7 +440,7 @@ function SalonSection() {
                 ))}
               </div>
               <div className="px-5 py-4">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 font-dm">Financial</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 font-sans">Financial</p>
                 {['Service prices', 'Payment history', 'Revenue reports'].map(label => (
                   <div key={label} className="flex items-center justify-between py-1.5">
                     <span className="text-sm text-gray-700">{label}</span>
@@ -449,7 +449,7 @@ function SalonSection() {
                 ))}
               </div>
               <div className="px-5 py-3 bg-gray-50/60">
-                <p className="text-xs text-gray-400 font-dm italic">Permissions set by owner · enforced on the server</p>
+                <p className="text-xs text-gray-400 font-sans italic">Permissions set by owner · enforced on the server</p>
               </div>
             </div>
           </div>
@@ -459,10 +459,10 @@ function SalonSection() {
             <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
               Run your salon. Keep control of your clients.
             </h2>
-            <p className="mt-5 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-5 text-gray-500 font-sans leading-relaxed">
               When a provider leaves, they should leave with their skills — not your client list. Lango keeps every client record, service history and contact detail within the salon, protected by permissions only the owner controls.
             </p>
-            <p className="mt-3 text-gray-500 font-dm leading-relaxed">
+            <p className="mt-3 text-gray-500 font-sans leading-relaxed">
               Each staff member sees exactly what they need to do their job, and nothing they don't. Every change is audit-logged.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -479,7 +479,7 @@ function SalonSection() {
                 <Icon className="w-5 h-5 text-lango-amber" />
               </div>
               <h3 className="font-display font-bold text-gray-900 text-sm mb-1.5">{title}</h3>
-              <p className="text-xs text-gray-500 font-dm leading-relaxed">{desc}</p>
+              <p className="text-xs text-gray-500 font-sans leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
@@ -508,20 +508,20 @@ function Pricing() {
           <h2 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-lango-dark tracking-tight">
             No hidden fees. No lock-in.
           </h2>
-          <p className="mt-4 text-gray-500 font-dm max-w-lg mx-auto leading-relaxed">
+          <p className="mt-4 text-gray-500 font-sans max-w-lg mx-auto leading-relaxed">
             Both products come with a free trial. Choose the plan that fits your property or salon.
           </p>
 
           {/* Tab switcher */}
           <div className="mt-8 inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1">
             <button onClick={() => setTab('gate')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold font-dm transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold font-sans transition-all ${
                 tab === 'gate' ? 'bg-lango-dark text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}>
               <Building2 className="w-4 h-4" /> Gate Management
             </button>
             <button onClick={() => setTab('salon')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold font-dm transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold font-sans transition-all ${
                 tab === 'salon' ? 'bg-lango-dark text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}>
               <Scissors className="w-4 h-4" /> Salon
@@ -537,25 +537,25 @@ function Pricing() {
                 <div key={p.planId} className={`rounded-2xl p-6 flex flex-col relative border ${popular ? 'l-plan-popular' : 'bg-white border-gray-100 shadow-sm'}`}>
                   {popular && (
                     <div className="absolute -top-4 inset-x-0 flex justify-center">
-                      <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-dm uppercase">Most Popular</span>
+                      <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-sans uppercase">Most Popular</span>
                     </div>
                   )}
                   <p className={`text-sm font-bold font-display mb-1 ${popular ? 'text-white/55' : 'text-gray-400'}`}>{p.name}</p>
                   <p className={`text-3xl font-bold font-display ${popular ? 'text-white' : 'text-lango-dark'}`}>
                     KES {p.monthlyPrice.toLocaleString()}
                   </p>
-                  <p className={`text-[11px] mt-1 font-dm mb-6 ${popular ? 'text-white/38' : 'text-gray-400'}`}>
+                  <p className={`text-[11px] mt-1 font-sans mb-6 ${popular ? 'text-white/38' : 'text-gray-400'}`}>
                     per month · up to {p.maxUnits === 99999 ? 'unlimited' : p.maxUnits} units
                   </p>
                   <ul className="flex-1 space-y-2.5 mb-7">
                     {p.features.map(f => (
-                      <li key={f} className={`flex items-start gap-2.5 text-sm font-dm ${popular ? 'text-white/75' : 'text-gray-600'}`}>
+                      <li key={f} className={`flex items-start gap-2.5 text-sm font-sans ${popular ? 'text-white/75' : 'text-gray-600'}`}>
                         <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${popular ? 'text-lango-amber' : 'text-green-500'}`} />
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <a href="#cta" className={`block text-center text-sm font-semibold rounded-xl py-2.5 font-dm transition-all ${popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-primary text-lango-primary hover:bg-lango-primary hover:text-white'}`}>
+                  <a href="#cta" className={`block text-center text-sm font-semibold rounded-xl py-2.5 font-sans transition-all ${popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-primary text-lango-primary hover:bg-lango-primary hover:text-white'}`}>
                     Get Access
                   </a>
                 </div>
@@ -570,23 +570,23 @@ function Pricing() {
               <div key={p.name} className={`rounded-2xl p-6 flex flex-col relative border ${p.popular ? 'l-plan-popular' : 'bg-white border-gray-100 shadow-sm'}`}>
                 {p.popular && (
                   <div className="absolute -top-4 inset-x-0 flex justify-center">
-                    <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-dm uppercase">Most Popular</span>
+                    <span className="text-[11px] font-bold text-lango-dark bg-lango-amber px-3 py-1 rounded-full font-sans uppercase">Most Popular</span>
                   </div>
                 )}
                 <p className={`text-sm font-bold font-display mb-1 ${p.popular ? 'text-white/55' : 'text-gray-400'}`}>{p.name}</p>
                 <p className={`text-3xl font-bold font-display ${p.popular ? 'text-white' : 'text-lango-dark'}`}>
                   KES {p.price.toLocaleString()}
                 </p>
-                <p className={`text-[11px] mt-1 font-dm mb-6 ${p.popular ? 'text-white/38' : 'text-gray-400'}`}>per month</p>
+                <p className={`text-[11px] mt-1 font-sans mb-6 ${p.popular ? 'text-white/38' : 'text-gray-400'}`}>per month</p>
                 <ul className="flex-1 space-y-2.5 mb-7">
                   {p.features.map(f => (
-                    <li key={f} className={`flex items-start gap-2.5 text-sm font-dm ${p.popular ? 'text-white/75' : 'text-gray-600'}`}>
+                    <li key={f} className={`flex items-start gap-2.5 text-sm font-sans ${p.popular ? 'text-white/75' : 'text-gray-600'}`}>
                       <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${p.popular ? 'text-lango-amber' : 'text-green-500'}`} />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <a href="#cta" className={`block text-center text-sm font-semibold rounded-xl py-2.5 font-dm transition-all ${p.popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-amber text-lango-amber hover:bg-lango-amber hover:text-lango-dark'}`}>
+                <a href="#cta" className={`block text-center text-sm font-semibold rounded-xl py-2.5 font-sans transition-all ${p.popular ? 'bg-lango-amber text-lango-dark hover:bg-amber-400' : 'border border-lango-amber text-lango-amber hover:bg-lango-amber hover:text-lango-dark'}`}>
                   Start Free Trial
                 </a>
               </div>
@@ -624,7 +624,7 @@ function Kenya() {
                 <Icon className="w-5 h-5" />
               </div>
               <p className="text-sm font-bold text-white mb-1">{title}</p>
-              <p className="text-[11px] text-white/45 font-dm leading-relaxed">{body}</p>
+              <p className="text-[11px] text-white/45 font-sans leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
@@ -676,13 +676,13 @@ function Cta() {
 
           <div className="relative grid lg:grid-cols-2 gap-12 p-8 sm:p-12 lg:p-16">
             <div className="flex flex-col justify-center">
-              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-lango-amber font-dm mb-5">
+              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-lango-amber font-sans mb-5">
                 <span className="w-5 h-px bg-lango-amber/40" /> Get started today
               </span>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight tracking-tight">
                 Ready to bring your business into the 21st century?
               </h2>
-              <p className="mt-4 text-white/55 font-dm leading-relaxed">
+              <p className="mt-4 text-white/55 font-sans leading-relaxed">
                 Whether you manage a gated estate or a growing salon, we'll set you up and get you live. No technical experience needed.
               </p>
               <ul className="mt-8 space-y-4">
@@ -691,7 +691,7 @@ function Cta() {
                   { icon: Scissors,  text: 'Salon management — 30-day free trial' },
                   { icon: Phone,     text: 'We call you to confirm and set everything up' },
                 ].map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-3 text-sm text-white/65 font-dm">
+                  <li key={text} className="flex items-center gap-3 text-sm text-white/65 font-sans">
                     <div className="w-8 h-8 rounded-lg bg-white/8 border border-white/10 flex items-center justify-center shrink-0">
                       <Icon className="w-4 h-4 text-white/50" />
                     </div>
@@ -699,7 +699,7 @@ function Cta() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-8 text-xs text-white/22 font-dm">No credit card required · No commitment · We'll confirm within one business day</p>
+              <p className="mt-8 text-xs text-white/22 font-sans">No credit card required · No commitment · We'll confirm within one business day</p>
             </div>
 
             <div>
@@ -707,7 +707,7 @@ function Cta() {
                 <div className="bg-white/10 border border-white/15 rounded-2xl p-10 text-center h-full flex flex-col items-center justify-center">
                   <CheckCircle2 className="w-14 h-14 text-green-400 mb-4" />
                   <p className="text-xl font-bold text-white font-display">Request received!</p>
-                  <p className="text-white/55 font-dm mt-2 max-w-xs">We'll call or message you within one business day to get you set up.</p>
+                  <p className="text-white/55 font-sans mt-2 max-w-xs">We'll call or message you within one business day to get you set up.</p>
                 </div>
               ) : (
                 <form onSubmit={submit} className="bg-white rounded-2xl p-7 space-y-3.5 shadow-2xl">
@@ -736,7 +736,7 @@ function Cta() {
                     className="btn-primary w-full justify-center py-3 text-base">
                     {submitting ? 'Sending…' : <><span>Book Free Consultation</span> <ArrowRight className="w-4 h-4" /></>}
                   </button>
-                  <p className="text-center text-xs text-gray-400 font-dm">Free, no-obligation call with our team</p>
+                  <p className="text-center text-xs text-gray-400 font-sans">Free, no-obligation call with our team</p>
                 </form>
               )}
             </div>
@@ -761,19 +761,19 @@ function Footer() {
               </div>
               <span className="font-display font-bold text-white text-base tracking-wide">LANGO</span>
             </div>
-            <p className="text-sm text-white/40 font-dm leading-relaxed max-w-xs">
+            <p className="text-sm text-white/40 font-sans leading-relaxed max-w-xs">
               Operations software for Kenyan businesses. Gate management for properties. Salon management for salons.
             </p>
             <div className="mt-7">
-              <a href="#cta" className="inline-flex items-center gap-1.5 text-sm font-semibold text-lango-amber hover:text-amber-300 transition-colors font-dm">
+              <a href="#cta" className="inline-flex items-center gap-1.5 text-sm font-semibold text-lango-amber hover:text-amber-300 transition-colors font-sans">
                 Book a free consultation →
               </a>
             </div>
           </div>
 
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-dm">Products</p>
-            <div className="space-y-3 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-sans">Products</p>
+            <div className="space-y-3 text-sm text-white/45 font-sans">
               <a href="#gate"    className="flex items-center gap-2 hover:text-white transition-colors"><Building2 className="w-3.5 h-3.5" /> Gate Management</a>
               <a href="#salon"   className="flex items-center gap-2 hover:text-white transition-colors"><Scissors  className="w-3.5 h-3.5" /> Salon Management</a>
               <a href="#pricing" className="block hover:text-white transition-colors">Pricing</a>
@@ -783,8 +783,8 @@ function Footer() {
           </div>
 
           <div>
-            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-dm">Contact</p>
-            <div className="space-y-3.5 text-sm text-white/45 font-dm">
+            <p className="text-[11px] font-bold text-white/25 uppercase tracking-widest mb-5 font-sans">Contact</p>
+            <div className="space-y-3.5 text-sm text-white/45 font-sans">
               <a href="tel:+254700000000" className="flex items-center gap-3 hover:text-white transition-colors">
                 <Phone className="w-3.5 h-3.5 text-white/25" /> +254 700 000 000
               </a>
@@ -798,7 +798,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-gray-500 font-dm">
+        <div className="border-t border-white/7 pt-8 flex flex-col sm:flex-row justify-between gap-3 text-xs text-gray-500 font-sans">
           <p>© 2026 Lango. All rights reserved.</p>
           <div className="flex gap-5">
             <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>

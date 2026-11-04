@@ -1,13 +1,14 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
 import {
   initializeFirestore,
   getFirestore,
+  connectFirestoreEmulator,
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
-import { getFunctions } from 'firebase/functions'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
 const firebaseConfig = {
   apiKey:            import.meta.env.FIREBASE_API_KEY,
@@ -36,5 +37,14 @@ export const db        = isNewApp
   : (databaseId ? getFirestore(app, databaseId) : getFirestore(app))
 export const storage   = getStorage(app)
 export const functions = getFunctions(app, 'us-central1')
+
+// Local development against the Firebase Emulator Suite (`firebase emulators:start`).
+// Opt in with VITE_USE_EMULATORS=true in .env.local; production builds never set it.
+if (import.meta.env.VITE_USE_EMULATORS === 'true' && isNewApp) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  connectStorageEmulator(storage, '127.0.0.1', 9199)
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+}
 
 export default app
