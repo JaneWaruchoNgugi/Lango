@@ -12,6 +12,8 @@ import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { UnitPayment, PaymentStatus, PaymentMethod } from '../../types'
 import { useTenants } from '../../hooks/useTenants'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 const schema = z.object({
   status:        z.enum(['PAID', 'PENDING', 'OVERDUE']),
@@ -24,8 +26,8 @@ type FormData = z.infer<typeof schema>
 
 const STATUS_BADGE: Record<PaymentStatus, string> = {
   PAID:    'badge badge-green',
-  PENDING: 'bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full',
-  OVERDUE: 'bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full',
+  PENDING: 'badge badge-yellow',
+  OVERDUE: 'badge badge-red',
 }
 
 function monthKey(d: Date): string { return format(d, 'yyyy-MM') }
@@ -142,18 +144,10 @@ export default function PaymentsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
+    <div className="max-w-6xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <CreditCard className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{isPM ? 'Financials' : 'Payments'}</h1>
-            <p className="text-sm text-gray-500">Rent payment tracker</p>
-          </div>
-        </div>
+        <PageHeader className="!mb-0" icon={CreditCard} title={isPM ? 'Financials' : 'Payments'} subtitle="Rent payment tracker" />
         <div className="flex items-center gap-2">
           {/* Month selector */}
           <div className="flex items-center gap-1 card px-3 py-2">
@@ -208,7 +202,7 @@ export default function PaymentsPage() {
                   <td className="text-gray-600">{tenant.fullName}</td>
                   <td>
                     <span className={STATUS_BADGE[payment?.status ?? 'PENDING']}>
-                      {payment?.status ?? 'PENDING'}
+                      {humanize(payment?.status ?? 'PENDING')}
                     </span>
                   </td>
                   <td className="text-gray-600">{payment?.amount ? payment.amount.toLocaleString() : '—'}</td>

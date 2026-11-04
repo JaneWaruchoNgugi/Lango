@@ -13,6 +13,7 @@ import { TenantFormDrawer } from './TenantFormDrawer'
 import { Users, Plus, Search, Home, User, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Tenant } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 type Tab = 'ACTIVE' | 'MOVED_OUT'
 
@@ -49,10 +50,7 @@ export default function TenantsPage() {
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-lango-primary" /></div>
-          <div><h1 className="text-xl font-bold text-gray-900">Tenants</h1><p className="text-sm text-gray-500">Add and manage tenants for your units.</p></div>
-        </div>
+        <PageHeader className="!mb-0" icon={Users} title="Tenants" subtitle="Add and manage tenants for your units." />
         {canManage && <button className="btn-primary" onClick={openAdd}><Plus className="w-4 h-4" /> Add Tenant</button>}
       </div>
 
@@ -117,7 +115,7 @@ export default function TenantsPage() {
               {canManage && (
                 <div className="flex gap-2 shrink-0">
                   <button className="btn-secondary text-xs" onClick={() => setDrawer({ open: true, editing: t })}>Edit</button>
-                  {t.status === 'ACTIVE' && <button className="btn-danger text-xs" onClick={() => setMoveOut(t)}>Move out</button>}
+                  {t.status === 'ACTIVE' && <button className="btn-secondary !text-red-600 hover:!bg-red-50 hover:!border-red-200" onClick={() => setMoveOut(t)}>Move out</button>}
                 </div>
               )}
             </div>

@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from 'recharts'
 import type { Visitor, Delivery, Incident, Unit, Shift } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const RANGES: [number, string][] = [[7, '7 days'], [30, '30 days'], [90, '90 days']]
 const COLORS = { visitors: '#7c3aed', incidents: '#f97316', collected: '#16a34a', uncollected: '#e5e7eb', occupied: '#2563eb', vacant: '#d1d5db' }
@@ -164,15 +165,7 @@ export default function ReportsPlaceholder() {
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Reports</h1>
-            <p className="text-sm text-gray-500">Property activity summary</p>
-          </div>
-        </div>
+        <PageHeader icon={BarChart3} title="Reports" subtitle="Property activity summary" />
         <div className="flex items-center gap-2">
           <div className="flex bg-gray-100 p-1 rounded-lg gap-1">
             {RANGES.map(([n, label]) => (

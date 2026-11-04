@@ -11,6 +11,8 @@ import { Users, Plus, Search, User, ShieldCheck, DoorOpen } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatDuration, durationMinutes } from '../../utils/format'
 import type { Visitor, VisitType, VisitorStatus } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Segmented } from '../../components/ui/Segmented'
 
 type RangeKey = 'today' | 'yesterday' | 'week'
 const RANGES: [RangeKey, string][] = [['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This Week']]
@@ -51,29 +53,14 @@ export default function VisitorsPage() {
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Visitors</h1>
-            <p className="text-sm text-gray-500">{isPM ? 'View all registered visitors.' : 'Manage and track all visitors on site.'}</p>
-          </div>
-        </div>
+        <PageHeader className="!mb-0" icon={Users} title="Visitors" subtitle={isPM ? 'View all registered visitors.' : 'Manage and track all visitors on site.'} />
         {!isPM && (
           <button className="btn-primary" onClick={addVisitor}><Plus className="w-4 h-4" /> Add Visitor</button>
         )}
       </div>
 
       {/* Date range chips */}
-      <div className="flex gap-2">
-        {RANGES.map(([key, label]) => (
-          <button key={key} onClick={() => setRange(key)}
-            className={`text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${range === key ? 'bg-lango-primary text-white border-lango-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented value={range} onChange={setRange} options={RANGES.map(([key, label]) => ({ value: key, label }))} />
 
       {/* Search + type/status filters */}
       <div className="space-y-3">

@@ -11,6 +11,10 @@ import { z } from 'zod'
 import { format, differenceInDays } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { MaintenanceRequest, MaintenancePriority, MaintenanceStatus, MaintenanceCategory } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Segmented } from '../../components/ui/Segmented'
+import { humanize } from '../../utils/humanize'
 
 const schema = z.object({
   unitNumber:  z.string().min(1, 'Unit required'),
@@ -138,22 +142,11 @@ export default function MaintenancePage() {
   const STATUS_TABS: StatusFilter[] = ['ALL', 'PENDING', 'IN_PROGRESS', 'DONE']
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-6xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <Wrench className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Maintenance</h1>
-            <p className="text-sm text-gray-500">Track and resolve unit maintenance requests</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
+      <PageHeader icon={Wrench} title="Maintenance" subtitle="Track and resolve unit maintenance requests" actions={<button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
           <Plus className="w-4 h-4" /> Log Request
-        </button>
-      </div>
+        </button>} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -172,14 +165,7 @@ export default function MaintenancePage() {
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        <div className="flex bg-gray-100 p-1 rounded-lg gap-1">
-          {STATUS_TABS.map(t => (
-            <button key={t} onClick={() => setStatusTab(t)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${statusTab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              {t.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
+        <Segmented value={statusTab} onChange={setStatusTab} options={STATUS_TABS.map(t => ({ value: t, label: t === 'ALL' ? 'All' : humanize(t) }))} />
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input className="input pl-9" placeholder="Search unit or description…" value={search} onChange={e => setSearch(e.target.value)} />
@@ -188,10 +174,7 @@ export default function MaintenancePage() {
 
       {/* List */}
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <Wrench className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No maintenance requests found.</p>
-        </div>
+        <EmptyState card icon={Wrench} title="No maintenance requests found" />
       ) : (
         <div className="space-y-2">
           {shown.map(item => {
