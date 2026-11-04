@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { collection, query, where, Timestamp, onSnapshot } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
+import { PageHeader } from '../../../components/ui/PageHeader'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
 import { format, startOfDay } from 'date-fns'
 import { UserPlus, ShoppingBag, Users } from 'lucide-react'
@@ -38,62 +40,71 @@ export default function ReceptionistDashboard() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <div>
-        <h1 className="page-title">Reception</h1>
-        <p className="page-subtitle">Today · {format(new Date(), 'd MMMM yyyy')}</p>
-      </div>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <PageHeader
+        title="Reception"
+        subtitle={`Today · ${format(new Date(), 'EEEE, d MMMM yyyy')}`}
+        className="!mb-0"
+        actions={
+          <>
+            {canViewPayments && (
+              <Link to={`/salon/${salonId}/receptionist/checkout`} className="btn-secondary">
+                <ShoppingBag className="w-4 h-4" /> Checkout
+              </Link>
+            )}
+            {canCreateClients && (
+              <Link to={`/salon/${salonId}/receptionist/clients`} className="btn-primary">
+                <UserPlus className="w-4 h-4" /> Register client
+              </Link>
+            )}
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card p-4">
-          <p className="text-xs text-gray-500">Active Now</p>
-          <p className="text-3xl font-bold text-lango-primary">{active.length}</p>
-        </div>
-        <div className="card p-4">
-          <p className="text-xs text-gray-500">Checked Out</p>
-          <p className="text-3xl font-bold text-gray-900">{checkedOut.length}</p>
-        </div>
-        <div className="card p-4">
-          <p className="text-xs text-gray-500">Total Today</p>
-          <p className="text-3xl font-bold text-gray-900">{clients.length}</p>
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        {canCreateClients && (
-          <Link to={`/salon/${salonId}/receptionist/clients`} className="btn-primary">
-            <UserPlus className="w-4 h-4" /> Register Client
-          </Link>
-        )}
-        {canViewPayments && (
-          <Link to={`/salon/${salonId}/receptionist/checkout`} className="btn-secondary">
-            <ShoppingBag className="w-4 h-4" /> Checkout
-          </Link>
-        )}
-      </div>
-
-      {active.length > 0 && (
-        <div className="card">
-          <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
-            <Users className="w-4 h-4 text-lango-primary" />
-            <h3 className="section-title mb-0">Currently Active ({active.length})</h3>
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        {[
+          { label: 'In the salon', value: active.length, accent: 'text-lango-primary', dot: 'bg-lango-primary' },
+          { label: 'Checked out', value: checkedOut.length, accent: 'text-gray-900', dot: 'bg-emerald-500' },
+          { label: 'Total today', value: clients.length, accent: 'text-gray-900', dot: 'bg-gray-300' },
+        ].map(k => (
+          <div key={k.label} className="card p-4 sm:p-5">
+            <p className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-500">
+              <span className={`w-2 h-2 rounded-full ${k.dot}`} />{k.label}
+            </p>
+            <p className={`mt-2 font-display text-2xl sm:text-3xl font-bold ${k.accent}`}>{k.value}</p>
           </div>
-          <div className="divide-y divide-gray-50">
+        ))}
+      </div>
+
+      <div className="card">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="section-title mb-0">In the salon now</h3>
+          <span className="badge badge-blue">{active.length}</span>
+        </div>
+        {active.length === 0 ? (
+          <EmptyState icon={Users} title="No one waiting" description="Registered clients show here until they check out." />
+        ) : (
+          <div className="divide-y divide-gray-100">
             {active.map(c => (
-              <div key={c.clientId} className="px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{c.name}</p>
+              <div key={c.clientId} className="px-5 py-3.5 flex items-center gap-3">
+                <span className="w-9 h-9 rounded-full bg-lango-light text-lango-primary text-xs font-semibold flex items-center justify-center shrink-0">
+                  {c.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
                   <p className="text-xs text-gray-500">
-                    {canViewPhone ? c.phone : '•••••••••••'} · {format(c.createdAt.toDate(), 'h:mm a')}
+                    {canViewPhone ? c.phone : '•••••••••••'} · Arrived {format(c.createdAt.toDate(), 'h:mm a')}
                   </p>
                 </div>
-                <Link to={`/salon/${salonId}/receptionist/checkout?client=${c.clientId}`}
-                  className="btn-secondary text-xs">Checkout</Link>
+                {canViewPayments && (
+                  <Link to={`/salon/${salonId}/receptionist/checkout?client=${c.clientId}`}
+                    className="btn-secondary text-xs">Checkout</Link>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
