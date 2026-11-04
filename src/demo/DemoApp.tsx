@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import DemoEntry from './pages/DemoEntry'
 import { DemoShell } from './components/DemoShell'
 import { DemoPlaceholder } from './components/DemoPlaceholder'
@@ -17,6 +17,14 @@ import DemoShiftPage from './components/DemoShiftPage'
 import { GUARD_STAFF_ID } from './data/personas'
 import { DemoTourProvider } from './tour/DemoTourContext'
 import { DemoTourCard } from './tour/DemoTourCard'
+import { SalonDemoShell } from './salon/SalonDemoShell'
+import SalonDemoOwnerDashboard from './salon/pages/OwnerDashboard'
+import SalonDemoOwnerProviders from './salon/pages/OwnerProviders'
+import SalonDemoOwnerReports from './salon/pages/OwnerReports'
+import SalonDemoReceptionDashboard from './salon/pages/ReceptionDashboard'
+import SalonDemoRegisterClient from './salon/pages/RegisterClient'
+import SalonDemoCheckout from './salon/pages/Checkout'
+import SalonDemoProviderDashboard from './salon/pages/ProviderDashboard'
 
 export default function DemoApp() {
   return (
@@ -50,6 +58,25 @@ export default function DemoApp() {
           <Route path="inside" element={<DemoInsidePage />} />
           <Route path="*" element={<DemoPlaceholder />} />
         </Route>
+
+        <Route path="salon" element={<Navigate to="/demo/salon/owner" replace />} />
+        <Route path="salon/owner" element={<SalonDemoShell role="OWNER" />}>
+          <Route index element={<SalonDemoOwnerDashboard />} />
+          <Route path="providers" element={<SalonDemoOwnerProviders />} />
+          <Route path="reports" element={<SalonDemoOwnerReports />} />
+          <Route path="*" element={<DemoPlaceholder />} />
+        </Route>
+        <Route path="salon/reception" element={<SalonDemoShell role="RECEPTION" />}>
+          <Route index element={<SalonDemoReceptionDashboard />} />
+          <Route path="register" element={<SalonDemoRegisterClient />} />
+          <Route path="checkout" element={<SalonDemoCheckout />} />
+          <Route path="*" element={<DemoPlaceholder />} />
+        </Route>
+        <Route path="salon/provider" element={<SalonDemoShell role="PROVIDER" />}>
+          <Route index element={<SalonDemoProviderDashboard />} />
+          <Route path="*" element={<DemoPlaceholder />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/demo" replace />} />
       </Routes>
       <DemoTourCard />
       </DemoTourProvider>
