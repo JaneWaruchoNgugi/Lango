@@ -197,3 +197,51 @@
 .l-stat-divider {
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
+
+/* ── Layout container: content stops growing past 1200px so wide screens stay balanced ── */
+.l-container {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 640px)  { .l-container { padding-inline: 2rem; } }
+@media (min-width: 1024px) { .l-container { padding-inline: 2.5rem; } }
+
+/* ── Secondary button for light backgrounds ─────────────────────────── */
+.l-btn-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: #ffffff;
+  color: #0f2a43;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 42, 67, 0.05);
+  text-decoration: none;
+  transition: all 0.18s;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.l-btn-light:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+/* Hero spotlight behind the product visual */
+.l-hero-glow {
+  background:
+    radial-gradient(60% 50% at 70% 40%, rgba(59, 130, 246, 0.22) 0%, transparent 70%),
+    radial-gradient(40% 40% at 90% 80%, rgba(245, 158, 11, 0.10) 0%, transparent 70%);
+}
+
+/* FAQ: native <details> with a rotating plus */
+.l-faq summary { list-style: none; cursor: pointer; }
+.l-faq summary::-webkit-details-marker { display: none; }
+.l-faq .l-faq-icon { transition: transform 0.2s ease; }
+.l-faq[open] .l-faq-icon { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .l-anim-1, .l-anim-2, .l-anim-3, .l-anim-4, .l-anim-5, .l-anim-6,
+  .l-float, .l-float-2, .l-pulse { animation: none !important; }
+  .l-feature-card:hover, .l-btn-amber:hover, .l-btn-primary:hover { transform: none; }
+}
