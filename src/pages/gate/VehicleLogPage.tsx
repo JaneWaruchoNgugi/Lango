@@ -11,6 +11,8 @@ import { z } from 'zod'
 import { format, differenceInMinutes } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { VehicleEntry, VehicleType } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const schema = z.object({
   plate:        z.string().min(1, 'Plate required').toUpperCase(),
@@ -109,20 +111,9 @@ export default function VehicleLogPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <Car className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Vehicle Log</h1>
-            <p className="text-sm text-gray-500">{inside} inside · {entries.length} total today</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
+      <PageHeader icon={Car} title="Vehicle Log" subtitle={<>{inside} inside · {entries.length} total today</>} actions={<button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
           <Plus className="w-4 h-4" /> Log Vehicle
-        </button>
-      </div>
+        </button>} />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -130,10 +121,7 @@ export default function VehicleLogPage() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <Car className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No vehicles logged yet.</p>
-        </div>
+        <EmptyState card icon={Car} title="No vehicles logged yet" description="Log cars and motorbikes as they come in, and check them out when they leave." />
       ) : (
         <div className="card overflow-hidden">
           <div className="table-container">

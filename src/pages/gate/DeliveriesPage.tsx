@@ -8,6 +8,9 @@ import { Package } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Delivery } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Segmented } from '../../components/ui/Segmented'
 
 export default function DeliveriesPage() {
   const { user } = useAuth()
@@ -32,37 +35,25 @@ export default function DeliveriesPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-lango-primary" /></div>
-        <div><h1 className="text-xl font-bold text-gray-900">Delivery Check-in</h1><p className="text-sm text-gray-500">Receive and check in deliveries.</p></div>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-4">
+      <PageHeader icon={Package} title="Deliveries" subtitle="Receive parcels and hand them over to residents." className="!mb-2" />
 
-      <div className="inline-flex bg-gray-100 rounded-xl p-1">
-        {(['today', 'history'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-6 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${tab === t ? 'bg-lango-primary text-white' : 'text-gray-600'}`}>{t}</button>
-        ))}
-      </div>
+      <Segmented value={tab} onChange={setTab} options={[{ value: 'today', label: 'Today' }, { value: 'history', label: 'History' }]} />
 
       {shown.length === 0 ? (
-        <div className="card py-14 flex flex-col items-center text-center px-6">
-          <div className="w-28 h-28 rounded-full bg-lango-primary/5 flex items-center justify-center mb-5"><Package className="w-12 h-12 text-lango-primary/40" /></div>
-          <h3 className="font-bold text-gray-900">No deliveries</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-xs">{tab === 'today' ? 'No deliveries received today yet.' : 'No past deliveries to show.'}</p>
-        </div>
+        <EmptyState card icon={Package} title="No deliveries" description={tab === 'today' ? 'No deliveries received today yet.' : 'No past deliveries to show.'} />
       ) : (
         <div className="space-y-3">
           {shown.map(d => (
             <div key={d.deliveryId} className="card p-4 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-lango-primary" /></div>
+              <div className="w-11 h-11 rounded-xl bg-lango-light flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-lango-primary" /></div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900 truncate">{d.company}</p>
                 <p className="text-xs text-gray-500 truncate">{d.unitNumber}{d.riderName ? ` · ${d.riderName}` : ''}</p>
-                <p className="text-xs text-gray-400">Received {format(d.receivedAt.toDate(), 'h:mm a')}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Received {format(d.receivedAt.toDate(), 'h:mm a')}</p>
               </div>
               {d.status === 'RECEIVED'
-                ? <button className="btn-primary text-xs shrink-0" disabled={busy === d.deliveryId} onClick={() => collect(d)}>Check In</button>
+                ? <button className="btn-primary shrink-0" disabled={busy === d.deliveryId} onClick={() => collect(d)}>Check In</button>
                 : <DeliveryStatusBadge status={d.status} />}
             </div>
           ))}

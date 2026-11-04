@@ -9,9 +9,10 @@ import { bumpShiftCounter, getActiveShift } from '../../services/shiftService'
 import { uploadPhoto } from '../../services/photoService'
 import { PhotoCapture } from '../../components/ui/PhotoCapture'
 import { Spinner } from '../../components/ui/LoadingScreen'
-import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { IncidentType, IncidentSeverity } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 const schema = z.object({
   type: z.enum(['SUSPICIOUS_VISITOR', 'UNAUTHORIZED_ENTRY', 'DISPUTE', 'THEFT', 'EMERGENCY', 'OTHER']),
@@ -29,6 +30,7 @@ export default function ReportIncidentPage() {
   const [photo, setPhoto] = useState<Blob | null>(null)
   const [busy, setBusy] = useState(false)
   const form = useForm<Form>({ resolver: zodResolver(schema), defaultValues: { severity: 'MEDIUM', type: 'SUSPICIOUS_VISITOR' } })
+  const severity = form.watch('severity')
 
   const onSubmit = async (data: Form) => {
     if (!user?.propertyId) return
@@ -43,17 +45,28 @@ export default function ReportIncidentPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/gate/incidents')} className="btn-ghost p-2"><ArrowLeft className="w-4 h-4" /></button>
-        <h1 className="page-title">Report Incident</h1>
-      </div>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="card p-5 space-y-4">
-        <div><label className="label">Type *</label><select className="input" {...form.register('type')}>{TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
-        <div><label className="label">Severity *</label><select className="input" {...form.register('severity')}>{SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
-        <div><label className="label">Description *</label><textarea rows={3} className="input resize-none" {...form.register('description')} />{form.formState.errors.description && <p className="form-error">{form.formState.errors.description.message}</p>}</div>
+    <div className="max-w-xl mx-auto">
+      <PageHeader backTo="/gate/incidents" title="Report an incident" subtitle="It's shared with the property manager straight away." />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="card p-5 sm:p-6 space-y-5">
+        <div><label className="label">What happened?</label><select className="input" {...form.register('type')}>{TYPES.map(t => <option key={t} value={t}>{humanize(t)}</option>)}</select></div>
+        <div>
+          <p className="label">How serious is it?</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {SEVERITIES.map(s => {
+              const active = severity === s
+              const tone = { LOW: 'peer-checked:border-gray-500 peer-checked:bg-gray-50', MEDIUM: 'peer-checked:border-amber-500 peer-checked:bg-amber-50', HIGH: 'peer-checked:border-orange-500 peer-checked:bg-orange-50', CRITICAL: 'peer-checked:border-red-500 peer-checked:bg-red-50' }[s]
+              return (
+                <label key={s} className="cursor-pointer">
+                  <input type="radio" value={s} className="peer sr-only" {...form.register('severity')} />
+                  <span className={`block text-center rounded-lg border-2 border-gray-200 px-3 py-2 text-sm font-medium transition-colors ${tone} ${active ? 'text-gray-900' : 'text-gray-600'}`}>{humanize(s)}</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+        <div><label className="label">Description</label><textarea rows={4} className="input resize-none" placeholder="Who was involved, where, and what you did." {...form.register('description')} />{form.formState.errors.description && <p className="form-error">{form.formState.errors.description.message}</p>}</div>
         <PhotoCapture onCapture={setPhoto} label="Add photo (optional)" />
-        <button type="submit" disabled={busy} className="btn-primary w-full py-3">{busy && <Spinner size="sm" className="text-white" />}{busy ? 'Reporting…' : 'Report Incident'}</button>
+        <button type="submit" disabled={busy} className="btn-primary w-full !min-h-11">{busy && <Spinner size="sm" className="text-white" />}{busy ? 'Reporting…' : 'Report incident'}</button>
       </form>
     </div>
   )

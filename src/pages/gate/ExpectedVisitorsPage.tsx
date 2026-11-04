@@ -6,6 +6,8 @@ import { PageLoader } from '../../components/ui/LoadingScreen'
 import { CalendarCheck, Search, CheckCircle, Clock, User } from 'lucide-react'
 import { format } from 'date-fns'
 import type { PreApprovedVisitor } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -51,18 +53,8 @@ export default function ExpectedVisitorsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-          <CalendarCheck className="w-5 h-5 text-lango-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Expected Today</h1>
-          <p className="text-sm text-gray-500">
-            {DAY_LABELS[new Date().getDay()]}, {format(new Date(), 'dd MMM yyyy')} · {shown.length} expected
-          </p>
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-4">
+      <PageHeader icon={CalendarCheck} title="Expected Today" subtitle={<>{DAY_LABELS[new Date().getDay()]}, {format(new Date(), 'dd MMM yyyy')} · {shown.length} expected</>} />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -70,10 +62,7 @@ export default function ExpectedVisitorsPage() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <CalendarCheck className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No pre-approved visitors scheduled for today.</p>
-        </div>
+        <EmptyState card icon={CalendarCheck} title="Nobody expected today" description="Pre-approved visitors due today will show up here." />
       ) : (
         <div className="space-y-2">
           {shown.map(v => {

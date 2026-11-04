@@ -13,6 +13,8 @@ import { VISIT_TYPE_LABEL } from '../../domain/visitTypes'
 import { useCurrentVisitors } from '../../hooks/useCurrentVisitors'
 import { useShift } from '../../hooks/useShift'
 import { startShift as startShiftService, endShift as endShiftService } from '../../services/shiftService'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { humanize } from '../../utils/humanize'
 import type { Delivery, Incident, PreApprovedVisitor, Unit, UserRole } from '../../types'
 
 function routesFor(role: UserRole | null | undefined) {
@@ -23,40 +25,41 @@ function routesFor(role: UserRole | null | undefined) {
 
 function StatCard({ to, icon: Icon, value, label, tone }: { to: string; icon: LucideIcon; value: number; label: string; tone: string }) {
   return (
-    <Link to={to} className="card p-4 flex flex-col hover:shadow-card-hover transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${tone}`}><Icon className="w-5 h-5" /></div>
-        <ChevronRight className="w-4 h-4 text-gray-300" />
+    <Link to={to} className="group card p-4 sm:p-5 flex flex-col hover:shadow-card-hover hover:border-gray-300/70 transition-all">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-medium text-gray-500">{label}</p>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${tone}`}><Icon className="w-4 h-4" /></div>
       </div>
-      <p className="text-2xl font-bold text-gray-900 mt-3 leading-none">{value}</p>
-      <p className="text-xs text-gray-500 mt-1">{label}</p>
+      <p className="font-display text-3xl font-semibold text-gray-900 mt-3 leading-none tabular-nums">{value}</p>
     </Link>
   )
 }
 
-function KpiCard({ label, value, icon: Icon, tone, change }: { label: string; value: string | number; icon: LucideIcon; tone: string; change?: number | null }) {
-  return (
-    <div className="card p-4 flex items-start gap-3">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${tone}`}><Icon className="w-5 h-5" /></div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-        {change !== null && change !== undefined && (
-          <p className={`text-xs font-medium mt-0.5 ${change >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-            {change >= 0 ? '+' : ''}{change}% vs last month
-          </p>
-        )}
+function Kpi({ label, value, icon: Icon, tone, note, noteTone = 'text-gray-500', to }: { label: string; value: string | number; icon: LucideIcon; tone: string; note?: string | null; noteTone?: string; to?: string }) {
+  const body = (
+    <>
+      <div className="flex items-center gap-2">
+        <span className={`w-6 h-6 rounded-md flex items-center justify-center ${tone}`}><Icon className="w-3.5 h-3.5" /></span>
+        <p className="text-[13px] text-gray-500">{label}</p>
       </div>
-    </div>
+      <p className="font-display text-2xl font-semibold text-gray-900 mt-2 tabular-nums">{typeof value === 'number' ? value.toLocaleString() : value}</p>
+      {note && <p className={`text-xs font-medium mt-1 ${noteTone}`}>{note}</p>}
+    </>
   )
+  return to
+    ? <Link to={to} className="block p-4 sm:p-5 hover:bg-gray-50/70 transition-colors">{body}</Link>
+    : <div className="p-4 sm:p-5">{body}</div>
 }
 
 function ActionCard({ to, icon: Icon, title, subtitle }: { to: string; icon: LucideIcon; title: string; subtitle: string }) {
   return (
-    <Link to={to} className="card p-4 flex items-center gap-3 hover:shadow-card-hover transition-shadow">
-      <div className="w-10 h-10 rounded-lg bg-lango-primary/10 flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-lango-primary" /></div>
-      <div className="flex-1 min-w-0"><p className="font-semibold text-sm text-gray-900 truncate">{title}</p><p className="text-xs text-gray-500 truncate">{subtitle}</p></div>
-      <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+    <Link to={to} className="card p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 text-center sm:text-left hover:shadow-card-hover hover:border-gray-300/70 transition-all">
+      <div className="w-10 h-10 rounded-xl bg-lango-light flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-lango-primary" /></div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[13px] sm:text-sm text-gray-900 leading-tight">{title}</p>
+        <p className="hidden sm:block text-xs text-gray-500 truncate mt-0.5">{subtitle}</p>
+      </div>
+      <ChevronRight className="hidden sm:block w-4 h-4 text-gray-300 shrink-0" />
     </Link>
   )
 }
@@ -159,137 +162,107 @@ export default function RoleDashboard() {
   const activity: ActivityItem[] = [
     ...currentVisitors.map(v => ({ id: v.visitorId, title: `${v.visitorName} checked in`, sub: `${v.unitNumber} · ${VISIT_TYPE_LABEL[v.visitType]}`, ts: v.checkInTime.toDate(), icon: LogIn, tone: 'bg-green-50 text-green-600' })),
     ...deliveries.map(d => ({ id: d.deliveryId, title: 'Delivery registered', sub: `${d.unitNumber} · ${d.company}`, ts: d.receivedAt.toDate(), icon: Package, tone: 'bg-orange-50 text-orange-500' })),
-    ...incidents.map(i => ({ id: i.incidentId, title: 'Incident reported', sub: `${i.type.replace(/_/g, ' ')}`, ts: i.createdAt.toDate(), icon: AlertTriangle, tone: 'bg-red-50 text-red-500' })),
+    ...incidents.map(i => ({ id: i.incidentId, title: 'Incident reported', sub: humanize(i.type), ts: i.createdAt.toDate(), icon: AlertTriangle, tone: 'bg-red-50 text-red-500' })),
   ].sort((a, b) => b.ts.getTime() - a.ts.getTime()).slice(0, 6)
 
+  const kpis = role === 'PROPERTY_MANAGER' && pmKpi ? [
+    { label: 'Visitors this month', value: pmKpi.visitorsThisMonth, icon: Users, tone: 'bg-blue-50 text-blue-600',
+      ...(pmKpi.visitorsPrevMonth > 0 ? (() => { const c = Math.round((pmKpi.visitorsThisMonth - pmKpi.visitorsPrevMonth) / pmKpi.visitorsPrevMonth * 100); return { note: `${c >= 0 ? '+' : ''}${c}% vs last month`, noteTone: c >= 0 ? 'text-green-600' : 'text-red-500' } })() : {}) },
+    { label: 'Occupancy', value: `${pmKpi.occupancyRate}%`, icon: Home, tone: 'bg-green-50 text-green-600' },
+    ...(pmKpi.avgResolutionHours !== null ? [{ label: 'Avg. incident resolution', value: `${pmKpi.avgResolutionHours}h`, icon: Clock, tone: 'bg-amber-50 text-amber-600' }] : []),
+    { label: 'Uncollected deliveries', value: pmKpi.uncollectedDeliveries, icon: Package, tone: 'bg-orange-50 text-orange-500', to: '/property/deliveries',
+      ...(pmKpi.uncollectedDeliveries > 0 ? { note: 'Needs attention', noteTone: 'text-orange-600' } : {}) },
+    { label: 'Open maintenance', value: pmKpi.pendingMaintenance, icon: Wrench, tone: 'bg-purple-50 text-purple-600', to: '/property/maintenance',
+      ...(pmKpi.pendingMaintenance > 0 ? { note: 'Action required', noteTone: 'text-purple-600' } : {}) },
+  ] : []
+  const kpiCols = kpis.length >= 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'
+
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-6">
       {/* Greeting + date chip */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-lango-primary/10 flex items-center justify-center text-lango-primary font-semibold shrink-0">{(firstName[0] ?? 'U').toUpperCase()}</div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{greeting}, {firstName} 👋</h1>
-            <p className="text-sm text-gray-500">Here's your property overview for today.</p>
-          </div>
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-sm text-gray-500">{format(now, 'EEEE, d MMMM')}</p>
+          <h1 className="page-title mt-0.5">{greeting}, {firstName}</h1>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-lango-primary/5 px-4 py-2">
-          <CalendarDays className="w-5 h-5 text-lango-primary" />
-          <div className="leading-tight"><p className="text-xs text-gray-500">{format(now, 'EEE, d MMM yyyy')}</p><p className="text-sm font-semibold text-gray-900 tabular-nums">{format(now, 'h:mm a')}</p></div>
+        <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white border border-gray-200/80 shadow-sm px-3.5 py-2">
+          <Clock className="w-4 h-4 text-gray-400" />
+          <p className="text-sm font-semibold text-gray-900 tabular-nums">{format(now, 'h:mm a')}</p>
         </div>
       </div>
 
-      {/* Shift banner — guards start/end their shift here */}
+      {/* Shift banner: guards start/end their shift here */}
       {isGuard && (
-        <div className={`card p-4 flex items-center justify-between ${shift ? 'bg-green-50 border-green-100' : ''}`}>
-          <div className="flex items-center gap-3">
-            <span className={`w-2.5 h-2.5 rounded-full ${shift ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-            <div>
-              <p className="text-sm font-semibold text-gray-900">{shift ? 'On Shift' : 'Not on Shift'}</p>
-              {shift && shift.startTime && <p className="text-xs text-gray-500">Started {format(shift.startTime.toDate(), 'h:mm a')}</p>}
+        <div className={`rounded-xl border p-4 flex items-center justify-between gap-3 ${shift ? 'bg-green-50/70 border-green-200/70' : 'bg-white border-gray-200/80 shadow-card'}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="relative flex w-2.5 h-2.5 shrink-0">
+              {shift && <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-60" />}
+              <span className={`relative w-2.5 h-2.5 rounded-full ${shift ? 'bg-green-500' : 'bg-gray-400'}`} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900">{shift ? "You're on shift" : 'Not on shift'}</p>
+              {shift && shift.startTime && <p className="text-xs text-gray-600">Since {format(shift.startTime.toDate(), 'h:mm a')}</p>}
             </div>
           </div>
-          <button onClick={handleShift} disabled={shiftLoading} className={shift ? 'btn-secondary text-sm' : 'btn-primary text-sm'}>
-            {shiftLoading ? '…' : shift ? <><LogOut className="w-3.5 h-3.5" /> End Shift</> : <><LogIn className="w-3.5 h-3.5" /> Start Shift</>}
+          <button onClick={handleShift} disabled={shiftLoading} className={shift ? 'btn-secondary' : 'btn-primary'}>
+            {shiftLoading ? '…' : shift ? <><LogOut className="w-4 h-4" /> End shift</> : <><LogIn className="w-4 h-4" /> Start shift</>}
           </button>
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard to={R.inside} icon={Users} value={visitorsToday} label="Visitors Today" tone="bg-blue-50 text-blue-600" />
-        <StatCard to={R.inside} icon={Users} value={currentVisitors.length} label="Currently Inside" tone="bg-green-50 text-green-600" />
-        <StatCard to={R.inside} icon={CalendarDays} value={expectedToday} label="Expected Today" tone="bg-indigo-50 text-indigo-600" />
-        <StatCard to={R.incidents} icon={AlertTriangle} value={incidents.length} label="Open Incidents" tone="bg-orange-50 text-orange-500" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard to={R.inside} icon={Users} value={visitorsToday} label="Visitors today" tone="bg-blue-50 text-blue-600" />
+        <StatCard to={R.inside} icon={LogIn} value={currentVisitors.length} label="Inside now" tone="bg-green-50 text-green-600" />
+        <StatCard to={R.inside} icon={CalendarDays} value={expectedToday} label="Expected today" tone="bg-indigo-50 text-indigo-600" />
+        <StatCard to={R.incidents} icon={AlertTriangle} value={incidents.length} label="Open incidents" tone="bg-orange-50 text-orange-500" />
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
+        <Link to={R.register} className="col-span-3 lg:col-span-1 flex items-center gap-3.5 p-4 rounded-xl bg-lango-primary text-white shadow-sm shadow-blue-600/20 hover:bg-lango-secondary transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0"><UserPlus className="w-5 h-5" /></div>
+          <div className="flex-1 min-w-0"><p className="font-semibold">Register visitor</p><p className="text-white/75 text-xs">Check in a new guest</p></div>
+          <ChevronRight className="w-5 h-5 text-white/70" />
+        </Link>
+        <ActionCard to={R.deliveries} icon={Package} title="Deliveries" subtitle="Receive and hand over" />
+        <ActionCard to={R.inside} icon={Users} title="Inside now" subtitle="Who's on the property" />
+        <ActionCard to={R.incidents} icon={AlertTriangle} title="Incidents" subtitle="Report or review" />
       </div>
 
       {/* PM KPI section */}
-      {role === 'PROPERTY_MANAGER' && pmKpi && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Monthly KPIs</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <KpiCard
-              label="Visitors This Month"
-              value={pmKpi.visitorsThisMonth}
-              icon={Users}
-              change={pmKpi.visitorsPrevMonth > 0
-                ? Math.round((pmKpi.visitorsThisMonth - pmKpi.visitorsPrevMonth) / pmKpi.visitorsPrevMonth * 100)
-                : null}
-              tone="bg-blue-50 text-blue-600"
-            />
-            <KpiCard
-              label="Occupancy Rate"
-              value={`${pmKpi.occupancyRate}%`}
-              icon={Home}
-              tone="bg-green-50 text-green-600"
-            />
-            {pmKpi.avgResolutionHours !== null && (
-              <KpiCard
-                label="Avg Resolution Time"
-                value={`${pmKpi.avgResolutionHours}h`}
-                icon={Clock}
-                tone="bg-yellow-50 text-yellow-600"
-              />
-            )}
-            <Link to="/property/deliveries" className="card p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow">
-              <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center shrink-0"><Package className="w-5 h-5 text-orange-500" /></div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{pmKpi.uncollectedDeliveries}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Uncollected Deliveries</p>
-                {pmKpi.uncollectedDeliveries > 0 && <span className="text-xs text-orange-500 font-medium">Needs attention</span>}
-              </div>
-            </Link>
-            <Link to="/property/maintenance" className="card p-4 flex items-start gap-3 hover:shadow-card-hover transition-shadow">
-              <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0"><Wrench className="w-5 h-5 text-purple-600" /></div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{pmKpi.pendingMaintenance}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Pending Maintenance</p>
-                {pmKpi.pendingMaintenance > 0 && <span className="text-xs text-purple-500 font-medium">Action required</span>}
-              </div>
-            </Link>
+      {kpis.length > 0 && (
+        <section>
+          <h2 className="section-title">This month</h2>
+          <div className={`card overflow-hidden grid grid-cols-2 ${kpiCols} divide-x divide-y lg:divide-y-0 divide-gray-100`}>
+            {kpis.map(k => <Kpi key={k.label} {...k} />)}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link to={R.register} className="col-span-2 lg:col-span-1 flex items-center gap-4 p-5 rounded-2xl bg-lango-primary text-white hover:bg-lango-secondary transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0"><UserPlus className="w-6 h-6" /></div>
-          <div className="flex-1"><p className="font-semibold">Register Visitor</p><p className="text-white/70 text-sm">Register a new guest</p></div>
-          <ChevronRight className="w-5 h-5 text-white/70" />
-        </Link>
-        <ActionCard to={R.deliveries} icon={Package} title="Delivery Check-in" subtitle="Today's deliveries" />
-        <ActionCard to={R.inside} icon={Users} title="Currently Inside" subtitle="View all inside" />
-        <ActionCard to={R.incidents} icon={AlertTriangle} title="Report Incident" subtitle="Security & safety" />
-      </div>
-
       {/* Recent activity */}
-      <div className="card">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-lango-primary/10 flex items-center justify-center"><Clock className="w-4 h-4 text-lango-primary" /></div>
-            <div><h3 className="text-sm font-semibold text-gray-900">Recent Activity</h3><p className="text-xs text-gray-500">Latest updates across the property</p></div>
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Recent activity</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Latest updates across the property</p>
           </div>
-          <Link to={R.activity} className="text-xs font-medium text-lango-primary shrink-0">View all</Link>
+          <Link to={R.activity} className="text-sm font-medium text-lango-primary hover:underline shrink-0">View all</Link>
         </div>
         {activity.length === 0 ? (
-          <div className="py-14 flex flex-col items-center text-center px-6">
-            <div className="relative w-24 h-24 rounded-full bg-lango-primary/5 flex items-center justify-center mb-4"><FileClock className="w-11 h-11 text-lango-primary/40" /></div>
-            <h4 className="font-semibold text-gray-900">No activity yet today.</h4>
-            <p className="text-sm text-gray-500 mt-1 max-w-sm">Updates will appear here as events happen in the property.</p>
-          </div>
+          <EmptyState icon={FileClock} title="No activity yet today" description="Visitors, deliveries and incidents will appear here as they happen." />
         ) : (
-          <div className="divide-y divide-gray-50">
+          <ul className="divide-y divide-gray-100">
             {activity.map(a => (
-              <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={a.id} className="flex items-center gap-3 px-5 py-3">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${a.tone}`}><a.icon className="w-4 h-4" /></div>
                 <div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900 truncate">{a.title}</p><p className="text-xs text-gray-500 truncate">{a.sub}</p></div>
-                <p className="text-xs text-gray-400 shrink-0">{format(a.ts, 'h:mm a')}</p>
-              </div>
+                <p className="text-xs text-gray-400 shrink-0 tabular-nums">{format(a.ts, 'h:mm a')}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   )
 }

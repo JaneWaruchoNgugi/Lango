@@ -7,10 +7,14 @@ import { PageLoader } from '../../components/ui/LoadingScreen'
 import { ConfirmDialog } from '../../components/ui/Modal'
 import { VisitTypeBadge, VisitorStatusBadge } from '../../components/ui/StatusBadge'
 import { formatDuration, durationMinutes } from '../../utils/format'
-import { Users, Search, History } from 'lucide-react'
+import { Users, Search, History, UserPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Visitor, VisitType } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Segmented, Chip } from '../../components/ui/Segmented'
 
 type MainTab   = 'today' | 'history'
 type HistRange = 'yesterday' | 'week'
@@ -79,47 +83,24 @@ export default function CurrentlyInsidePage() {
   if (mainTab === 'history' && histLoading) return <PageLoader />
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-          <Users className="w-5 h-5 text-lango-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            {mainTab === 'today' ? "Today's Visitors" : 'History'}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {mainTab === 'today'
-              ? `${activeVisitors.length} currently inside · ${todayVisitors.length} total today`
-              : `${shown.length} visitor${shown.length === 1 ? '' : 's'} found`}
-          </p>
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-4">
+      <PageHeader
+        icon={Users}
+        title={mainTab === 'today' ? 'Currently inside' : 'Visitor history'}
+        subtitle={mainTab === 'today'
+          ? `${activeVisitors.length} inside now · ${todayVisitors.length} checked in today`
+          : `${shown.length} visitor${shown.length === 1 ? '' : 's'} found`}
+        className="!mb-2"
+      />
 
-      {/* Main tab switcher */}
-      <div className="flex gap-2 border-b border-gray-100 pb-1">
-        <button onClick={() => setMainTab('today')}
-          className={`text-sm font-semibold px-1 pb-2 border-b-2 transition-colors ${mainTab === 'today' ? 'border-lango-primary text-lango-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-          Today
-        </button>
-        <button onClick={() => setMainTab('history')}
-          className={`flex items-center gap-1.5 text-sm font-semibold px-1 pb-2 border-b-2 transition-colors ${mainTab === 'history' ? 'border-lango-primary text-lango-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-          <History className="w-3.5 h-3.5" /> History
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Segmented value={mainTab} onChange={setMainTab}
+          options={[{ value: 'today', label: 'Today' }, { value: 'history', label: <><History className="w-3.5 h-3.5" /> History</> }]} />
+        {mainTab === 'history' && (
+          <Segmented value={histRange} onChange={setHistRange}
+            options={[{ value: 'yesterday', label: 'Yesterday' }, { value: 'week', label: 'This week' }]} />
+        )}
       </div>
-
-      {/* History range pills */}
-      {mainTab === 'history' && (
-        <div className="flex gap-2">
-          {(['yesterday', 'week'] as HistRange[]).map(r => (
-            <button key={r} onClick={() => setHistRange(r)}
-              className={`text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${histRange === r ? 'bg-lango-primary text-white border-lango-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-              {r === 'yesterday' ? 'Yesterday' : 'This Week'}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Search */}
       <div className="relative">
@@ -128,30 +109,22 @@ export default function CurrentlyInsidePage() {
       </div>
 
       {/* Type filter chips */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         {TYPE_TABS.map(t => (
-          <button key={t.key} onClick={() => setTypeTab(t.key)}
-            className={`shrink-0 text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${typeTab === t.key ? 'bg-lango-primary text-white border-lango-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-            {t.label}
-          </button>
+          <Chip key={t.key} active={typeTab === t.key} onClick={() => setTypeTab(t.key)}>{t.label}</Chip>
         ))}
       </div>
 
       {/* Visitor list */}
       {shown.length === 0 ? (
-        <div className="card py-14 flex flex-col items-center text-center px-6">
-          <div className="w-28 h-28 rounded-full bg-lango-primary/5 flex items-center justify-center mb-5">
-            <Users className="w-12 h-12 text-lango-primary/40" />
-          </div>
-          <h3 className="font-bold text-gray-900">No visitors</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-xs">
-            {mainTab === 'today'
-              ? (todayVisitors.length === 0 ? 'No visitors have checked in today.' : 'No visitors match your search or filter.')
-              : 'No visitors found for this period.'}
-          </p>
-        </div>
+        <EmptyState card icon={Users} title="No visitors"
+          description={mainTab === 'today'
+            ? (todayVisitors.length === 0 ? 'No visitors have checked in today.' : 'No visitors match your search or filter.')
+            : 'No visitors found for this period.'}
+          action={mainTab === 'today' && todayVisitors.length === 0
+            ? <Link to="/gate/register" className="btn-primary"><UserPlus className="w-4 h-4" /> Register a visitor</Link> : undefined} />
       ) : (
-        <div className="card divide-y divide-gray-50">
+        <div className="card divide-y divide-gray-100 overflow-hidden">
           {shown.map(v => (
             <div key={v.visitorId} className="flex items-center gap-3 px-4 py-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shrink-0 ${toneFor(v.visitorId || v.visitorName)}`}>
