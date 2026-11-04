@@ -7,6 +7,8 @@ import { platformSettingsDoc } from '../../firebase/collections'
 import { SUBSCRIPTION_PLANS } from '../../types'
 import { Spinner } from '../../components/ui/LoadingScreen'
 import toast from 'react-hot-toast'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 type PlanKey = 'SMALL' | 'MEDIUM' | 'LARGE' | 'ESTATE'
 const PLAN_KEYS: PlanKey[] = ['SMALL', 'MEDIUM', 'LARGE', 'ESTATE']
@@ -61,16 +63,17 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Settings</h1>
-          <p className="page-subtitle">Your account and platform configuration.</p>
-        </div>
-        <button className="btn-primary text-sm" onClick={onSave} disabled={saving || loadingSettings}>
-          {saving && <Spinner size="sm" className="text-white" />}
-          Save changes
-        </button>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Your account and platform configuration."
+        className="!mb-0"
+        actions={
+          <button className="btn-primary text-sm" onClick={onSave} disabled={saving || loadingSettings}>
+            {saving && <Spinner size="sm" className="text-white" />}
+            Save changes
+          </button>
+        }
+      />
 
       {/* Account */}
       <div className="card p-5">
@@ -82,7 +85,7 @@ export default function AdminSettingsPage() {
           <Row label="Name"  value={user?.profile?.name ?? '—'} />
           <Row label="Email" value={user?.email ?? '—'} />
           <Row label="Phone" value={user?.profile?.phone ?? '—'} />
-          <Row label="Role"  value={(user?.role ?? '—').replace(/_/g, ' ')} />
+          <Row label="Role"  value={humanize(user?.role ?? '—')} />
         </dl>
         <div className="mt-4">
           <Link to="/change-password" className="btn-secondary text-sm inline-flex">

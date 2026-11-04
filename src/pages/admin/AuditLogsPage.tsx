@@ -7,6 +7,8 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { ScrollText, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import type { AuditLog, Property, UserRole } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 const roleBadge: Record<UserRole, string> = {
   SUPER_ADMIN:        'badge-red',
@@ -100,15 +102,16 @@ export default function AuditLogsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">System Logs</h1>
-          <p className="page-subtitle">Audit trail of actions across the platform.</p>
-        </div>
-        <button onClick={exportCsv} disabled={shown.length === 0} className="btn-secondary text-sm flex items-center gap-2">
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
-      </div>
+      <PageHeader
+        title="System Logs"
+        subtitle="Audit trail of actions across the platform."
+        className="!mb-0"
+        actions={
+          <button onClick={exportCsv} disabled={shown.length === 0} className="btn-secondary text-sm flex items-center gap-2">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -117,7 +120,7 @@ export default function AuditLogsPage() {
           onChange={e => setActionFilter(e.target.value)}
           className="text-xs px-3 py-2 rounded-lg border border-gray-200 text-gray-700 bg-white"
         >
-          {actions.map(a => <option key={a} value={a}>{a === 'ALL' ? 'All actions' : a.replace(/_/g, ' ')}</option>)}
+          {actions.map(a => <option key={a} value={a}>{a === 'ALL' ? 'All actions' : humanize(a)}</option>)}
         </select>
         <select
           value={propertyFilter}
@@ -169,7 +172,7 @@ export default function AuditLogsPage() {
               <div key={log.logId} className="px-5 py-3.5 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-gray-900">{log.action.replace(/_/g, ' ')}</span>
+                    <span className="text-sm font-medium text-gray-900">{humanize(log.action)}</span>
                     <span className={`badge ${roleBadge[log.actorRole]}`}>{log.actorName}</span>
                     {log.propertyId && propMap[log.propertyId] && (
                       <span className="text-xs text-gray-400">{propMap[log.propertyId]}</span>
