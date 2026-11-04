@@ -11,6 +11,10 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Complaint, ComplaintCategory, ComplaintStatus } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Segmented } from '../../components/ui/Segmented'
+import { humanize } from '../../utils/humanize'
 
 const addSchema = z.object({
   category:    z.enum(['NOISE','CLEANLINESS','SECURITY','MAINTENANCE','NEIGHBOUR','MANAGEMENT','OTHER']),
@@ -147,48 +151,22 @@ export default function ComplaintsPage() {
   const CATEGORIES: ComplaintCategory[] = ['NOISE','CLEANLINESS','SECURITY','MAINTENANCE','NEIGHBOUR','MANAGEMENT','OTHER']
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <MessageSquare className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Complaints</h1>
-            <p className="text-sm text-gray-500">
-              {stats.NEW} new · {stats.ACKNOWLEDGED} acknowledged · {stats.RESOLVED} resolved
-            </p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => { addForm.reset(); setShowAdd(true) }}>
+    <div className="max-w-6xl mx-auto space-y-4">
+      <PageHeader icon={MessageSquare} title="Complaints" subtitle={<>{stats.NEW} new · {stats.ACKNOWLEDGED} acknowledged · {stats.RESOLVED} resolved</>} actions={<button className="btn-primary" onClick={() => { addForm.reset(); setShowAdd(true) }}>
           <Plus className="w-4 h-4" /> Log Complaint
-        </button>
-      </div>
+        </button>} />
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
-        <div className="flex bg-gray-100 p-1 rounded-lg gap-1">
-          {TABS.map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              {t}
-              {t !== 'ALL' && stats[t as ComplaintStatus] > 0 && (
-                <span className="ml-1 text-xs">{stats[t as ComplaintStatus]}</span>
-              )}
-            </button>
-          ))}
-        </div>
-        <select className="input w-auto text-xs" value={catFilter} onChange={e => setCatFilter(e.target.value as ComplaintCategory | '')}>
-          <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        <Segmented value={tab} onChange={setTab} options={TABS.map(t => ({ value: t, label: <>{t === 'ALL' ? 'All' : humanize(t)}{t !== 'ALL' && stats[t as ComplaintStatus] > 0 && <span className="text-xs text-gray-400 tabular-nums">{stats[t as ComplaintStatus]}</span>}</> }))} />
+        <select className="input w-auto" value={catFilter} onChange={e => setCatFilter(e.target.value as ComplaintCategory | '')}>
+          <option value="">All categories</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{humanize(c)}</option>)}
         </select>
       </div>
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center">
-          <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No complaints match this filter.</p>
-        </div>
+        <EmptyState card icon={MessageSquare} title="No complaints match this filter" />
       ) : (
         <div className="space-y-2">
           {shown.map(item => (

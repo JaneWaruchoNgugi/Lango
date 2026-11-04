@@ -10,6 +10,9 @@ import { AlertTriangle, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Incident } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Chip } from '../../components/ui/Segmented'
+import { humanize } from '../../utils/humanize'
 
 const STATUSES: Incident['status'][] = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED']
 const TABS: (Incident['status'] | 'ALL')[] = ['ALL', 'OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED']
@@ -49,10 +52,7 @@ export default function IncidentsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0"><AlertTriangle className="w-5 h-5 text-lango-primary" /></div>
-        <div><h1 className="text-xl font-bold text-gray-900">Incidents</h1><p className="text-sm text-gray-500">Track and resolve reported incidents.</p></div>
-      </div>
+      <PageHeader icon={AlertTriangle} title="Incidents" subtitle="Track and resolve reported incidents." />
 
       {/* Search */}
       <div className="relative">
@@ -63,10 +63,7 @@ export default function IncidentsPage() {
       {/* Status chips */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`shrink-0 text-xs font-semibold px-4 py-2 rounded-full border transition-colors ${tab === t ? 'bg-lango-primary text-white border-lango-primary' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-            {t}
-          </button>
+          <Chip key={t} active={tab === t} onClick={() => setTab(t)}>{t === 'ALL' ? 'All' : humanize(t)}</Chip>
         ))}
       </div>
 

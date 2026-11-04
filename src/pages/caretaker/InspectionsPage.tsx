@@ -11,6 +11,8 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { UnitInspection, InspectionType, InspectionCondition, InspectionItem } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const CHECKLIST_ITEMS: string[] = [
   'Walls', 'Flooring', 'Ceiling', 'Plumbing / Taps', 'Electrical / Switches',
@@ -136,27 +138,13 @@ export default function InspectionsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <ClipboardList className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Unit Inspections</h1>
-            <p className="text-sm text-gray-500">{inspections.length} inspection{inspections.length !== 1 ? 's' : ''} recorded</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={startNew}>
+    <div className="max-w-6xl mx-auto space-y-4">
+      <PageHeader icon={ClipboardList} title="Unit Inspections" subtitle={<>{inspections.length} inspection{inspections.length !== 1 ? 's' : ''} recorded</>} actions={<button className="btn-primary" onClick={startNew}>
           <Plus className="w-4 h-4" /> New Inspection
-        </button>
-      </div>
+        </button>} />
 
       {inspections.length === 0 ? (
-        <div className="card p-10 text-center">
-          <ClipboardList className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No inspections recorded yet.</p>
-        </div>
+        <EmptyState card icon={ClipboardList} title="No inspections recorded yet" />
       ) : (
         <div className="space-y-2">
           {inspections.map(ins => (

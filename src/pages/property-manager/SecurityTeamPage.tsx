@@ -19,6 +19,8 @@ import { formatDuration, durationMinutes } from '../../utils/format'
 import toast from 'react-hot-toast'
 import type { AppUser } from '../../types'
 import { SHIFT_CONFIG } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 const guardSchema = z.object({
   name:        z.string().min(2, 'Name required'),
@@ -109,22 +111,11 @@ export default function SecurityTeamPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-lango-primary/10 flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-lango-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Security Team</h1>
-            <p className="text-sm text-gray-500">Guards, active shifts, and shift history.</p>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
+      <PageHeader icon={Shield} title="Security Team" subtitle="Guards, active shifts, and shift history." actions={<button className="btn-primary" onClick={() => { reset(); setShowAdd(true) }}>
           <Plus className="w-4 h-4" /> Add Guard
-        </button>
-      </div>
+        </button>} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto sm:inline-flex">
@@ -146,10 +137,7 @@ export default function SecurityTeamPage() {
             <input className="input pl-9" placeholder="Search guards…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           {guards.length === 0 ? (
-            <div className="card p-10 text-center">
-              <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No security guards found. Add a guard to get started.</p>
-            </div>
+            <EmptyState card icon={Users} title="No security guards found. Add a guard to get started" />
           ) : (
             <div className="space-y-2">
               {guards.map(g => {
@@ -200,10 +188,7 @@ export default function SecurityTeamPage() {
       {tab === 'active' && (
         <div className="space-y-3">
           {activeShifts.length === 0 ? (
-            <div className="card p-10 text-center">
-              <Clock className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No active shifts right now.</p>
-            </div>
+            <EmptyState card icon={Clock} title="No active shifts right now" />
           ) : (
             activeShifts.map(s => (
               <div key={s.shiftId} className="card p-4 flex items-center gap-3 border-green-100 bg-green-50/40">
@@ -240,10 +225,7 @@ export default function SecurityTeamPage() {
           {histLoading ? (
             <div className="flex justify-center py-8"><Spinner size="lg" /></div>
           ) : history.length === 0 ? (
-            <div className="card p-10 text-center">
-              <CheckCircle className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No completed shifts found.</p>
-            </div>
+            <EmptyState card icon={CheckCircle} title="No completed shifts found" />
           ) : (
             <div className="card overflow-hidden">
               <div className="table-container">
@@ -306,10 +288,7 @@ export default function SecurityTeamPage() {
         return histLoading ? (
           <div className="flex justify-center py-8"><Spinner size="lg" /></div>
         ) : perf.length === 0 ? (
-          <div className="card p-10 text-center">
-            <CheckCircle className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">No shift data for the last 30 days.</p>
-          </div>
+          <EmptyState card icon={CheckCircle} title="No shift data for the last 30 days" />
         ) : (
           <div className="card overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
