@@ -20,7 +20,7 @@ export default function DemoManagerDashboard() {
           <h1 className="text-xl font-bold text-gray-900">Good afternoon, Mercy Njeri 👋</h1>
           <p className="text-sm text-gray-500">{property.name} · {property.location}</p>
         </div>
-        <button onClick={start} className="inline-flex items-center gap-1.5 text-sm font-medium text-lango-primary hover:underline shrink-0">
+        <button onClick={() => start()} className="inline-flex items-center gap-1.5 text-sm font-medium text-lango-primary hover:underline shrink-0">
           <PlayCircle className="w-4 h-4" /> Take the guided tour
         </button>
       </div>
