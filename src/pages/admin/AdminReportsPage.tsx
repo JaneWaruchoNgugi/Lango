@@ -7,6 +7,8 @@ import { PageLoader } from '../../components/ui/LoadingScreen'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { BarChart3, DoorOpen, Package, AlertTriangle, Home } from 'lucide-react'
 import type { Property, Visitor, Delivery, Incident, Unit } from '../../types'
+import { Segmented } from '../../components/ui/Segmented'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const RANGES: [number, string][] = [[7, '7 days'], [30, '30 days'], [90, '90 days']]
 
@@ -75,18 +77,14 @@ export default function AdminReportsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Reports</h1>
-          <p className="page-subtitle">Activity across all properties.</p>
-        </div>
-        <div className="flex gap-1">
-          {RANGES.map(([d, l]) => (
-            <button key={d} onClick={() => setDays(d)}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${days === d ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>{l}</button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Reports"
+        subtitle="Activity across all properties."
+        className="!mb-0"
+        actions={
+          <Segmented value={String(days)} onChange={v => setDays(Number(v))} options={RANGES.map(([d, l]) => ({ value: String(d), label: l }))} />
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Metric icon={DoorOpen}      color="text-purple-600" bg="bg-purple-50" label="Visitors"   value={report.visitors} />

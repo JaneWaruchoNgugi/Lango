@@ -7,6 +7,8 @@ import { EmptyState } from '../../../components/ui/EmptyState'
 import { format, startOfDay, startOfWeek, startOfMonth, subMonths } from 'date-fns'
 import type { SalonService, SalonProvider, SalonCheckout, SalonServiceType } from '../../../types'
 import { SALON_SERVICE_LABELS } from '../../../types'
+import { Segmented } from '../../../components/ui/Segmented'
+import { PageHeader } from '../../../components/ui/PageHeader'
 
 type Period = 'today' | 'week' | 'month' | string  // string = "YYYY-MM" for historical months
 
@@ -101,27 +103,24 @@ export default function OwnerReportsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Reports</h1>
-          <p className="page-subtitle">Provider performance & revenue</p>
-        </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          {['today', 'week', 'month'].map(p => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${period === p ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>
-              {p === 'today' ? 'Today' : p === 'week' ? 'This Week' : 'This Month'}
-            </button>
-          ))}
-          <select value={typeof period === 'string' && period.includes('-') ? period : ''}
-            onChange={e => e.target.value && setPeriod(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600">
-            <option value="">Past months...</option>
-            {months.map(m => <option key={m} value={m}>{format(new Date(m + '-01'), 'MMMM yyyy')}</option>)}
-          </select>
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Reports"
+        subtitle="Provider performance & revenue"
+        className="!mb-0"
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Segmented<string> value={period} onChange={setPeriod}
+              options={[{ value: 'today', label: 'Today' }, { value: 'week', label: 'This week' }, { value: 'month', label: 'This month' }]} />
+            <select value={typeof period === 'string' && period.includes('-') ? period : ''}
+              onChange={e => e.target.value && setPeriod(e.target.value)}
+              className="input !w-auto !py-2 text-sm">
+              <option value="">Past months...</option>
+              {months.map(m => <option key={m} value={m}>{format(new Date(m + '-01'), 'MMMM yyyy')}</option>)}
+            </select>
+          </div>
+        }
+      />
 
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-4">

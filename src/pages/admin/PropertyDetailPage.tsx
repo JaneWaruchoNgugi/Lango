@@ -1,3 +1,4 @@
+import { humanize } from '../../utils/humanize'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
@@ -314,7 +315,7 @@ export default function PropertyDetailPage() {
           <div className="card p-5">
             <h3 className="section-title">Property Details</h3>
             <dl className="space-y-2.5">
-              <Row label="Type"     value={property.type.replace(/_/g, ' ')} />
+              <Row label="Type"     value={humanize(property.type)} />
               <Row label="Blocks"   value={`${blocks.length} block${blocks.length !== 1 ? 's' : ''}`} />
               <Row label="Plan"     value={plan.name} />
               <Row label="County"   value={property.county} />
@@ -490,7 +491,7 @@ export default function PropertyDetailPage() {
                     <p className="text-xs text-gray-500">{s.email} · {s.phone}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="badge badge-blue">{s.role.replace(/_/g,' ')}</span>
+                    <span className="badge badge-blue">{humanize(s.role)}</span>
                     <span className={`badge ${s.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{s.status}</span>
                     <button
                       onClick={() => {
@@ -574,7 +575,7 @@ export default function PropertyDetailPage() {
                 <div key={inc.incidentId} className="px-5 py-3.5 flex items-start justify-between gap-4 group">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-gray-900">{inc.type.replace(/_/g,' ')}</p>
+                      <p className="text-sm font-medium text-gray-900">{humanize(inc.type)}</p>
                       {inc.status === 'RESOLVED' || inc.status === 'CLOSED' ? (
                         <span className="badge badge-green flex-shrink-0">{inc.status}</span>
                       ) : (

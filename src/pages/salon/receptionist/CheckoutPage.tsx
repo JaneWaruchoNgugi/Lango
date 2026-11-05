@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc, wri
 import { db } from '../../../firebase/config'
 import { useAuth } from '../../../contexts/AuthContext'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
+import { PageHeader } from '../../../components/ui/PageHeader'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { ShoppingBag, CheckCircle, Search, Pencil, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -205,11 +206,8 @@ export default function CheckoutPage() {
   const draftTotal = Object.values(draftPrices).reduce((s, v) => s + (Number(v) || 0), 0)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <div>
-        <h1 className="page-title">Checkout</h1>
-        <p className="page-subtitle">Select a client to check out</p>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader title="Checkout" subtitle="Pick a client, confirm payment and close their visit." className="!mb-0" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Active clients list */}

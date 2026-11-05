@@ -10,6 +10,7 @@ import { PageLoader, Spinner } from '../../components/ui/LoadingScreen'
 import { Modal } from '../../components/ui/Modal'
 import type { Property, PropertyStatus } from '../../types'
 import toast from 'react-hot-toast'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
@@ -55,17 +56,18 @@ export default function PropertiesPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="space-y-5">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Properties</h1>
-          <p className="page-subtitle">{properties.length} total properties on the platform</p>
-        </div>
-        <Link to="/admin/properties/new" className="btn-primary">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Property</span>
-        </Link>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Properties"
+        subtitle={`${properties.length} total properties on the platform`}
+        className="!mb-0"
+        actions={
+          <Link to="/admin/properties/new" className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Add Property
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">

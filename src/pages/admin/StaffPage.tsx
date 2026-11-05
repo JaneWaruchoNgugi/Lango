@@ -13,6 +13,8 @@ import type { AppUser, Property, UserRole } from '../../types'
 import { httpsCallable } from 'firebase/functions'
 import { functions } from '../../firebase/config'
 import toast from 'react-hot-toast'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 const staffSchema = z.object({
   name:       z.string().min(2, 'Name is required'),
@@ -175,17 +177,18 @@ export default function StaffPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="space-y-5">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Staff</h1>
-          <p className="page-subtitle">{staff.length} staff members across all properties</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Staff</span>
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Staff"
+        subtitle={`${staff.length} staff members across all properties`}
+        className="!mb-0"
+        actions={
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            Add Staff
+          </button>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -235,7 +238,7 @@ export default function StaffPage() {
                       <td>
                         <div className="flex items-center gap-1.5">
                           {roleIcon(member.role)}
-                          <span className="text-xs text-gray-700">{member.role.replace(/_/g, ' ')}</span>
+                          <span className="text-xs text-gray-700">{humanize(member.role)}</span>
                         </div>
                       </td>
                       <td className="hidden sm:table-cell text-xs text-gray-600">{prop?.name ?? '—'}</td>

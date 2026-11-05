@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { PageLoader } from '../../components/ui/LoadingScreen'
 import toast from 'react-hot-toast'
 import type { Salon } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const schema = z.object({
   name:          z.string().min(2, 'Salon name required'),
@@ -75,16 +76,17 @@ export default function SalonsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Salons</h1>
-          <p className="page-subtitle">Manage all registered salons</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> New Salon
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Salons"
+        subtitle="Manage all registered salons"
+        className="!mb-0"
+        actions={
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4" /> New Salon
+          </button>
+        }
+      />
 
       {tempCred && (
         <div className="card p-4 bg-green-50 border-green-200">
@@ -98,7 +100,7 @@ export default function SalonsPage() {
       )}
 
       <div className="card">
-        <div className="px-5 py-4 border-b border-gray-50">
+        <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="section-title mb-0">All Salons ({salons.length})</h3>
         </div>
         {salons.length === 0 ? (
