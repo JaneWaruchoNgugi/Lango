@@ -3,9 +3,11 @@ import { useParams } from 'react-router-dom'
 import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useAuth } from '../../../contexts/AuthContext'
+import { PageHeader } from '../../../components/ui/PageHeader'
+import { humanize } from '../../../utils/humanize'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
 import { EmptyState } from '../../../components/ui/EmptyState'
-import { Users, CheckCircle2 } from 'lucide-react'
+import { Users, CheckCircle2, ChevronDown } from 'lucide-react'
 import { format, startOfDay, startOfWeek, startOfMonth } from 'date-fns'
 import { useSalonPermissions } from '../../../hooks/useSalonPermissions'
 import toast from 'react-hot-toast'
@@ -76,13 +78,10 @@ export default function ProviderDashboard() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div>
-        <h1 className="page-title">My Clients</h1>
-        <p className="page-subtitle">{user?.profile?.name}</p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-5">
+      <PageHeader title="My clients" subtitle={user?.profile?.name} className="!mb-0" />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div role="tablist" className="grid grid-cols-3 gap-3 sm:gap-4">
         {(['today', 'week', 'month'] as Filter[]).map(f => {
           const count = services.filter(s => {
             const d = s.serviceDate.toDate()
@@ -90,36 +89,41 @@ export default function ProviderDashboard() {
             if (f === 'week')  return d >= startOfWeek(now, { weekStartsOn: 1 })
             return d >= startOfMonth(now)
           }).length
+          const active = filter === f
           return (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`card p-4 text-left transition-colors ${filter === f ? 'ring-2 ring-lango-primary' : ''}`}>
-              <p className="text-xs text-gray-500 capitalize">{f === 'today' ? 'Today' : f === 'week' ? 'This Week' : 'This Month'}</p>
-              <p className="text-2xl font-bold text-gray-900">{count}</p>
+            <button key={f} role="tab" aria-selected={active} onClick={() => setFilter(f)}
+              className={`rounded-2xl border p-4 sm:p-5 text-left transition-all ${active
+                ? 'bg-lango-dark border-lango-dark text-white shadow-card'
+                : 'bg-white border-gray-200/80 text-gray-900 hover:border-gray-300'}`}>
+              <p className={`text-xs sm:text-sm font-medium ${active ? 'text-white/70' : 'text-gray-500'}`}>
+                {f === 'today' ? 'Today' : f === 'week' ? 'This week' : 'This month'}
+              </p>
+              <p className="mt-2 font-display text-2xl sm:text-3xl font-bold">{count}</p>
             </button>
           )
         })}
       </div>
 
       {!canViewHistory && (
-        <div className="card p-4 bg-yellow-50 border-yellow-100">
-          <p className="text-xs text-yellow-700">Your service history access is restricted. Contact the salon owner.</p>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm text-amber-800">Your service history access is restricted. Contact the salon owner.</p>
         </div>
       )}
 
       <div className="card">
-        <div className="px-5 py-4 border-b border-gray-50">
+        <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="section-title mb-0">
-            {filter === 'today' ? "Today's" : filter === 'week' ? "This Week's" : "This Month's"} Clients ({clientGroups.length})
+            {filter === 'today' ? "Today's" : filter === 'week' ? "This week's" : "This month's"} clients ({clientGroups.length})
           </h3>
         </div>
         {clientGroups.length === 0 ? (
           <EmptyState icon={Users} title="No clients" description="No clients assigned for this period." />
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-100">
             {clientGroups.map(([clientId, group]) => (
               <div key={clientId}>
                 <button onClick={() => setExpanded(expanded === clientId ? null : clientId)}
-                  className="w-full text-left px-5 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between">
+                  aria-expanded={expanded === clientId} className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{group.name}</p>
                     <p className="text-xs text-gray-500">
@@ -128,7 +132,7 @@ export default function ProviderDashboard() {
                       {format(group.services[0].serviceDate.toDate(), 'dd MMM · h:mm a')}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-400">{expanded === clientId ? '▲' : '▼'}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${expanded === clientId ? 'rotate-180' : ''}`} />
                 </button>
                 {expanded === clientId && (
                   <div className="px-5 pb-3 space-y-2 bg-gray-50/50">
@@ -150,7 +154,7 @@ export default function ProviderDashboard() {
                         <div className="text-right">
                           <p className="text-xs text-gray-500">{format(s.serviceDate.toDate(), 'h:mm a, dd MMM')}</p>
                           <span className={`badge ${s.status === 'COMPLETED' ? 'badge-green' : s.status === 'IN_PROGRESS' ? 'badge-yellow' : 'badge-gray'}`}>
-                            {s.status.replace('_', ' ')}
+                            {humanize(s.status)}
                           </span>
                         </div>
                       </div>

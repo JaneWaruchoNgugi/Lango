@@ -12,6 +12,8 @@ import { EmptyState } from '../../../components/ui/EmptyState'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
 import toast from 'react-hot-toast'
 import type { AppUser, Salon } from '../../../types'
+import { humanize } from '../../../utils/humanize'
+import { PageHeader } from '../../../components/ui/PageHeader'
 
 const schema = z.object({
   name:     z.string().min(2, 'Name required'),
@@ -115,16 +117,17 @@ export default function ReceptionistsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Receptionists</h1>
-          <p className="page-subtitle">{salon?.name}</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> Add Receptionist
-        </button>
-      </div>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <PageHeader
+        title="Receptionists"
+        subtitle={salon?.name}
+        className="!mb-0"
+        actions={
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4" /> Add Receptionist
+          </button>
+        }
+      />
 
       {tempCred && (
         <div className="card p-4 bg-green-50 border-green-200">
@@ -148,12 +151,12 @@ export default function ReceptionistsPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">{u.name}</p>
                   <p className="text-xs text-gray-500">{u.email} · {u.phone}</p>
-                  <span className={`badge ${u.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'} mt-1`}>{u.status}</span>
+                  <span className={`badge ${u.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'} mt-1`}>{humanize(u.status)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleResetPassword(u.uid, u.name)} disabled={resetting === u.uid}
                     className="btn-secondary text-xs">
-                    <RefreshCw className="w-3 h-3" /> {resetting === u.uid ? '...' : 'Reset PW'}
+                    <RefreshCw className="w-3 h-3" /> {resetting === u.uid ? '...' : 'Reset password'}
                   </button>
                   <button onClick={() => setToDelete(u)} className="btn-ghost text-xs text-red-500">
                     <Trash2 className="w-3 h-3" />

@@ -8,6 +8,8 @@ import { Plus, Trash2, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { SalonProvider, SalonServiceType, SalonClientPricing } from '../../../types'
 import { SALON_SERVICE_LABELS } from '../../../types'
+import { Segmented } from '../../../components/ui/Segmented'
+import { PageHeader } from '../../../components/ui/PageHeader'
 
 const ALL_SERVICES = Object.entries(SALON_SERVICE_LABELS) as [SalonServiceType, string][]
 
@@ -224,20 +226,15 @@ export default function ClientRegistrationPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Register Client</h1>
-          <p className="page-subtitle">Record services and assign providers</p>
-        </div>
-        <div className="flex gap-1">
-          {(['single', 'group'] as Mode[]).map(m => (
-            <button key={m} onClick={() => { setMode(m); setClients([newClient()]) }}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${mode === m ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>
-              {m === 'single' ? 'Single Client' : 'Group / Package'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Register Client"
+        subtitle="Record services and assign providers"
+        className="!mb-0"
+        actions={
+          <Segmented<Mode> value={mode} onChange={m => { setMode(m); setClients([newClient()]) }}
+            options={[{ value: 'single', label: 'Single client' }, { value: 'group', label: 'Group / package' }]} />
+        }
+      />
 
       {mode === 'group' && (
         <div className="card p-4">
