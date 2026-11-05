@@ -5,7 +5,7 @@ import { httpsCallable } from 'firebase/functions'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Scissors } from 'lucide-react'
 import { db, functions } from '../../../firebase/config'
 import { Modal, ConfirmDialog } from '../../../components/ui/Modal'
 import { EmptyState } from '../../../components/ui/EmptyState'
@@ -13,6 +13,8 @@ import { PageLoader } from '../../../components/ui/LoadingScreen'
 import toast from 'react-hot-toast'
 import type { SalonProvider, SalonServiceType, Salon } from '../../../types'
 import { SALON_SERVICE_LABELS } from '../../../types'
+import { humanize } from '../../../utils/humanize'
+import { PageHeader } from '../../../components/ui/PageHeader'
 
 const ALL_SERVICES = Object.entries(SALON_SERVICE_LABELS) as [SalonServiceType, string][]
 
@@ -137,16 +139,17 @@ export default function ProvidersPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Service Providers</h1>
-          <p className="page-subtitle">{salon?.name}</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          <Plus className="w-4 h-4" /> Add Provider
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Service Providers"
+        subtitle={salon?.name}
+        className="!mb-0"
+        actions={
+          <button onClick={() => setShowModal(true)} className="btn-primary">
+            <Plus className="w-4 h-4" /> Add Provider
+          </button>
+        }
+      />
 
       {tempCred && (
         <div className="card p-4 bg-green-50 border-green-200">
@@ -158,39 +161,46 @@ export default function ProvidersPage() {
       )}
 
       <div className="card">
-        <div className="px-5 py-4 border-b border-gray-50">
+        <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="section-title mb-0">Providers ({providers.length})</h3>
         </div>
         {providers.length === 0 ? (
-          <EmptyState title="No providers" description="Add your first service provider." />
+          <EmptyState icon={Scissors} title="No providers yet" description="Add your stylists so receptionists can assign clients to them." />
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-100">
             {providers.map(p => (
-              <div key={p.providerId} className="px-5 py-4 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-medium text-gray-900">{p.name}</p>
-                    <span className="font-mono text-xs bg-lango-light text-lango-primary px-1.5 py-0.5 rounded">{p.providerCode}</span>
-                    <span className={`badge ${p.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{p.status}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{p.phone}{p.idNumber ? ` · ID: ${p.idNumber}` : ''}</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {p.services.map(s => (
-                      <span key={s} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{SALON_SERVICE_LABELS[s as SalonServiceType]}</span>
-                    ))}
+              <div key={p.providerId} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <span className="w-10 h-10 rounded-full bg-lango-light text-lango-primary text-xs font-semibold flex items-center justify-center shrink-0">
+                    {p.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-gray-900">{p.name}</p>
+                      <span className="badge badge-gray font-mono">{p.providerCode}</span>
+                      <span className={`badge ${p.status === 'ACTIVE' ? 'badge-green' : 'badge-gray'}`}>{humanize(p.status)}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.phone}{p.idNumber ? ` · ID ${p.idNumber}` : ''}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {p.services.map(s => (
+                        <span key={s} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                          {SALON_SERVICE_LABELS[s as SalonServiceType] ?? humanize(s)}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0 pl-[52px] sm:pl-0">
                   <button onClick={() => handleResetPassword(p.providerId, p.name)} disabled={resetting === p.providerId}
                     className="btn-secondary text-xs">
-                    <RefreshCw className="w-3 h-3" /> {resetting === p.providerId ? '...' : 'Reset PW'}
+                    <RefreshCw className="w-3.5 h-3.5" /> {resetting === p.providerId ? 'Resetting…' : 'Reset password'}
                   </button>
-                  <button onClick={() => handleToggleStatus(p)} disabled={saving}
-                    className="btn-ghost text-xs">
+                  <button onClick={() => handleToggleStatus(p)} disabled={saving} className="btn-ghost text-xs">
                     {p.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                   </button>
-                  <button onClick={() => setToDelete(p)} className="btn-ghost text-xs text-red-500">
-                    <Trash2 className="w-3 h-3" /> Remove
+                  <button onClick={() => setToDelete(p)} aria-label={`Remove ${p.name}`} title="Remove"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>

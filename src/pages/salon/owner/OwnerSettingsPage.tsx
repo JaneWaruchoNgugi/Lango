@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase/config'
 import { useAuth } from '../../../contexts/AuthContext'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
+import { PageHeader } from '../../../components/ui/PageHeader'
 import toast from 'react-hot-toast'
 import type { Salon } from '../../../types'
 
@@ -55,8 +56,8 @@ export default function OwnerSettingsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-lg mx-auto space-y-4">
-      <h1 className="page-title">Settings</h1>
+    <div className="max-w-2xl mx-auto space-y-5">
+      <PageHeader title="Settings" subtitle="Salon details and your account." className="!mb-0" />
 
       <div className="card p-5 space-y-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Salon Information</p>

@@ -5,6 +5,7 @@ import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '../../../firebase/config'
 import { useAuth } from '../../../contexts/AuthContext'
 import { PageLoader } from '../../../components/ui/LoadingScreen'
+import { PageHeader } from '../../../components/ui/PageHeader'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Toggle } from '../../../components/ui/Toggle'
 import toast from 'react-hot-toast'
@@ -173,11 +174,8 @@ export default function StaffPermissionsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      <div>
-        <h1 className="page-title">Staff Permissions</h1>
-        <p className="page-subtitle">Configure individual access for each staff member</p>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader title="Staff permissions" subtitle="Choose what each staff member can see and do." className="!mb-0" />
 
       <div className="grid md:grid-cols-[280px_1fr] gap-5 items-start">
         {/* Staff list */}

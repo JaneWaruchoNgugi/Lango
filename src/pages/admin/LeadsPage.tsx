@@ -7,6 +7,9 @@ import { Inbox } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import type { Lead, LeadStatus } from '../../types'
+import { Chip } from '../../components/ui/Segmented'
+import { humanize } from '../../utils/humanize'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const statusBadge: Record<LeadStatus, string> = { NEW: 'badge-blue', CONTACTED: 'badge-yellow', CLOSED: 'badge-gray' }
 
@@ -45,24 +48,22 @@ export default function LeadsPage() {
   const filters: ('ALL' | LeadStatus)[] = ['ALL', 'NEW', 'CONTACTED', 'CLOSED']
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Leads</h1>
-          <p className="page-subtitle">Consultation requests from the landing page · live updates</p>
-        </div>
-        <div className="flex items-center gap-1">
-          {filters.map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${filter === f ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>
-              {f === 'ALL' ? 'All' : f}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Leads"
+        subtitle="Consultation requests from the landing page · live updates"
+        className="!mb-0"
+        actions={
+          <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1">
+            {filters.map(f => (
+              <Chip key={f} active={filter === f} onClick={() => setFilter(f)}>{f === 'ALL' ? 'All' : humanize(f)}</Chip>
+            ))}
+          </div>
+        }
+      />
 
       <div className="card">
-        <div className="px-5 py-4 border-b border-gray-50"><h3 className="section-title mb-0">Requests ({shown.length})</h3></div>
+        <div className="px-5 py-4 border-b border-gray-100"><h3 className="section-title mb-0">Requests ({shown.length})</h3></div>
         {shown.length === 0 ? (
           <EmptyState icon={Inbox} title="No leads yet" description="Demo requests from the landing page will appear here." />
         ) : (
@@ -72,7 +73,7 @@ export default function LeadsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-gray-900">{l.name}</p>
-                    <span className={`badge ${statusBadge[l.status]}`}>{l.status}</span>
+                    <span className={`badge ${statusBadge[l.status]}`}>{humanize(l.status)}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">{l.propertyName} · {l.propertyType} · {l.phone}{l.email ? ` · ${l.email}` : ''}</p>
                   {l.message && <p className="text-xs text-gray-400 mt-1">{l.message}</p>}

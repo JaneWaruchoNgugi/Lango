@@ -8,6 +8,8 @@ import { CreditCard, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { SUBSCRIPTION_PLANS } from '../../types'
 import type { Property, Subscription, SubscriptionStatus } from '../../types'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { humanize } from '../../utils/humanize'
 
 const statusBadge: Record<SubscriptionStatus, string> = {
   ACTIVE:    'badge-green',
@@ -78,10 +80,7 @@ export default function SubscriptionsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div>
-        <h1 className="page-title">Subscriptions</h1>
-        <p className="page-subtitle">Billing plans and renewals across all properties.</p>
-      </div>
+      <PageHeader title="Subscriptions" subtitle="Billing plans and renewals across all properties." className="!mb-0" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat label="Monthly Recurring" value={`KES ${mrr.toLocaleString()}`} color="text-lango-primary" />
@@ -112,7 +111,7 @@ export default function SubscriptionsPage() {
                     </td>
                     <td>{SUBSCRIPTION_PLANS[r.property.plan].name}</td>
                     <td className="tabular-nums">KES {r.monthlyPrice.toLocaleString()}</td>
-                    <td><span className={`badge ${statusBadge[r.status]}`}>{r.status.replace(/_/g, ' ')}</span></td>
+                    <td><span className={`badge ${statusBadge[r.status]}`}>{humanize(r.status)}</span></td>
                     <td className="text-gray-500 text-xs">{r.renewalDate ? format(r.renewalDate.toDate(), 'dd MMM yyyy') : '—'}</td>
                   </tr>
                 ))}

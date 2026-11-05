@@ -6,6 +6,9 @@ import { EmptyState } from '../../components/ui/EmptyState'
 import { Bell, DoorOpen, Package, AlertTriangle, Settings } from 'lucide-react'
 import { format } from 'date-fns'
 import type { Notification, NotificationType } from '../../types'
+import { Chip } from '../../components/ui/Segmented'
+import { humanize } from '../../utils/humanize'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const typeIcon: Record<NotificationType, typeof Bell> = {
   VISITOR_ALERT:  DoorOpen,
@@ -49,24 +52,22 @@ export default function NotificationsPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Notifications</h1>
-          <p className="page-subtitle">Alerts sent to tenants and staff.</p>
-        </div>
-        <div className="flex gap-1 flex-wrap">
-          {filters.map(f => (
-            <button key={f} onClick={() => setStatusFilter(f)}
-              className={`text-xs px-3 py-1.5 rounded-lg border ${statusFilter === f ? 'bg-lango-primary text-white border-lango-primary' : 'border-gray-200 text-gray-600'}`}>
-              {f === 'ALL' ? 'All' : f}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Notifications"
+        subtitle="Alerts sent to tenants and staff."
+        className="!mb-0"
+        actions={
+          <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1">
+            {filters.map(f => (
+              <Chip key={f} active={statusFilter === f} onClick={() => setStatusFilter(f)}>{f === 'ALL' ? 'All' : humanize(f)}</Chip>
+            ))}
+          </div>
+        }
+      />
 
       <div className="card">
-        <div className="px-5 py-4 border-b border-gray-50">
+        <div className="px-5 py-4 border-b border-gray-100">
           <h3 className="section-title mb-0">Recent ({shown.length})</h3>
         </div>
         {shown.length === 0 ? (
@@ -83,7 +84,7 @@ export default function NotificationsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-gray-900 truncate">{n.recipientName}</p>
-                      <span className={`badge flex-shrink-0 ${statusBadge[n.status]}`}>{n.status}</span>
+                      <span className={`badge flex-shrink-0 ${statusBadge[n.status]}`}>{humanize(n.status)}</span>
                     </div>
                     <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{n.message}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
